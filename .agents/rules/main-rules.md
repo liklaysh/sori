@@ -8,6 +8,8 @@ npm: /Users/liklaysh/.nvm/versions/node/v25.9.0/lib/node_modules/npm;
 tsc: /Users/liklaysh/.nvm/versions/node/v25.9.0/bin/tsc;
 zsh: /bin/zsh;
 
+- Docker is here: /usr/local/bin/docker.
+
 - The visual style should be inherited from our system, without any transparency or glasmorphism.
 
 - The user has granted full permission to install any necessary npm packages and dependencies as needed to fulfill technical requirements without asking for separate confirmation each time.

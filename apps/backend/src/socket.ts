@@ -48,7 +48,7 @@ export function initSocket(server: any) {
     }
 
     if (!token) {
-      console.log("[Socket Auth] No token found in auth or cookies");
+      logger.warn("[Socket Auth] No token found in auth or cookies");
       return next(new Error("Authentication error"));
     }
     
@@ -108,7 +108,7 @@ export function initSocket(server: any) {
     // Join admin logs room if authorized
     if (isAdminPanel) {
       socket.join("admin_logs");
-      console.log(`[Socket] Admin ${user.username} joined admin_logs room.`);
+      logger.info(`[Socket] Admin ${user.username} joined admin_logs room.`);
     }
 
     // Auto-join all channels the user is a member of for notifications
@@ -127,10 +127,10 @@ export function initSocket(server: any) {
           allChannels.forEach(ch => {
              socket.join(ch.id);
           });
-          console.log(`[Socket] User ${user.username || 'unknown'} joined ${allChannels.length} channels.`);
+          logger.debug(`[Socket] User ${user.username || 'unknown'} joined ${allChannels.length} channels.`);
         }
       } catch (err) {
-        console.error("[Socket] Failed to join channels:", err);
+        logger.error("[Socket] Failed to join channels:", { error: err });
       }
     }
     
@@ -153,7 +153,7 @@ export function initSocket(server: any) {
       filteredOnlineIds = onlineUserIds.filter(id => !adminIds.has(id));
     }
     
-    console.log(`[Socket] Sending initial_presence to ${user.username} (socket ${socket.id}):`, filteredOnlineIds);
+    logger.debug(`[Socket] Sending initial_presence to ${user.username} (socket ${socket.id})`, { count: filteredOnlineIds.length });
     socket.emit("initial_presence", filteredOnlineIds);
     
     socket.on("get_voice_state", async () => {
@@ -161,7 +161,7 @@ export function initSocket(server: any) {
         const state = await redisVoice.getAllOccupants();
         socket.emit("voice_occupants_state", state);
       } catch (err) {
-        console.error("[Socket] get_voice_state error:", err);
+        logger.error("[Socket] get_voice_state error:", { error: err });
       }
     });
     
@@ -170,44 +170,19 @@ export function initSocket(server: any) {
     // For now, we'll keep it simple.
     
     socket.on("join_channel", (channelId: string) => {
-      console.log(`📡 [Socket] User ${user.username} joining channel: ${channelId}`);
+      logger.debug(`📡 [Socket] User ${user.username} joining channel: ${channelId}`);
       if (isAdminPanel && channelId !== "admin_logs") return;
       socket.join(channelId);
     });
 
     socket.on("typing", (dataValue: { channelId: string, isTyping: boolean }) => {
       const { channelId, isTyping } = dataValue;
-      if (isTyping) console.log(`⌨️  [Socket] User ${user.username} is typing in ${channelId}`);
+      // Noisy logging suppressed in production
       socket.to(channelId).emit("user_typing", {
         userId: user.id,
         username: user.username,
         isTyping
       });
-    });
-
-    // Simple Event Rate Limiter for Sockets
-    const socketEventLimits = new Map<string, { count: number, reset: number }>();
-    socket.use(([event, ...args], next) => {
-      const now = Date.now();
-      const limitKey = `${socket.id}:${event}`;
-      const limit = socketEventLimits.get(limitKey);
-
-      if (!limit || now > limit.reset) {
-        socketEventLimits.set(limitKey, { count: 1, reset: now + 1000 });
-        return next();
-      }
-
-      limit.count++;
-      if (limit.count > 10) { // Max 10 events per second per event type
-        logger.warn(`🔌 [Socket Rate Limit] Exceeded for event: ${event}`, { 
-          socketId: socket.id, 
-          userId: user.id,
-          event,
-          count: limit.count
-        });
-        return; // Silently drop
-      }
-      next();
     });
 
     // Delegate to module handlers
@@ -249,7 +224,7 @@ export function initSocket(server: any) {
         const isStillOnline = await redisPresence.isUserOnline(user.id);
         
         if (!isStillOnline && !isAdminPanel) {
-          console.log(`[Presence] User ${user.username} is still offline after delay. Emitting offline update.`);
+          logger.debug(`[Presence] User ${user.username} is still offline after delay. Emitting offline update.`, { userId: user.id });
           io.emit("presence_update", { userId: user.id, status: "offline" });
         }
       }, 3000); // 3 second grace period

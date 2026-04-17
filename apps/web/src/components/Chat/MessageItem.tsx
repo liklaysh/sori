@@ -84,7 +84,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
             href={part} 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="text-white underline decoration-white/30 hover:decoration-white transition-all underline-offset-2 break-all"
+            className="text-white underline decoration-white hover:decoration-sori-primary transition-all underline-offset-2 break-all"
             onClick={(e) => e.stopPropagation()}
           >
             {part}
@@ -102,7 +102,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
       className={`flex flex-col gap-1 group animate-in slide-in-from-bottom-1 duration-300 ${isMe ? "items-end" : "items-start"}`}
     >
       {msg.parent && !msg.isDeleted && (
-        <div className={`flex items-center gap-2 mb-[-8px] opacity-40 hover:opacity-100 transition-opacity cursor-pointer max-w-[70%] ${isMe ? "flex-row-reverse" : "ml-12"}`}>
+        <div className={`flex items-center gap-2 mb-[-8px] text-[#888888] hover:text-white transition-colors cursor-pointer max-w-[70%] ${isMe ? "flex-row-reverse" : "ml-12"}`}>
           <CornerUpLeft className="h-3 w-3" />
           <p className="text-[10px] truncate italic">
             <span className="font-bold">{msg.parent.username || msg.parent.author?.username}:</span> {msg.parent.content}
@@ -111,7 +111,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
       )}
 
       <div className={`flex gap-3 ${isMe ? "flex-row-reverse" : ""}`}>
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px] transition-transform group-hover:scale-105 shadow-inner shrink-0 ${isMe ? "bg-sori-primary/20 text-sori-primary border border-sori-primary/20" : "bg-white/5 text-gray-400 border border-white/5"} overflow-hidden`}>
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px] transition-transform group-hover:scale-105 shadow-inner shrink-0 ${isMe ? "bg-[#484a7a] text-sori-primary border border-[#545574]" : "bg-[#3c3d42] text-gray-400 border border-[#4a4b51]"} overflow-hidden`}>
           {msg.author?.avatarUrl ? (
             <img 
                src={msg.author.avatarUrl.startsWith('http') ? msg.author.avatarUrl : `${API_URL}/uploads/${msg.author.avatarUrl}`} 
@@ -126,11 +126,11 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
             <span className={`text-[11px] font-black ${isMe ? "text-sori-primary" : "text-sori-secondary"}`}>
               {isMe ? "You" : username}
             </span>
-            <span className="text-[10px] font-bold opacity-30 tracking-tight">
+            <span className="text-[10px] font-bold text-[#555555] tracking-tight">
               {formatMessageTime(msg.createdAt)}
             </span>
             {msg.isEdited && !msg.isDeleted && (
-              <span className="text-[8px] font-black text-sori-primary/50 uppercase italic">
+              <span className="text-[8px] font-black text-[#545574] uppercase italic">
                 (edited {msg.editedAt ? format(formatServerTimestamp(msg.editedAt), "HH:mm") : ""})
               </span>
             )}
@@ -138,41 +138,41 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
           
           <div className={`flex flex-col gap-2 ${isMe ? 'items-end' : 'items-start'} max-w-[calc(100vw-120px)] md:max-w-md lg:max-w-lg xl:max-w-xl`}>
             {msg.type === 'call_missed' ? (
-              <div className="flex items-center gap-3 py-3 px-5 bg-sori-error/5 border border-sori-error/20 rounded-2xl animate-in fade-in zoom-in-95 duration-500 my-1">
-                <div className="w-10 h-10 rounded-xl bg-sori-error/10 flex items-center justify-center text-sori-error shadow-inner">
+              <div className="flex items-center gap-3 py-3 px-5 bg-[#383335] border border-[#5c3738] rounded-2xl animate-in fade-in zoom-in-95 duration-500 my-1">
+                <div className="w-10 h-10 rounded-xl bg-[#453539] flex items-center justify-center text-sori-error shadow-inner">
                   <PhoneMissed className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-white text-xs font-black tracking-tight uppercase opacity-90">Missed Call</p>
-                  <p className="text-[10px] text-sori-error/60 font-bold">{formatMessageTime(msg.createdAt)}</p>
+                  <p className="text-white text-xs font-black tracking-tight uppercase">Missed Call</p>
+                  <p className="text-[10px] text-[#ef4444] font-bold">{formatMessageTime(msg.createdAt)}</p>
                 </div>
               </div>
             ) : msg.type === 'call_ended' ? (
-              <div className="flex items-center gap-3 py-3 px-5 bg-sori-primary/5 border border-sori-primary/20 rounded-2xl animate-in fade-in zoom-in-95 duration-500 my-1">
-                <div className="w-10 h-10 rounded-xl bg-sori-primary/10 flex items-center justify-center text-sori-primary shadow-inner">
+              <div className="flex items-center gap-3 py-3 px-5 bg-[#33344d] border border-[#484a7a] rounded-2xl animate-in fade-in zoom-in-95 duration-500 my-1">
+                <div className="w-10 h-10 rounded-xl bg-[#3d3f5c] flex items-center justify-center text-sori-primary shadow-inner">
                   <Phone className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-white text-xs font-black tracking-tight uppercase opacity-90">Call Ended</p>
-                  <p className="text-[10px] text-sori-primary/60 font-black uppercase tracking-widest leading-none mt-0.5">Duration: {msg.content}</p>
+                  <p className="text-white text-xs font-black tracking-tight uppercase">Call Ended</p>
+                  <p className="text-[10px] text-sori-primary font-black uppercase tracking-widest leading-none mt-0.5">Duration: {msg.content}</p>
                 </div>
               </div>
             ) : msg.type === 'call_rejected' ? (
-              <div className="flex items-center gap-3 py-3 px-5 bg-white/5 border border-white/10 rounded-2xl animate-in fade-in zoom-in-95 duration-500 my-1 opacity-60">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-400 shadow-inner">
+              <div className="flex items-center gap-3 py-3 px-5 bg-[#3c3d42] border border-[#4a4b51] rounded-2xl animate-in fade-in zoom-in-95 duration-500 my-1">
+                <div className="w-10 h-10 rounded-xl bg-[#323338] flex items-center justify-center text-gray-400">
                   <PhoneOff className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-white text-xs font-black tracking-tight uppercase opacity-90">Declined Call</p>
+                  <p className="text-[#a3a3a3] text-xs font-black tracking-tight uppercase">Declined Call</p>
                   <p className="text-[10px] text-gray-500 font-bold">{formatMessageTime(msg.createdAt)}</p>
                 </div>
               </div>
             ) : msg.content && (
               <div className="relative group/content w-full">
                 <div className={`
-                  px-3.5 py-2 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap break-words w-full
-                  ${msg.isDeleted ? "bg-black/20 text-white/20 italic border border-white/5" : 
-                    isMe ? "bg-sori-primary text-white rounded-tr-none shadow-lg" : "bg-sori-sidebar text-white rounded-tl-none border border-white/5 shadow-md"}
+                  px-3.5 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words w-full
+                  ${msg.isDeleted ? "bg-[#1e1e1e] text-[#555555] italic border border-[#323338]" : 
+                    isMe ? "bg-sori-primary text-white rounded-tr-none shadow-lg" : "bg-[#2c2d32] text-white rounded-tl-none border border-[#3c3d42]"}
                 `}>
                   {renderContentWithLinks(msg.content)}
                 </div>
@@ -188,7 +188,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
             )}
 
             {msg.fileUrl && !msg.isDeleted && (
-              <div className={`max-w-md rounded-2xl overflow-hidden border border-white/5 bg-black/20 group/file relative`}>
+              <div className={`max-w-md rounded-2xl overflow-hidden border border-[#3c3d42] bg-[#1e1e1e] group/file relative`}>
                 {isImage ? (
                   <div className="cursor-pointer" onClick={() => setShowLightbox(true)}>
                     <img src={msg.fileUrl || undefined} alt={msg.fileName || 'Attachment'} className="max-h-80 w-auto object-contain hover:brightness-110 transition-all" loading="lazy" />
@@ -205,7 +205,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                     <a 
                       href={msg.fileUrl} 
                       download={msg.fileName} 
-                      className="w-10 h-10 rounded-xl bg-sori-primary/10 text-sori-primary flex items-center justify-center hover:bg-sori-primary hover:text-white transition-all shadow-sm"
+                      className="w-10 h-10 rounded-xl bg-[#3d3f5c] text-sori-primary flex items-center justify-center hover:bg-sori-primary hover:text-white transition-all shadow-sm"
                       title="Download"
                     >
                       <Download className="h-5 w-5" />
@@ -219,9 +219,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
           {Object.keys(groupedReactions).length > 0 && !msg.isDeleted && (
             <div className={`flex flex-wrap gap-1.5 mt-1.5 ${isMe ? "justify-end" : "justify-start"}`}>
               {Object.entries(groupedReactions).map(([emoji, count]) => (
-                <div key={emoji} className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.5 hover:bg-white/10 transition-colors cursor-pointer">
+                <div key={emoji} className="flex items-center gap-1 bg-[#3c3d42] border border-[#4a4b51] rounded-lg px-1.5 py-0.5 hover:bg-[#414247] transition-colors cursor-pointer">
                   <span className="text-xs">{emoji}</span>
-                  <span className="text-[9px] font-black text-white/60">{count}</span>
+                  <span className="text-[9px] font-black text-[#a3a3a3]">{count}</span>
                 </div>
               ))}
             </div>
@@ -231,7 +231,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
 
       {showLightbox && isImage && (
         <div 
-          className="fixed inset-0 z-[1000] bg-black/95 flex items-center justify-center p-8 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[1000] bg-black flex items-center justify-center p-8 animate-in fade-in duration-300"
           onClick={() => setShowLightbox(false)}
         >
           <div className="absolute top-6 right-6 flex gap-3">
@@ -246,14 +246,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                     fileType: msg.fileType || undefined
                   });
                 }}
-                className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center hover:bg-sori-primary transition-all shadow-lg border border-white/5"
+                className="w-12 h-12 rounded-2xl bg-[#3c3d42] text-white flex items-center justify-center hover:bg-sori-primary transition-all shadow-lg border border-[#4a4b51]"
                 title="Forward"
               >
                 <Forward className="h-6 w-6" />
              </button>
              <button 
                 onClick={handleCopy}
-                className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all shadow-lg border border-white/5"
+                className="w-12 h-12 rounded-2xl bg-[#3c3d42] text-white flex items-center justify-center hover:bg-[#4a4b51] transition-all shadow-lg border border-[#4a4b51]"
                 title="Copy Link"
               >
                 <Copy className="h-6 w-6" />
@@ -262,14 +262,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                 href={msg.fileUrl!} 
                 download={msg.fileName}
                 onClick={e => e.stopPropagation()}
-                className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center hover:bg-sori-primary transition-all shadow-lg border border-white/5"
+                className="w-12 h-12 rounded-2xl bg-[#3c3d42] text-white flex items-center justify-center hover:bg-sori-primary transition-all shadow-lg border border-[#4a4b51]"
                 title="Save"
              >
                 <Save className="h-6 w-6" />
              </a>
              <button 
-               className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center hover:bg-sori-error transition-all"
-               onClick={() => setShowLightbox(false)}
+                className="w-12 h-12 rounded-2xl bg-[#3c3d42] text-white flex items-center justify-center hover:bg-sori-error transition-all"
+                onClick={() => setShowLightbox(false)}
              >
                 <X className="h-6 w-6" />
              </button>

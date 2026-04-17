@@ -79,7 +79,10 @@ auth.post("/login", safe(async (c) => {
       username: user.username, 
       email: user.email, 
       role: user.role, 
-      avatarUrl: normalizeS3Url(user.avatarUrl) 
+      avatarUrl: normalizeS3Url(user.avatarUrl),
+      noiseSuppression: user.noiseSuppression,
+      micGain: user.micGain,
+      outputVolume: user.outputVolume
     } 
   });
 }));
@@ -95,7 +98,10 @@ auth.get("/me", authMiddleware, safe(async (c) => {
       username: user.username, 
       email: user.email, 
       role: user.role, 
-      avatarUrl: normalizeS3Url(user.avatarUrl)
+      avatarUrl: normalizeS3Url(user.avatarUrl),
+      noiseSuppression: user.noiseSuppression,
+      micGain: user.micGain,
+      outputVolume: user.outputVolume
     } 
   });
 }));
@@ -120,31 +126,6 @@ auth.get("/refresh", authMiddleware, safe(async (c) => {
   setCookie(c, "sori_auth", token, getCookieOptions(c, maxAge));
 
   return c.json({ success: true });
-}));
-
-// Search users via DB
-auth.get("/users/search", authMiddleware, safe(async (c) => {
-  const query = c.req.query("q");
-  const searchPattern = query ? `%${query.toLowerCase()}%` : null;
-  
-  const results = await db.query.users.findMany({
-    where: and(
-      searchPattern ? or(
-        like(sql`lower(${users.username})`, searchPattern),
-        like(sql`lower(${users.email})`, searchPattern)
-      ) : undefined,
-      not(eq(users.role, 'adminpanel')) // Hide adminpanel role from search
-    ),
-    orderBy: sql`${users.createdAt} DESC`,
-    limit: 20
-  });
-  
-  return c.json(results.map(u => ({ 
-    id: u.id, 
-    username: u.username, 
-    avatarUrl: normalizeS3Url(u.avatarUrl),
-    status: u.status 
-  })));
 }));
 
 export default auth;

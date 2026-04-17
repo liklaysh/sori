@@ -45,6 +45,8 @@ export const DMSidebar: React.FC<DMSidebarProps> = ({
 
   const { livekitToken, endCall } = useCall({ socket, currentUser: user! });
 
+  console.log(`[DM UI Trace] Sidebar Render. Conversations Count: ${conversations.length}, ActiveConversationID: ${activeConversationId}`);
+
   const getOtherUser = (conv: any) => {
     return conv.user1Id === user?.id ? conv.user2 : conv.user1;
   };

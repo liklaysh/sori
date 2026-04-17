@@ -18,21 +18,21 @@ export const MentionPopup: React.FC<MentionPopupProps> = ({ filter, onSelect }) 
   if (filteredUsers.length === 0 && !showEveryone) return null;
 
   return (
-    <div className="absolute bottom-full left-0 w-full bg-sori-chat border border-white/10 border-b-0 rounded-t-2xl shadow-2xl z-50 animate-in slide-in-from-bottom-2 duration-300 overflow-hidden">
+    <div className="absolute bottom-full left-0 w-full bg-[#323338] border border-[#414141] border-b-0 rounded-t-2xl shadow-2xl z-50 animate-in slide-in-from-bottom-2 duration-300 overflow-hidden">
       <div className="p-2 space-y-1">
         
         {filteredUsers.length > 0 && (
           <div className="space-y-1">
-            <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-primary opacity-60">
+            <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-[#a3a6ff]">
               Members
             </div>
             {filteredUsers.map((user) => (
               <div
                 key={user.id}
                 onClick={() => onSelect(user.username)}
-                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-primary/10 cursor-pointer transition-all group"
+                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#3d3f5c] cursor-pointer transition-all group"
               >
-                <div className="w-6 h-6 rounded-lg bg-primary/20 flex items-center justify-center text-[10px] font-black text-primary border border-primary/10">
+                <div className="w-6 h-6 rounded-lg bg-[#484a7a] flex items-center justify-center text-[10px] font-black text-primary border border-[#484a7a]">
                   {user.username[0].toUpperCase()}
                 </div>
                 <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">
@@ -44,16 +44,16 @@ export const MentionPopup: React.FC<MentionPopupProps> = ({ filter, onSelect }) 
         )}
 
         {filteredUsers.length > 0 && showEveryone && (
-          <div className="h-px bg-white/10 my-2 mx-2"></div>
+          <div className="h-px bg-[#414141] my-2 mx-2"></div>
         )}
 
         {showEveryone && (
           <div className="space-y-1">
             <div
               onClick={() => onSelect("everyone")}
-              className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-secondary/10 cursor-pointer transition-all group"
+              className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#384649] cursor-pointer transition-all group"
             >
-              <div className="w-6 h-6 rounded-lg bg-secondary/20 flex items-center justify-center text-[10px] font-black text-secondary border border-secondary/10">
+              <div className="w-6 h-6 rounded-lg bg-[#3e5a5a] flex items-center justify-center text-[10px] font-black text-secondary border border-[#3e5a5a]">
                 @
               </div>
               <div className="flex flex-col">

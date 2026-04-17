@@ -22,11 +22,12 @@ interface ChatState {
   setVoiceOccupants: (occupants: Record<string, VoiceOccupant[]>) => void;
   updateVoiceOccupants: (channelId: string, occupants: VoiceOccupant[]) => void;
   setTyping: (channelId: string, username: string | null) => void;
+  upsertConversation: (conv: DMConversation) => void;
   
   // Async Fetches
   fetchInitialData: (communityId: string) => Promise<void>;
   fetchConversations: () => Promise<void>;
-  fetchMessages: (channelId: string) => Promise<void>;
+  fetchMessages: (channelId: string, search?: string) => Promise<void>;
   fetchDMMessages: (conversationId: string) => Promise<void>;
 }
 
@@ -60,6 +61,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     else delete next[channelId];
     return { typingUsers: next };
   }),
+  upsertConversation: (conv) => set((state) => {
+    const exists = state.conversations.some(c => c.id === conv.id);
+    if (exists) {
+      return {
+        conversations: state.conversations.map(c => c.id === conv.id ? { ...c, ...conv } : c)
+      };
+    }
+    return { conversations: [conv, ...state.conversations] };
+  }),
 
   fetchInitialData: async (communityId) => {
     const [commsRes, channelsRes, membersRes] = await Promise.all([
@@ -68,24 +78,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
       api.get(`/communities/${communityId}/members`)
     ]);
     set({ 
-      communities: commsRes.data, 
-      channels: channelsRes.data, 
-      members: membersRes.data 
+      communities: (commsRes.data as Community[]) || [], 
+      channels: (channelsRes.data as Channel[]) || [], 
+      members: (membersRes.data as Member[]) || [] 
     });
   },
 
   fetchConversations: async () => {
     const res = await api.get("/dm/conversations");
-    set({ conversations: res.data });
+    set({ conversations: (res.data as DMConversation[]) || [] });
   },
 
-  fetchMessages: async (channelId) => {
-    const res = await api.get(`/channels/${channelId}/messages`);
-    set({ messages: res.data });
+  fetchMessages: async (channelId: string, search?: string) => {
+    const url = search ? `/channels/${channelId}/messages?q=${search}` : `/channels/${channelId}/messages`;
+    const res = await api.get(url);
+    set({ messages: (res.data as ChatItem[]) || [] });
   },
 
   fetchDMMessages: async (conversationId) => {
     const res = await api.get(`/dm/conversations/${conversationId}/messages`);
-    set({ messages: res.data });
+    set({ messages: (res.data as ChatItem[]) || [] });
   }
 }));

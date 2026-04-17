@@ -78,7 +78,7 @@ export const SystemCallToast: React.FC<SystemCallToastProps> = ({ log, count = 1
           <span className="text-[10px] font-black uppercase tracking-wider">
             {config.label}
           </span>
-          <span className="text-[9px] opacity-60 font-medium">
+          <span className="text-[9px] font-bold text-black/40">
             {timeStr}
           </span>
         </div>

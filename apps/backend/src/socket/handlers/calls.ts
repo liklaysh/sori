@@ -5,6 +5,7 @@ import { db } from "../../db/index.js";
 import { calls, directMessages, dmConversations, callLogs, users } from "../../db/schema.js";
 import { eq, or, and } from "drizzle-orm";
 import { redisPresence, redisCalls } from "../../utils/redis.js";
+import { logger } from "../../utils/logger.js";
 
 export function handleCalls(io: Server, socket: Socket, user: any) {
   
@@ -79,9 +80,9 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
         }
       }, 30000);
 
-      console.log(`[Calls] ${user.username} initiated call to ${targetUserId}. CallID: ${callId}`);
+      logger.info(`[Calls] ${user.username} initiated call to ${targetUserId}. CallID: ${callId}`);
     } catch (err) {
-      console.error("[Calls] Initiate Error:", err);
+      logger.error("[Calls] Initiate Error:", { error: err });
       socket.emit("direct_call_error", { message: "System failure during initiation" });
     }
   });
@@ -106,9 +107,9 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
       io.to(`user:${callData.callerId}`).emit("call_accepted", { callId });
       io.to(`user:${callData.calleeId}`).emit("call_accepted", { callId });
 
-      console.log(`[Calls] Call ${callId} accepted by ${user.username}.`);
+      logger.info(`[Calls] Call ${callId} accepted by ${user.username}.`);
     } catch (err) {
-      console.error("[Calls] Accept Error:", err);
+      logger.error("[Calls] Accept Error:", { error: err });
       socket.emit("direct_call_error", { message: "System failure during acceptance" });
     }
   });
@@ -123,7 +124,7 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
       await endCall(callId, "rejected");
       io.to(`user:${callData.callerId}`).emit("call_rejected", { callId });
     } catch (err) {
-      console.error("[Calls] Reject Error:", err);
+      logger.error("[Calls] Reject Error:", { error: err });
     }
   });
 
@@ -138,13 +139,13 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
       io.to(`user:${callData.callerId}`).emit("call_ended", { callId });
       io.to(`user:${callData.calleeId}`).emit("call_ended", { callId });
     } catch (err) {
-      console.error("[Calls] End Error:", err);
+      logger.error("[Calls] End Error:", { error: err });
     }
   });
 
   async function endCall(callId: string, status: string, metrics?: any) {
     try {
-      console.log(`[Calls] >>> Starting endCall for ID: ${callId}, status: ${status}`);
+      logger.debug(`[Calls] >>> Starting endCall for ID: ${callId}, status: ${status}`);
       const endedAt = new Date();
       // Update DB record for the call itself
       await db.update(calls)
@@ -163,15 +164,12 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
         where: eq(calls.id, callId)
       });
       
-      console.log("[Calls] Fetched callData from DB:", JSON.stringify(callData, null, 2));
-
       if (!callData || callData.type !== "direct") {
-        console.warn("[Calls] callData not found or not direct. Removing from Redis and returning.", { callData });
+        logger.warn("[Calls] callData not found or not direct. Removing from Redis.", { callId });
         await redisCalls.removeCall(callId);
         return;
       }
 
-      console.log(`[Calls] IDs - Caller: ${callData.callerId}, Callee: ${callData.calleeId}`);
       const [u1, u2] = [callData.callerId!, callData.calleeId!].sort();
 
       // 1. Ensure DM Conversation exists
@@ -180,7 +178,7 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
       });
 
       if (!conversation) {
-        console.log(`[Calls] No DM conversation found for ${u1} and ${u2}. Creating one...`);
+        logger.info(`[Calls] Creating new DM conversation for ${u1} & ${u2} during call log...`);
         const convId = nanoid();
         await db.insert(dmConversations).values({
           id: convId,
@@ -192,10 +190,8 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
         });
       }
 
-      console.log("[Calls] Use Conversation ID:", conversation?.id);
-
       if (conversation) {
-        // 2. Prepare Call Log Entry (Instead of Message)
+        // 2. Prepare Call Log Entry
         const logId = nanoid();
         let duration: number | undefined = undefined;
 
@@ -203,7 +199,6 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
           duration = Math.floor((endedAt.getTime() - callData.startedAt.getTime()) / 1000);
         }
 
-        console.log(`[Calls] Inserting call log entry: ${logId}`);
         await db.insert(callLogs).values({
           id: logId,
           conversationId: conversation.id,
@@ -211,7 +206,7 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
           calleeId: callData.calleeId!,
           status: status, // 'ended', 'missed', 'rejected', 'timeout'
           duration: duration,
-          createdAt: new Date(), // This will be stored as ms by Drizzle if mode is timestamp
+          createdAt: new Date(), 
           isRead: false
         });
 
@@ -230,13 +225,13 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
           .set({ updatedAt: new Date() })
           .where(eq(dmConversations.id, conversation.id));
       } else {
-        console.error("[Calls] FAILED to resolve/create DM conversation.");
+        logger.error("[Calls] FAILED to resolve/create DM conversation.");
       }
 
       await redisCalls.removeCall(callId);
-      console.log(`[Calls] <<< Call ${callId} finished processing.`);
+      logger.debug(`[Calls] <<< Call ${callId} finished processing.`);
     } catch (err) {
-      console.error("[Calls] endCall Internal Error:", err);
+      logger.error("[Calls] endCall Internal Error:", { error: err });
     }
   }
 }

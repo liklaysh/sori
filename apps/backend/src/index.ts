@@ -36,7 +36,7 @@ import adminRoutes from "./routes/admin.js";
 import timeRoutes from "./routes/time.js";
 import utilsRoutes from "./routes/utils.js";
 import healthRoutes from "./routes/health.js";
-import { authLimiter, uploadLimiter } from "./middleware/rateLimiter.js";
+import { authLimiter, uploadLimiter, generalLimiter } from "./middleware/rateLimiter.js";
 
 // Sockets
 import { initSocket } from "./socket.js";
@@ -75,26 +75,43 @@ app.use("*", requestIdMiddleware);
 
 // Structured Request Logger Middleware
 app.use("*", async (c, next) => {
+  const isHealthCheck = c.req.path.startsWith("/health");
+  
+  // Completely skip logging for health checks
+  if (isHealthCheck) {
+    return await next();
+  }
+
   const start = Date.now();
   await next();
   const duration = Date.now() - start;
-  const requestId = c.get("requestId");
-  const user = c.get("jwtPayload");
   
-  const logPayload = {
-    message: `HTTP ${c.req.method} ${c.req.path}`,
-    method: c.req.method,
-    path: c.req.path,
-    status: c.res.status,
-    duration,
-    requestId,
-    userId: user?.id
-  };
+  // Sampling logic
+  const sampleRate = config.logging.sampleRate;
+  const shouldLog = Math.random() < sampleRate;
+  
+  // High priority logs (slow requests or errors) should ALWAYS be logged regardless of sampling
+  const isHighPriority = duration > 1000 || c.res.status >= 400;
 
-  if (duration > 500) {
-    logger.warn(`Slow Request: ${c.req.path}`, logPayload);
-  } else {
-    logger.info(logPayload);
+  if (shouldLog || isHighPriority) {
+    const requestId = c.get("requestId");
+    const user = c.get("jwtPayload");
+    
+    const logPayload = {
+      message: `HTTP ${c.req.method} ${c.req.path}`,
+      method: c.req.method,
+      path: c.req.path,
+      status: c.res.status,
+      duration,
+      requestId,
+      userId: user?.id
+    };
+
+    if (duration > 1000) {
+      logger.warn(`Slow Request: ${c.req.path}`, logPayload);
+    } else {
+      logger.info(logPayload);
+    }
   }
 });
 
@@ -151,7 +168,10 @@ app.route("/health", healthRoutes);
 app.get("/", (c) => c.json({ status: "online", service: "Sori API" }));
 
 // Mount Routes
-app.use("/auth/*", authLimiter);
+app.use("/auth/login", authLimiter);
+app.use("/auth/register", authLimiter);
+app.use("/auth/me", generalLimiter);
+app.use("/auth/refresh", generalLimiter);
 app.use("/upload", uploadLimiter);
 
 app.route("/auth", authRoutes);

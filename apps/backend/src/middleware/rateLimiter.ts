@@ -70,7 +70,7 @@ export const rateLimiter = (options: RateLimitConfig) => {
 
 export const authLimiter = rateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
+  max: 300, // Increased for dev testing
   keyPrefix: "auth"
 });
 
@@ -82,6 +82,6 @@ export const uploadLimiter = rateLimiter({
 
 export const generalLimiter = rateLimiter({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100,
+  max: 500, // Relaxed for real-time app usage
   keyPrefix: "gen"
 });

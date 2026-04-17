@@ -53,11 +53,12 @@ export const ProfileTab: React.FC = () => {
       const uploadRes = await api.post("/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      const newAvatarUrl = uploadRes.data.fileUrl;
+      const uploadData = uploadRes.data as { fileUrl: string };
+      const newAvatarUrl = uploadData.fileUrl;
       
       // Step 2: Update user profile with new URL
       const updateRes = await api.patch("/users/me", { avatarUrl: newAvatarUrl });
-      setUser(updateRes.data);
+      setUser(updateRes.data as any);
       toast.success("Avatar updated!");
     } catch (err) {
       toast.error("Failed to upload avatar.");
@@ -70,7 +71,7 @@ export const ProfileTab: React.FC = () => {
     setIsUpdating(true);
     try {
       const res = await api.patch("/users/me", { username: tempNickname, email: tempEmail });
-      setUser(res.data);
+      setUser(res.data as any);
       toast.success("Profile updated!");
       setIsProfileDialogOpen(false);
     } catch (err) {

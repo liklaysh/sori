@@ -1,7 +1,15 @@
 import { config } from "../config.js";
 import { globalIo } from "../globals.js";
 
-type LogLevel = "info" | "warn" | "error" | "debug";
+type LogLevel = "fatal" | "error" | "warn" | "info" | "debug";
+
+const LEVEL_PRIORITY: Record<LogLevel, number> = {
+  fatal: 0,
+  error: 1,
+  warn: 2,
+  info: 3,
+  debug: 4
+};
 
 interface LogPayload {
   level: LogLevel;
@@ -13,13 +21,17 @@ interface LogPayload {
   timestamp: string;
   stack?: string;
   duration?: number;
-  fatal?: boolean;
   [key: string]: any;
 }
 
 const serviceName = "backend";
 
 function log(level: LogLevel, data: string | any, meta?: any) {
+  const currentConfigLevel = (config.logging.level as LogLevel) || "info";
+  if (LEVEL_PRIORITY[level] > LEVEL_PRIORITY[currentConfigLevel]) {
+    return;
+  }
+
   const timestamp = new Date().toISOString();
   
   let payload: LogPayload;
@@ -51,13 +63,13 @@ function log(level: LogLevel, data: string | any, meta?: any) {
     }
   }
 
-  // Output JSON to console
-  console.log(JSON.stringify(payload));
+  // Output JSON to console (stdout)
+  process.stdout.write(JSON.stringify(payload) + "\n");
 
   // Broadcast to admin room
-  if (globalIo && level !== "debug") {
+  if (globalIo && LEVEL_PRIORITY[level] <= LEVEL_PRIORITY.info) {
     globalIo.to("admin_logs").emit("server_log", {
-      level: level === ("debug" as string) ? "info" : level,
+      level,
       message: payload.message,
       requestId: payload.requestId,
       timestamp: payload.timestamp
@@ -66,12 +78,9 @@ function log(level: LogLevel, data: string | any, meta?: any) {
 }
 
 export const logger = {
-  info: (data: string | Partial<LogPayload>, meta?: Partial<LogPayload>) => log("info", data, meta),
-  warn: (data: string | Partial<LogPayload>, meta?: Partial<LogPayload>) => log("warn", data, meta),
+  fatal: (data: string | Partial<LogPayload>, meta?: Partial<LogPayload>) => log("fatal", data, meta),
   error: (data: string | Partial<LogPayload>, meta?: Partial<LogPayload>) => log("error", data, meta),
-  debug: (data: string | Partial<LogPayload>, meta?: Partial<LogPayload>) => {
-    if (!config.security.isProduction) {
-      log("debug", data, meta);
-    }
-  }
+  warn: (data: string | Partial<LogPayload>, meta?: Partial<LogPayload>) => log("warn", data, meta),
+  info: (data: string | Partial<LogPayload>, meta?: Partial<LogPayload>) => log("info", data, meta),
+  debug: (data: string | Partial<LogPayload>, meta?: Partial<LogPayload>) => log("debug", data, meta)
 };

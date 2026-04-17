@@ -20,7 +20,8 @@ export const useServerTime = () => {
         
         // Estimate round-trip time (latency)
         const latency = (endTime - startTime) / 2;
-        const serverTimestamp = response.data.timestamp;
+        const data = response.data as { timestamp: number };
+        const serverTimestamp = data.timestamp;
         
         // Offset = ServerTime - (ClientTime - Latency)
         // serverAdjustedTime = clientTime + offset

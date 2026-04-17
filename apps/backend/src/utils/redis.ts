@@ -1,5 +1,6 @@
 import { Redis } from "ioredis";
 import { config } from "../config.js";
+import { logger } from "./logger.js";
 
 const REDIS_URL = config.redis.url;
 
@@ -15,8 +16,8 @@ export const subClient = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
 });
 
-redis.on("error", (err: any) => console.error("[Redis] Error:", err));
-redis.on("connect", () => console.log("[Redis] Connected to Valkey/Redis"));
+redis.on("error", (err: any) => logger.error("[Redis] Error:", { error: err }));
+redis.on("connect", () => logger.info("[Redis] Connected to Valkey/Redis"));
 
 /**
  * Helper to manage online users in Redis
@@ -62,7 +63,7 @@ export const redisPresence = {
     });
 
     if (toRemove.length > 0) {
-      console.log(`[Presence] Purging ${toRemove.length} stale sockets for user ${userId}`);
+      logger.debug(`[Presence] Purging ${toRemove.length} stale sockets for user ${userId}`, { userId });
       await redis.srem(`presence:${userId}`, ...toRemove);
       if (aliveCount === 0) {
         await redis.srem(`global:presence`, userId);
@@ -139,7 +140,7 @@ export const redisPresence = {
     return onlineUsers;
   },
   clearPresence: async () => {
-    console.log("🧹 Cleaning up stale presence in Redis...");
+    logger.info("🧹 Cleaning up stale presence in Redis...");
     await redis.del("global:presence");
     
     // Find all presence sets and delete them
@@ -158,7 +159,7 @@ export const redisPresence = {
       cursor = newCursor;
       if (keys.length > 0) await redis.del(...keys);
     } while (cursor !== "0");
-    console.log("✅ Presence cleanup complete.");
+    logger.info("✅ Presence cleanup complete.");
   },
   getUserSockets: async (userId: string) => {
     return await redis.smembers(`presence:${userId}`);

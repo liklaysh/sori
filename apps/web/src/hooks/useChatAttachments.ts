@@ -51,20 +51,20 @@ export const useChatAttachments = () => {
         headers: { 
           "Content-Type": "multipart/form-data"
         },
-        onUploadProgress: (progressEvent) => {
+        onUploadProgress: (progressEvent: any) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || progressEvent.loaded));
           setPendingAttachments(prev => 
             prev.map(a => a.id === attachmentId ? { ...a, progress: percentCompleted } : a)
           );
         }
-      });
+      } as any);
 
       setPendingAttachments(prev => 
         prev.map(a => a.id === attachmentId ? { 
           ...a, 
           isUploading: false, 
           progress: 100,
-          result: res.data 
+          result: res.data as { fileUrl: string; fileName: string; fileSize: number; fileType: string; }
         } : a)
       );
       

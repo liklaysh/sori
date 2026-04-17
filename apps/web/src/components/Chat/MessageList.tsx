@@ -60,12 +60,12 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
       {messages.length >= 50 && onLoadMore && (
         <div className="flex justify-center py-2">
           {isLoadingMore ? (
-            <div className="flex gap-2 items-center text-primary text-[10px] font-black uppercase animate-pulse">
+            <div className="flex gap-2 items-center text-sori-primary text-[10px] font-black uppercase animate-pulse">
                <Loader2 className="h-3 w-3 animate-spin" />
                Syncing archives...
             </div>
           ) : (
-            <div className="text-white/20 text-[9px] font-black uppercase tracking-tighter">End of recent history</div>
+            <div className="text-[#555555] text-[9px] font-black uppercase tracking-tighter">End of recent history</div>
           )}
         </div>
       )}
@@ -87,9 +87,9 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
           ))}
         </div>
       ) : messages.length === 0 ? (
-        <div className="h-full items-center justify-center opacity-20 space-y-4 flex flex-col flex-1">
+        <div className="h-full items-center justify-center space-y-4 flex flex-col flex-1 text-[#555555]">
           <MessageCircle className="h-16 w-16" />
-          <p className="font-headline font-bold text-xl">Welcome to your conversation!</p>
+          <p className="font-headline font-bold text-xl text-white">Welcome to your conversation!</p>
         </div>
       ) : (
         (() => {
@@ -106,13 +106,13 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
             if (showDivider) {
               renderedItems.push(
                 <div key={`divider-${msg.id}`} className="flex items-center gap-4 py-6">
-                  <div className="h-[1px] flex-1 bg-white/5" />
-                  <div className="px-4 py-1.5 rounded-full border border-white/5 bg-white/[0.02] backdrop-blur-sm">
+                  <div className="h-[1px] flex-1 bg-[#3c3d42]" />
+                  <div className="px-4 py-1.5 rounded-full border border-[#3c3d42] bg-[#34353a]">
                     <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">
                       {format(new Date(msg.createdAt), "dd.MM.yy")}
                     </span>
                   </div>
-                  <div className="h-[1px] flex-1 bg-white/5" />
+                  <div className="h-[1px] flex-1 bg-[#3c3d42]" />
                 </div>
               );
             }
@@ -170,7 +170,7 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
         <div className="sticky bottom-4 left-0 right-0 flex justify-center pointer-events-none z-50">
           <button 
             onClick={() => scrollToBottom('smooth')}
-            className="pointer-events-auto bg-sori-chat border border-primary/30 text-primary w-10 h-10 rounded-full flex items-center justify-center shadow-2xl shadow-primary/20 hover:scale-110 active:scale-95 transition-all animate-in slide-in-from-bottom-4"
+            className="pointer-events-auto bg-[#323338] border border-[#545574] text-sori-primary w-10 h-10 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all animate-in slide-in-from-bottom-4"
           >
             <ArrowDown className="h-5 w-5" />
           </button>

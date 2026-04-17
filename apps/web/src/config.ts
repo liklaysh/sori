@@ -10,6 +10,8 @@ export const WS_URL = cleanUrl(import.meta.env.VITE_WS_URL || API_URL);
 // Add other global constants here
 export const APP_NAME = "Sori";
 
-// LiveKit auto-detect (if on same domain but different port or proxied)
+// LiveKit auto-detect
 const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-export const LIVEKIT_URL = cleanUrl(import.meta.env.VITE_LIVEKIT_URL || `${protocol}//${window.location.hostname}:7880`);
+const livekitHost = import.meta.env.VITE_LIVEKIT_URL || `${protocol}//${window.location.hostname}:7880`;
+export const LIVEKIT_URL = cleanUrl(livekitHost);
+console.log("📡 [Config] LIVEKIT_URL:", LIVEKIT_URL);

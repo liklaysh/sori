@@ -33,7 +33,7 @@ export function useLinkPreviews(content: string) {
           const res = await api.get(`/utils/link-preview?url=${encodeURIComponent(url)}`);
 
           if (res.status === 200) {
-            const data = res.data;
+            const data = res.data as LinkMetadata;
             cache.current[url] = data;
             setPreviews(prev => ({ ...prev, [url]: data }));
           } else {

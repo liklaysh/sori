@@ -59,7 +59,10 @@ export const useUIStore = create<UIState>()(
       setSidebarWidth: (width) => set({ sidebarWidth: width }),
       setSettingsOpen: (open) => set({ isSettingsOpen: open }),
       setActiveModule: (activeModule) => set({ activeModule }),
-      setActiveChannelId: (activeChannelId) => set({ activeChannelId }),
+      setActiveChannelId: (activeChannelId) => {
+        console.log("🛠️ [UIStore] setActiveChannelId:", activeChannelId);
+        set({ activeChannelId });
+      },
       setActiveConversationId: (activeConversationId) => set({ activeConversationId }),
       setChannelSidebarOpen: (isChannelSidebarOpen) => set({ isChannelSidebarOpen }),
       setMemberSidebarOpen: (isMemberSidebarOpen) => set({ isMemberSidebarOpen }),
@@ -75,6 +78,8 @@ export const useUIStore = create<UIState>()(
         activeModule: state.activeModule,
         activeChannelId: state.activeChannelId,
         activeConversationId: state.activeConversationId,
+        isMuted: state.isMuted,
+        isDeafened: state.isDeafened,
       }),
       storage: {
         getItem: (name) => {

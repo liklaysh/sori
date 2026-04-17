@@ -5,6 +5,7 @@ import { messages, reactions, dmConversations, directMessages, callLogs } from "
 import { eq, and, not } from "drizzle-orm";
 import { sendMessageSchema, sendDirectMessageSchema } from "../../validation/schemas.js";
 import { getLinkPreviews } from "../../utils/linkPreview.js";
+import { logger } from "../../utils/logger.js";
 
 export function handleMessages(io: Server, socket: Socket, user: { id: string, username: string }, isAdminPanel: boolean) {
 
@@ -48,7 +49,7 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
 
       io.to(channelId).emit("new_message", newMessage);
     } catch (err: any) {
-      console.error(err);
+      logger.error("[Messages] Send Error", { error: err });
       socket.emit("error", { message: "Failed to send message" });
     }
   });
@@ -69,7 +70,7 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
         isEdited: true,
         editedAt: new Date().toISOString()
       });
-    } catch (err) { console.error(err); }
+    } catch (err) { logger.error("[Messages] Edit Error", { error: err }); }
   });
 
   socket.on("delete_message", async (messageId: string) => {
@@ -82,7 +83,7 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
         .where(eq(messages.id, messageId));
 
       io.to(msg.channelId!).emit("message_deleted", messageId);
-    } catch (err) { console.error(err); }
+    } catch (err) { logger.error("[Messages] Delete Error", { error: err }); }
   });
 
   socket.on("add_reaction", async (data: { messageId: string, emoji: string }) => {
@@ -102,7 +103,7 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       if (msg) {
         io.to(msg.channelId!).emit("reaction_added", { messageId, emoji, userId: user.id });
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { logger.error("[Messages] Reaction Error", { error: err }); }
   });
 
   socket.on("remove_reaction", async (data: { messageId: string, emoji: string }) => {
@@ -117,7 +118,7 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       if (msg) {
         io.to(msg.channelId!).emit("reaction_removed", { messageId, emoji, userId: user.id });
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { logger.error("[Messages] Un-Reaction Error", { error: err }); }
   });
 
   socket.on("send_direct_message", async (data: any) => {
@@ -139,7 +140,6 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       const messageId = nanoid();
       const linkPreviews = content ? await getLinkPreviews(content) : [];
 
-      console.log(`[Socket] Attempting DM insert: id=${messageId}, convo=${conversationId}`);
       await db.insert(directMessages).values({
         id: messageId,
         conversationId,
@@ -152,7 +152,6 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
         linkMetadata: linkPreviews.length > 0 ? JSON.stringify(linkPreviews) : null,
         createdAt: new Date()
       });
-      console.log(`[Socket] DM Insert Successful: ${messageId}`);
 
       await db.update(dmConversations)
         .set({ updatedAt: new Date() })
@@ -169,7 +168,8 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       io.to(`user:${targetUserId}`).emit("new_direct_message", newMessage);
       io.to(`user:${user.id}`).emit("new_direct_message", newMessage);
 
-    } catch (err) { console.error(err); }
+      logger.debug(`[Socket] DM Message delivered: ${messageId}`, { conversationId });
+    } catch (err) { logger.error("[Messages] DM Send Error", { error: err }); }
   });
 
   socket.on("mark_read", async (conversationId: string) => {

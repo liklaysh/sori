@@ -14,7 +14,7 @@
     "build": "npm run build --workspaces",
     "test": "echo \"Error: no test specified\" && exit 1",
     "post-refactor:fix": "node scripts/fix-imports.js && node scripts/audit-async.js",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "husky": "^9.1.7",

@@ -48,6 +48,10 @@ export const config = {
   storage: {
     logRetentionDays: Number(optional("LOG_RETENTION_DAYS", "3")),
   },
+  logging: {
+    level: optional("LOG_LEVEL", "info"),
+    sampleRate: Number(optional("LOG_SAMPLE_RATE", "1.0")),
+  },
   security: {
     isProduction: process.env.NODE_ENV === "production",
   },

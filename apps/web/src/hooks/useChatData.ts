@@ -30,7 +30,7 @@ export function useChatData(onlineUsersSetRef: React.MutableRefObject<Set<string
     setIsLoadingConversations(true);
     try {
       const res = await api.get("/dm/conversations");
-      setConversations(res.data || []);
+      setConversations((res.data as DMConversation[]) || []);
     } catch (err) { console.error("Conversations fetch failed", err); }
     finally { setIsLoadingConversations(false); }
   };
@@ -39,7 +39,8 @@ export function useChatData(onlineUsersSetRef: React.MutableRefObject<Set<string
     setIsLoadingMessages(true);
     try {
       const res = await api.get(`/dm/conversations/${conversationId}/messages`);
-      const mapped: ChatItem[] = res.data.map((m: any) => {
+      const data = (res.data as any[]) || [];
+      const mapped: ChatItem[] = data.map((m: any) => {
         if (m.type === "system_call") return m;
         return {
           id: m.id,
@@ -51,7 +52,7 @@ export function useChatData(onlineUsersSetRef: React.MutableRefObject<Set<string
           type: m.type
         };
       });
-      setMessages(mapped.reverse());
+      setMessages(mapped);
     } catch (err) { console.error("DM Messages fetch failed", err); }
     finally { setIsLoadingMessages(false); }
   };
@@ -59,8 +60,9 @@ export function useChatData(onlineUsersSetRef: React.MutableRefObject<Set<string
   const fetchCategories = async (communityId: string, onFetched?: (cats: Category[]) => void) => {
     try {
       const res = await api.get(`/communities/${communityId}/categories`);
-      setCategories(res.data || []);
-      if (onFetched) onFetched(res.data || []);
+      const data = (res.data as Category[]) || [];
+      setCategories(data);
+      if (onFetched) onFetched(data);
     } catch (err) { console.error("Categories fetch failed", err); }
   };
 
@@ -68,8 +70,9 @@ export function useChatData(onlineUsersSetRef: React.MutableRefObject<Set<string
     setIsLoadingChannels(true);
     try {
       const res = await api.get(`/communities/${communityId}/channels`);
-      setChannels(res.data || []);
-      return res.data || [];
+      const data = (res.data as Channel[]) || [];
+      setChannels(data);
+      return data;
     } catch (err) {
       console.error("Channels fetch failed", err);
       return [];
@@ -85,7 +88,7 @@ export function useChatData(onlineUsersSetRef: React.MutableRefObject<Set<string
         ? `/channels/${channelId}/messages?q=${encodeURIComponent(query)}`
         : `/channels/${channelId}/messages`;
       const res = await api.get(url);
-      setMessages(res.data || []);
+      setMessages((res.data as ChatItem[]) || []);
     } catch (err) { console.error("Messages fetch failed", err); }
     finally { setIsLoadingMessages(false); }
   };
@@ -93,7 +96,7 @@ export function useChatData(onlineUsersSetRef: React.MutableRefObject<Set<string
   const fetchMoreMessages = async (channelId: string, before: string) => {
     try {
       const res = await api.get(`/channels/${channelId}/messages?before=${before}`);
-      const newMsgs = res.data || [];
+      const newMsgs = (res.data as ChatItem[]) || [];
       if (newMsgs.length > 0) {
         setMessages(prev => [...newMsgs, ...prev]);
       }
@@ -107,7 +110,8 @@ export function useChatData(onlineUsersSetRef: React.MutableRefObject<Set<string
   const fetchMoreDMMessages = async (conversationId: string, before: string) => {
     try {
       const res = await api.get(`/dm/conversations/${conversationId}/messages?before=${before}`);
-      const mapped: ChatItem[] = res.data.map((m: any) => {
+      const data = (res.data as any[]) || [];
+      const mapped: ChatItem[] = data.map((m: any) => {
         if (m.type === "system_call") return m;
         return {
           id: m.id, content: m.content, authorId: m.authorId, author: m.author, channelId: "dm", createdAt: m.createdAt, type: m.type
@@ -127,7 +131,7 @@ export function useChatData(onlineUsersSetRef: React.MutableRefObject<Set<string
     setIsLoadingMembers(true);
     try {
       const res = await api.get(`/communities/${communityId}/members`);
-      setMembers(res.data || []);
+      setMembers((res.data as Member[]) || []);
     } catch (err) { console.error("Members fetch failed", err); }
     finally { setIsLoadingMembers(false); }
   };

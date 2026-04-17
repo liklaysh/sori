@@ -44,18 +44,28 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
     isMuted, setIsMuted, isDeafened, setIsDeafened
   } = useUIStore();
 
-  const { livekitToken, initiateCall, endCall } = useCall({ socket, currentUser: user! });
+  const { 
+    livekitToken, connectedChannelId, status, 
+    initiateCall, endCall, getChannelToken, resetCall 
+  } = useCall({ socket, currentUser: user! });
 
   const currentChannel = channels.find(c => c.id === activeChannelId) || null;
+  const connectedChannel = channels.find(c => c.id === connectedChannelId) || null;
   
-  const handleJoinVoiceChannel = (channelId: string) => {
-    socket?.emit("join_voice_channel", channelId);
-    setIsVoiceChatOpen(true);
+  const handleJoinVoiceChannel = async (channelId: string) => {
+    try {
+      await getChannelToken(channelId);
+      socket?.emit("join_voice_channel", channelId);
+      setIsVoiceChatOpen(true);
+    } catch (err) {
+      console.error("Join voice failed:", err);
+    }
   };
 
   const handleLeaveVoiceChannel = () => {
-    socket?.emit("leave_voice_channel", activeChannelId);
+    socket?.emit("leave_voice_channel", connectedChannelId);
     setIsVoiceChatOpen(false);
+    resetCall();
   };
 
   // Categorize channels
@@ -102,9 +112,13 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
                     <div key={ch.id} className="mb-1">
                       <div 
                         onClick={() => {
+                          console.log("👆 [ChannelSidebar] Channel clicked:", ch.name, ch.id, ch.type);
                           setActiveChannelId(ch.id);
                           setChannelSidebarOpen(false);
-                          if (ch.type === 'voice') handleJoinVoiceChannel(ch.id);
+                          if (ch.type === 'voice') {
+                            console.log("👆 [ChannelSidebar] Initiating joinVoiceChannel flow");
+                            handleJoinVoiceChannel(ch.id);
+                          }
                         }} 
                         className={cn(
                           "px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 transition-all group/ch",
@@ -141,12 +155,12 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
       </div>
 
       <div className="mt-auto flex flex-col">
-        {socket?.connected && activeChannelId && channels.find(c => c.id === activeChannelId)?.type === 'voice' && (
+        {socket?.connected && connectedChannelId && (
           <div className="bg-sori-voice px-3 py-2 border-t border-white/5 flex items-center gap-3 animate-in slide-in-from-bottom relative">
             <Volume2 className="h-4 w-4 text-secondary animate-pulse" />
             <div className="flex-1 min-w-0">
               <div className="text-[9px] font-black uppercase text-secondary leading-none">Voice Connected</div>
-              <div className="text-[10px] text-on-surface-variant font-bold truncate">{currentChannel?.name}</div>
+              <div className="text-[10px] text-on-surface-variant font-bold truncate">{connectedChannel?.name}</div>
             </div>
             
             <div className="flex items-center">

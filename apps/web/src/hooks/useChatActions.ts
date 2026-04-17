@@ -32,7 +32,7 @@ export const useChatActions = ({
         { name, type, categoryId: categoryId || states.categories[0]?.id }
       );
       await chatApi.fetchChannels(states.currentCommunity.id);
-      setters.setCurrentChannel(res.data);
+      setters.setCurrentChannel(res.data as Channel);
       uiSetters.setIsModalOpen(false);
       toast.success("Channel created!");
     } catch (err) { toast.error("Failed to create channel."); }
@@ -72,12 +72,13 @@ export const useChatActions = ({
   const handleStartDM = async (targetUserId: string) => {
     try {
       const res = await api.post("/dm/conversations", { targetUserId });
+      const conversation = res.data as DMConversation;
       setters.setConversations((prev: DMConversation[]) => {
-        if (prev.some((c: DMConversation) => c.id === res.data.id)) return prev;
-        return [res.data, ...prev];
+        if (prev.some((c: DMConversation) => c.id === conversation.id)) return prev;
+        return [conversation, ...prev];
       });
       uiSetters.setActiveModule('dm');
-      setters.setActiveConversationId(res.data.id);
+      setters.setActiveConversationId(conversation.id);
       uiSetters.setMemberContextMenu((prev: any) => ({ ...prev, visible: false }));
       uiSetters.setIsFindFriendOpen(false);
     } catch (err) { console.error("Failed to start DM", err); }

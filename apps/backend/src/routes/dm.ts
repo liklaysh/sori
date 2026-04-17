@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { db } from "../db/index.js";
 import { dmConversations, directMessages, users, callLogs } from "../db/schema.js";
-import { eq, or, and, desc, lt, gte, sql, not } from "drizzle-orm";
+import { eq, or, and, desc, asc, lt, gte, sql, not } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { authMiddleware } from "../middleware/auth.js";
 import { safe } from "../utils/safe.js";
 import { logger } from "../utils/logger.js";
+import { getGlobalIo } from "../globals.js";
 
 const app = new Hono();
 
@@ -148,14 +149,14 @@ app.get("/conversations/:id/messages", authMiddleware, safe(async (c) => {
     with: {
       author: true
     },
-    orderBy: [desc(directMessages.createdAt)],
+    orderBy: [asc(directMessages.createdAt)],
     limit: limit
   });
 
   // Fetch relevant call logs
   const logs = await db.query.callLogs.findMany({
     where: and(...logConditions),
-    orderBy: [desc(callLogs.createdAt)],
+    orderBy: [asc(callLogs.createdAt)],
     limit: limit
   });
 
@@ -170,7 +171,7 @@ app.get("/conversations/:id/messages", authMiddleware, safe(async (c) => {
     .sort((a: any, b: any) => {
       const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
       const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-      return timeB - timeA;
+      return timeA - timeB; // Chronological
     })
     .slice(0, limit);
 
@@ -219,8 +220,8 @@ app.post("/conversations/:id/messages", authMiddleware, safe(async (c) => {
       with: { author: true }
     });
 
-    // Emit to both users in the conversation
-    const io = (c as any).get("io");
+    // Emit to both users in the conversation - Fixed global IO access
+    const io = getGlobalIo();
     if (io) {
       io.to(`user:${conv.user1Id}`).emit("new_direct_message", msgWithAuthor);
       io.to(`user:${conv.user2Id}`).emit("new_direct_message", msgWithAuthor);

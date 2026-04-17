@@ -43,6 +43,8 @@ const Chat: React.FC = () => {
   // Initialize Socket (URL and auth handled internally)
   const { socket, onlineUsersSet } = useChatSocket();
   
+  console.log("[DIAGNOSTIC] Chat.tsx - onlineUsersSet:", Array.from(onlineUsersSet));
+
   // Media Settings
   const media = useMediaSettings({ initialUser: user! });
 
@@ -95,6 +97,7 @@ const Chat: React.FC = () => {
           socket={socket}
           isVoiceChatOpen={isVoiceChatOpen}
           setIsVoiceChatOpen={setIsVoiceChatOpen}
+          onlineUsersSet={onlineUsersSet}
           {...media}
         />
 

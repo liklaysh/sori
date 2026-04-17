@@ -14,7 +14,7 @@ import { useUserStore } from "../../store/useUserStore";
 import { useUIStore } from "../../store/useUIStore";
 import { useCall } from "../../hooks/useCall";
 import { cn } from "@sori/ui";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, ShieldAlert } from "lucide-react";
 import { API_URL, LIVEKIT_URL } from "../../config";
 import api from "../../lib/api";
 
@@ -22,6 +22,7 @@ interface ChatAreaProps {
   socket: any;
   isVoiceChatOpen: boolean;
   setIsVoiceChatOpen: (open: boolean) => void;
+  onlineUsersSet?: Set<string>;
   
   // Media settings (from useMediaSettings)
   noiseSuppression: boolean;
@@ -46,7 +47,10 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
     setChannelSidebarOpen, setMemberSidebarOpen 
   } = useUIStore();
 
-  const { livekitToken, initiateCall, endCall } = useCall({ socket: props.socket, currentUser: user! });
+  const { 
+    livekitToken, connectedChannelId, status, 
+    initiateCall, endCall, getChannelToken, resetCall 
+  } = useCall({ socket: props.socket, currentUser: user! });
 
   const currentChannel = channels.find(c => c.id === activeChannelId) || null;
   const activeConversation = conversations.find(c => c.id === activeConversationId) || null;
@@ -59,6 +63,14 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   const [editingMessage, setEditingMessage] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [inputValue, setInputValue] = useState("");
+  const [lastError, setLastError] = useState<string | null>(null);
+
+  const searchResults = React.useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    return messages.filter(m => 
+      'content' in m && m.content?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, messages]);
 
   const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
     if (scrollRef.current) {
@@ -76,11 +88,18 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   // Load History
   useEffect(() => {
     if (activeModule === "community" && activeChannelId) {
-      fetchMessages(activeChannelId);
+      fetchMessages(activeChannelId!, searchQuery);
     } else if (activeModule === "dm" && activeConversationId) {
-      fetchDMMessages(activeConversationId);
+      fetchDMMessages(activeConversationId!);
     }
-  }, [activeModule, activeChannelId, activeConversationId, fetchMessages, fetchDMMessages]);
+  }, [activeModule, activeChannelId, activeConversationId, fetchMessages, fetchDMMessages, searchQuery]);
+
+  // Join channel room for sockets
+  useEffect(() => {
+    if (activeModule === "community" && activeChannelId && props.socket) {
+      props.socket.emit("join_channel", activeChannelId);
+    }
+  }, [activeModule, activeChannelId, props.socket]);
 
   const handleSendMessage = async (e: React.FormEvent, manualAttachments?: any[]) => {
     if (e) e.preventDefault();
@@ -93,7 +112,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
         replyToId: replyTo?.id
       };
 
-      let res;
+      let res: any;
       if (activeModule === "community" && activeChannelId) {
         res = await api.post(`/channels/${activeChannelId}/messages`, payload);
       } else if (activeModule === "dm" && activeConversationId) {
@@ -113,14 +132,37 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
 
   const handleJoinVoice = async () => {
     if (!activeChannelId) return;
+    
+    // Check for Secure Context
+    if (!window.isSecureContext || !navigator.mediaDevices) {
+      setLastError("Secure Context Required: Media devices (microphone) are blocked on this domain. Use localhost or enable HTTPS.");
+      return;
+    }
+
     try {
-      await api.post("/calls/token", { channelId: activeChannelId });
+      setLastError(null);
+      await getChannelToken(activeChannelId);
       props.socket?.emit("join_voice_channel", activeChannelId);
       props.setIsVoiceChatOpen(true);
     } catch (err) {
       console.error("Join voice failed:", err);
     }
   };
+
+  // Sync Voice Token if user is already an occupant
+  useEffect(() => {
+    const isVoice = activeModule === "community" && currentChannel?.type === "voice";
+    // Only auto-join if we have media access
+    if (isVoice && activeChannelId && !livekitToken && window.isSecureContext && navigator.mediaDevices) {
+      const occupants = useChatStore.getState().voiceOccupants[activeChannelId] || [];
+      const isMeOccupant = occupants.some(o => o.userId === user?.id);
+      
+      if (isMeOccupant) {
+        console.log("📡 Auto-connecting to voice channel", activeChannelId);
+        getChannelToken(activeChannelId).catch(() => {});
+      }
+    }
+  }, [activeChannelId, activeModule, currentChannel?.type, livekitToken, user?.id, getChannelToken]);
 
   const renderMainChatLayout = () => {
     const isVoice = activeModule === "community" && currentChannel?.type === "voice";
@@ -133,32 +175,81 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
     }
 
     return (
-      <div className="flex-1 flex flex-col min-w-0 h-full relative" onDragEnter={attachments.handleDrag} onDragOver={attachments.handleDrag} onDrop={attachments.handleDrop}>
-        <ChatHeader 
-          activeModule={activeModule} currentChannel={currentChannel} activeConversation={activeConversation}
-          user={user!} isVoice={isVoice} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
-          setIsChannelSidebarOpen={setChannelSidebarOpen} setIsMemberSidebarOpen={setMemberSidebarOpen}
-          setIsVoiceChatOpen={props.setIsVoiceChatOpen} livekitToken={livekitToken}
-        />
+      <div className="flex-1 flex flex-col min-w-0 bg-sori-chat overflow-hidden">
+        {!isVoice && (
+          <ChatHeader 
+            activeModule={activeModule} 
+            currentChannel={currentChannel} 
+            activeConversation={activeConversation}
+            user={user!} 
+            isVoice={isVoice} 
+            searchQuery={searchQuery} 
+            setSearchQuery={setSearchQuery}
+            setIsChannelSidebarOpen={setChannelSidebarOpen} 
+            setIsMemberSidebarOpen={setMemberSidebarOpen}
+            setIsVoiceChatOpen={props.setIsVoiceChatOpen} 
+            livekitToken={livekitToken}
+            onInitiateCall={() => {
+              if (activeConversation) {
+                const partnerUser = activeConversation.user1Id === user?.id 
+                  ? activeConversation.user2 
+                  : activeConversation.user1;
+                
+                if (partnerUser) {
+                  initiateCall({
+                    id: partnerUser.id,
+                    username: partnerUser.username,
+                    avatarUrl: partnerUser.avatarUrl
+                  });
+                }
+              }
+            }}
+            callStatus={status}
+            onlineUsersSet={props.onlineUsersSet}
+            searchResults={searchResults}
+            onResultClick={(msg) => {
+               const element = document.getElementById(`msg-${msg.id}`);
+               if (element) {
+                 element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+               }
+            }}
+          />
+        )}
 
-        <div className="flex-1 overflow-hidden flex flex-col relative">
+        <div className="flex-1 overflow-hidden flex flex-col relative" onDragEnter={attachments.handleDrag} onDragOver={attachments.handleDrag} onDrop={attachments.handleDrop}>
           {attachments.dragActive && (
-            <div className="absolute inset-0 z-[100] bg-primary/10 border-4 border-dashed border-primary m-4 rounded-3xl flex flex-col items-center justify-center pointer-events-none">
-              <UploadCloud className="h-12 w-12 text-primary mb-4" />
+            <div className="absolute inset-0 z-[100] bg-[#3d3f5c] border-4 border-dashed border-sori-primary m-4 rounded-3xl flex flex-col items-center justify-center pointer-events-none">
+              <UploadCloud className="h-12 w-12 text-sori-primary mb-4" />
               <p className="text-xl font-black text-white uppercase tracking-widest">Drop to upload</p>
             </div>
           )}
 
           {isVoice ? (
-            livekitToken ? (
+            livekitToken && (connectedChannelId === activeChannelId || status === 'connected') && window.isSecureContext ? (
               <LiveKitRoom 
                 video={false} audio={true} token={livekitToken} serverUrl={LIVEKIT_URL} connect={true}
-                onDisconnected={() => { props.socket?.emit("leave_voice_channel", activeChannelId); props.setIsVoiceChatOpen(false); }} 
+                onConnected={() => {
+                  console.log("✅ [LiveKitRoom] onConnected event");
+                  setLastError(null);
+                }}
+                onError={(err) => {
+                  console.error("❌ [LiveKitRoom] Error:", err);
+                  setLastError(err.message);
+                }}
+                onDisconnected={() => { 
+                  console.log("🔌 [LiveKitRoom] onDisconnected event");
+                  props.socket?.emit("leave_voice_channel", connectedChannelId); 
+                  props.setIsVoiceChatOpen(false);
+                }} 
                 className="flex-1 flex"
               >
                 <LayoutContextProvider>
                   <SoriVoiceRoom 
-                    onLeave={() => { props.socket?.emit("leave_voice_channel", activeChannelId); props.setIsVoiceChatOpen(false); }} 
+                    onLeave={() => { 
+                      props.socket?.emit("leave_voice_channel", connectedChannelId); 
+                      props.setIsVoiceChatOpen(false); 
+                      resetCall();
+                    }} 
                     messages={messages} inputValue={inputValue} onInputChange={(e) => setInputValue(e.target.value)}
                     onSendMessage={handleSendMessage} user={user!} outputVolume={props.outputVolume} micGain={props.micGain}
                     participantVolumes={{}} noiseSuppression={props.noiseSuppression} toggleNoiseSuppression={props.toggleNoiseSuppression}
@@ -174,7 +265,28 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center space-y-6">
                 <h2 className="text-2xl font-bold text-white">Voice Channel: {currentChannel?.name}</h2>
-                <button onClick={handleJoinVoice} className="bg-primary text-white px-10 py-4 rounded-2xl font-bold">Join Voice Channel</button>
+                
+                {(!window.isSecureContext || !navigator.mediaDevices) ? (
+                  <div className="p-6 bg-[#453539] border border-[#ef4444] text-[#ef4444] rounded-3xl max-w-md text-center">
+                    <ShieldAlert className="h-10 w-10 mx-auto mb-4 opacity-80" />
+                    <h3 className="font-bold mb-2">Browser Security Block</h3>
+                    <p className="text-sm opacity-90">Microphone access is blocked on this domain. Use localhost or enable the Chrome flag.</p>
+                    <div className="mt-4 text-[10px] text-gray-400 bg-[#1e1e1e] p-3 rounded-xl font-mono text-left select-text">
+                      💡 Tip for Chrome/Yandex:<br/>
+                      1. Go to browser://flags/#unsafely-treat-insecure-origin-as-secure<br/>
+                      2. Add: https://sori-web.sori.orb.local<br/>
+                      3. Enable and Relaunch.
+                    </div>
+                  </div>
+                ) : lastError ? (
+                  <div className="p-4 bg-[#58373a] border border-[#ef4444] text-[#ef4444] rounded-xl max-w-md text-center text-sm">
+                    <strong>Connection Error:</strong> {lastError}
+                  </div>
+                ) : null}
+
+                {window.isSecureContext && navigator.mediaDevices && (
+                  <button onClick={handleJoinVoice} className="bg-primary text-white px-10 py-4 rounded-2xl font-bold active:scale-95 transition-transform">Join Voice Channel</button>
+                )}
               </div>
             )
           ) : (
@@ -202,5 +314,9 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
     );
   };
 
-  return <main className="flex-1 flex flex-col h-full bg-sori-chat min-w-0">{renderMainChatLayout()}</main>;
+  return (
+    <main className="flex-1 flex flex-col h-full bg-sori-chat min-w-0 relative">
+      {renderMainChatLayout()}
+    </main>
+  );
 };

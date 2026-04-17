@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUserStore } from '../../../store/useUserStore';
 import { useUIStore } from '../../../store/useUIStore';
+import { useChatStore } from '../../../store/useChatStore';
 import { getAvatarUrl } from "../../../utils/avatar";
 import { 
   cn,
@@ -43,7 +44,7 @@ export const FindFriendModal: React.FC<FindFriendModalProps> = ({
       }
       try {
         const res = await api.get(`/users/search?q=${searchQuery}`);
-        setResults(res.data);
+        setResults((res.data as any[]) || []);
       } catch (err) {
         console.error("Search failed:", err);
       }
@@ -53,13 +54,27 @@ export const FindFriendModal: React.FC<FindFriendModalProps> = ({
   }, [searchQuery]);
 
   const handleStartDM = async (userId: string) => {
+    console.log(`[DM Initialization] 1. Clicked user search result (UserId: ${userId})`);
     try {
+      console.log(`[DM Initialization] 2. Calling API POST /dm/conversations...`);
       const res = await api.post("/dm/conversations", { targetUserId: userId });
-      setActiveConversationId(res.data.id);
-      setActiveModule("dm");
-      onClose();
+      const data = res.data as any;
+      console.log(`[DM Initialization] 3. Backend response received:`, data);
+
+      if (data && data.id) {
+        console.log(`[DM Initialization] 4. Updating Zustand store (upsertConversation)...`);
+        useChatStore.getState().upsertConversation(data);
+        
+        console.log(`[DM Initialization] 5. Switching UI to active conversation (ID: ${data.id})`);
+        setActiveConversationId(data.id);
+        setActiveModule("dm");
+        onClose();
+        console.log(`[DM Initialization] 6. Modal closed, UI should be active.`);
+      } else {
+        console.error("[DM Initialization] ❌ Error: Backend returned invalid conversation data:", data);
+      }
     } catch (err) {
-      console.error("Failed to start DM:", err);
+      console.error("[DM Initialization] ❌ FAILED to start DM:", err);
     }
   };
 

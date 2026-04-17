@@ -6,6 +6,7 @@ import { authMiddleware } from "../middleware/auth.js";
 import { nanoid } from "nanoid";
 import { safe } from "../utils/safe.js";
 import { logger } from "../utils/logger.js";
+import { getGlobalIo } from "../globals.js";
 
 const router = new Hono();
 
@@ -56,7 +57,7 @@ router.get("/:channelId/messages", safe(async (c) => {
           with: { user: true }
         }
       },
-      orderBy: (messages, { desc }) => [desc(messages.createdAt)],
+      orderBy: (messages, { asc }) => [asc(messages.createdAt)],
       limit: limit
     });
 
@@ -95,10 +96,9 @@ router.post("/:channelId/messages", safe(async (c) => {
       }
     });
 
-    // Emit via socket
-    const io = (c as any).get("io");
-    if (io) {
-      io.to(`channel:${channelId}`).emit("new_message", messageWithAuthor);
+    const io = getGlobalIo();
+    if (io && typeof channelId === 'string') {
+      io.to(channelId).emit("new_message", messageWithAuthor);
     }
 
     return c.json(messageWithAuthor);

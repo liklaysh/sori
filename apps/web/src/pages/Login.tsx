@@ -24,10 +24,11 @@ const Login: React.FC = () => {
         password,
       });
 
+      const data = response.data as { user: any };
       // Token is now in HttpOnly cookie, we only store user in Zustand
-      setUser(response.data.user);
+      setUser(data.user);
       
-      if (response.data.user.role === "adminpanel") {
+      if (data.user.role === "adminpanel") {
         navigate("/admin");
       } else {
         navigate("/chat");

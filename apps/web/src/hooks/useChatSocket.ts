@@ -43,12 +43,12 @@ export function useChatSocket() {
     const refreshConversations = async () => {
       try {
         const res = await api.get("/dm/conversations");
-        setConversations(res.data);
+        setConversations((res.data as DMConversation[]) || []);
       } catch (err) { console.error("Failed to update conversations:", err); }
     };
 
     newSocket.on("connect", () => {
-      console.log("[Socket] Connected to backend");
+      console.log("[Socket] Connected to backend (DIAGNOSTIC VERSION ACTIVE)");
       setSocket(newSocket);
       refreshConversations();
     });

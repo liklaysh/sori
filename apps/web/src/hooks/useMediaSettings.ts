@@ -25,7 +25,7 @@ export const useMediaSettings = ({ initialUser }: UseMediaSettingsProps) => {
       const res = await api.patch("/users/me", {
         noiseSuppression: newState
       });
-      const updatedUser = res.data;
+      const updatedUser = res.data as User;
       setCurrentUser(updatedUser);
       setUser(updatedUser);
     } catch (err) {
@@ -51,7 +51,7 @@ export const useMediaSettings = ({ initialUser }: UseMediaSettingsProps) => {
           micGain,
           outputVolume
         });
-        const updatedUser = res.data;
+        const updatedUser = res.data as User;
         setCurrentUser(updatedUser);
         setUser(updatedUser);
         lastSyncedRef.current = { micGain, outputVolume };

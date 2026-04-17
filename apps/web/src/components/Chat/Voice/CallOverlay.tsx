@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { CallStatus } from "../../../hooks/useCall";
+import { CallStatus } from "../../../store/useVoiceStore";
 import { getAvatarUrl } from "../../../utils/avatar";
 import { Phone, PhoneOff, X, Loader2, Maximize2, Mic, MicOff } from "lucide-react";
 import { useServerTime } from "../../../hooks/useServerTime";
