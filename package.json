@@ -1,0 +1,23 @@
+{
+  "name": "sori",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev -w @sori/backend",
+    "dev:web": "npm run dev -w @sori/web",
+    "build": "npm run build --workspaces",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "post-refactor:fix": "node scripts/fix-imports.js && node scripts/audit-async.js",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "madge": "^8.0.0"
+  }
+}

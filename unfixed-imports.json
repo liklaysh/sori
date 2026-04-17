@@ -1,0 +1,15 @@
+{
+  "buildStrategy": {
+    "backend": "tsc",
+    "web": "vite"
+  },
+  "moduleResolution": {
+    "backend": "NodeNext",
+    "web": "bundler"
+  },
+  "brokenImports": [],
+  "recommendations": [
+    "Backend uses NodeNext resolution. This strictly requires '.js' extensions in standard Node.js ESM. Recommendation: Verify if 'tsx' or 'esbuild' is being used to bypass this, otherwise you MUST use .js in imports.",
+    "Web uses 'bundler' resolution (Vite). This is correct. No extensions needed."
+  ]
+}

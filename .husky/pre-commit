@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+echo "🔍 [Husky] Running soft pre-commit checks..."
+grep -rnE "localhost|127.0.0.1|password|secret" . --exclude-dir=node_modules --exclude-dir=tests --exclude=.env.example --exclude=config.ts && echo "⚠️  [Warning] Sensitive patterns found. Please review before pushing." || true
+

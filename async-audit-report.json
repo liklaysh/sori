@@ -1,0 +1,81 @@
+{
+  "missingLocalErrorHandler": [
+    {
+      "file": "apps/backend/src/routes/auth.ts",
+      "line": 15,
+      "snippet": "auth.post(\"/register\", safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/auth.ts",
+      "line": 38,
+      "snippet": "auth.post(\"/login\", safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/auth.ts",
+      "line": 86,
+      "snippet": "auth.get(\"/me\", authMiddleware, safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/auth.ts",
+      "line": 102,
+      "snippet": "auth.post(\"/logout\", safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/auth.ts",
+      "line": 107,
+      "snippet": "auth.get(\"/refresh\", authMiddleware, safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/auth.ts",
+      "line": 125,
+      "snippet": "auth.get(\"/users/search\", authMiddleware, safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/communities.ts",
+      "line": 19,
+      "snippet": "router.get(\"/\", safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/communities.ts",
+      "line": 39,
+      "snippet": "router.get(\"/:communityId/members\", safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/communities.ts",
+      "line": 68,
+      "snippet": "router.post(\"/\", safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/communities.ts",
+      "line": 87,
+      "snippet": "router.get(\"/:communityId/categories\", safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/communities.ts",
+      "line": 96,
+      "snippet": "router.post(\"/:communityId/categories\", safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/communities.ts",
+      "line": 108,
+      "snippet": "router.get(\"/:communityId/channels\", safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/communities.ts",
+      "line": 117,
+      "snippet": "router.post(\"/:communityId/channels\", safe(async (c) => {"
+    },
+    {
+      "file": "apps/backend/src/routes/time.ts",
+      "line": 6,
+      "snippet": "time.get(\"/\", safe(async (c) => {"
+    }
+  ],
+  "potentialDanglingPromises": [
+    {
+      "file": "apps/backend/src/config.ts",
+      "line": 53,
+      "snippet": "if (!config.db.url) missing.push(\"DATABASE_URL\");"
+    }
+  ]
+}

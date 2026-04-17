@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "eslint": "^10.2.0"
+  },
+  "_npx": {
+    "packages": [
+      "eslint"
+    ]
+  }
+}

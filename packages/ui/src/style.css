@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Sori-палитра: Солидные HSL значения */
+  --background: 210 9% 13%; /* #1e2124 (Server List color) */
+  --foreground: 226 100% 93%; /* #dee5ff */
+  
+  --muted: 232 7% 18%; /* #2c2d32 */
+  --muted-foreground: 226 10% 70%;
+  
+  --popover: 225 6% 21%; /* #323338 */
+  --popover-foreground: 226 100% 93%;
+  
+  --card: 225 6% 21%;
+  --card-foreground: 226 100% 93%;
+  
+  --border: 232 7% 18%;
+  --input: 232 7% 18%;
+  
+  --primary: 239 100% 82%; /* #a3a6ff */
+  --primary-foreground: 240 50% 5%;
+  
+  --secondary: 171 87% 69%; /* #6df5e1 */
+  --secondary-foreground: 171 100% 10%;
+  
+  --accent: 239 100% 82%;
+  --accent-foreground: 240 50% 5%;
+  
+  --destructive: 359 82% 60%; /* #ED4245 */
+  --destructive-foreground: 0 0% 100%;
+  
+  --ring: 239 100% 82%;
+  
+  --radius: 0.75rem;
+
+  /* Legacy Sori variables for compatibility */
+  --color-server-list: #1e2124;
+  --color-channels-sidebar: #2c2d32;
+  --color-chat-main: #323338;
+  --color-chat-input: #2c2d32;
+  --color-voice-block: #36373e;
+  --color-right-sidebar: #2c2d32;
+  --color-popups: #323338;
+  --color-error: #ED4245;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Primary Gradient */
+  .bg-primary-gradient {
+    background: linear-gradient(135deg, #a3a6ff 0%, #9396ff 100%);
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 rgba(147, 150, 255, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 6px rgba(147, 150, 255, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(147, 150, 255, 0);
+    }
+  }
+
+  /* Speaking pulse: Зеленоватый оттенок, как у статуса онлайн */
+  @keyframes pulse-speaking {
+    0% {
+      box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+      border-color: rgba(46, 204, 113, 1);
+    }
+    70% {
+      box-shadow: 0 0 0 6px rgba(46, 204, 113, 0);
+      border-color: rgba(46, 204, 113, 1);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+      border-color: rgba(46, 204, 113, 1);
+    }
+  }
+
+  .speaking-pulse {
+    animation: pulse-speaking 1.5s infinite;
+    border: 2px solid #2ecc71 !important;
+  }
+}

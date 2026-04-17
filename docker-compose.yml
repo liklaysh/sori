@@ -1,0 +1,129 @@
+services:
+  # --- Core Sori Services ---
+  sori-backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=${PORT}
+      - NODE_ENV=${NODE_ENV}
+      - JWT_SECRET=${JWT_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+      - VALKEY_URL=${VALKEY_URL}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_PUBLIC_URL=${S3_PUBLIC_URL}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_BUCKET=${S3_BUCKET}
+      - LIVEKIT_URL=${LIVEKIT_URL}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS}
+    depends_on:
+      - valkey
+      - sori-media
+      - livekit
+      - postgres
+    volumes:
+      - sori_media:/app/apps/backend/uploads
+      - ./backups:/app/backups
+    networks:
+      - sori-network
+  
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sori}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-sori}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sori-network
+
+  postgres-backup:
+    image: prodrigestivill/postgres-backup-local:latest
+    depends_on:
+      - postgres
+    volumes:
+      - ./backups:/backups
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-sori}
+      - POSTGRES_USER=${POSTGRES_USER:-sori}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - SCHEDULE=@every 12h
+      - BACKUP_KEEP_DAYS=7
+    networks:
+      - sori-network
+
+  sori-web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_WS_URL=${VITE_WS_URL}
+        - VITE_LIVEKIT_URL=${VITE_LIVEKIT_URL}
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_WS_URL=${VITE_WS_URL}
+      - VITE_LIVEKIT_URL=${VITE_LIVEKIT_URL}
+    depends_on:
+      - sori-backend
+    networks:
+      - sori-network
+
+  # --- Infrastructure Services ---
+  valkey:
+    image: valkey/valkey:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    networks:
+      - sori-network
+
+  sori-media:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - sori-network
+
+  livekit:
+    image: livekit/livekit-server:latest
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    command: --config /etc/livekit.yaml --dev
+    environment:
+      - "LIVEKIT_KEYS=${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-secret}"
+    volumes:
+      - ./infrastructure/livekit.yaml:/etc/livekit.yaml
+    networks:
+      - sori-network
+
+networks:
+  sori-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  sori_media:
+  valkey_data:
+  minio_data:
