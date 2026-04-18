@@ -69,53 +69,53 @@ export default function SettingsTab() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-sori-error pl-6 py-1">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-sori-accent-danger pl-6 py-1">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="p-1.5 bg-sori-error rounded-lg shadow-[0_0_15px_rgba(237,66,69,0.3)]">
-              <Settings className="h-5 w-5 text-white" />
+            <div className="p-1.5 bg-sori-accent-danger rounded-lg">
+              <Settings className="h-5 w-5 text-sori-text-on-accent" />
             </div>
-            <h1 className="text-2xl font-black tracking-tighter text-white uppercase">Core Logic</h1>
+            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">Core Logic</h1>
           </div>
-          <p className="text-gray-400 text-[10px] font-medium tracking-wide uppercase opacity-70">Platform-wide behavioral constants.</p>
+          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">Platform-wide behavioral constants.</p>
         </div>
       </div>
 
       <div className="max-w-3xl">
         {/* Main Settings Panel */}
-        <div className="bg-sori-sidebar border border-white/5 p-6 rounded-3xl shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-[0.02] text-white">
+        <div className="bg-sori-surface-main border border-sori-border-subtle p-6 rounded-3xl shadow-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-5 text-sori-text-strong">
             <Server className="h-16 w-16" />
           </div>
           
           <div className="relative z-10 space-y-6">
             <div className="flex items-center gap-2 mb-1">
-              <Globe className="h-4 w-4 text-sori-error" />
-              <h2 className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Identity Design</h2>
+              <Globe className="h-4 w-4 text-sori-accent-danger" />
+              <h2 className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.2em]">Identity Design</h2>
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between bg-black/20 p-4 rounded-2xl border border-white/5">
+              <div className="flex items-center justify-between bg-sori-surface-base p-4 rounded-2xl border border-sori-border-subtle">
                 <div className="space-y-0.5">
-                  <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Platform Alias</label>
-                  <p className="text-lg font-black text-white">{isLoading ? "Syncing..." : serverName}</p>
+                  <label className="text-[9px] font-black text-sori-text-muted uppercase tracking-widest">Platform Alias</label>
+                  <p className="text-lg font-black text-sori-text-strong">{isLoading ? "Syncing..." : serverName}</p>
                 </div>
                 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button 
                       variant="outline" 
-                      className="rounded-xl border-white/10 hover:bg-white/5 text-[9px] font-black uppercase tracking-widest gap-2 h-9"
+                      className="p-2.5 rounded-lg bg-sori-surface-danger-subtle text-sori-accent-danger hover:bg-sori-accent-danger hover:text-sori-text-on-accent transition-all shadow-md active:scale-95"
                       disabled={isLoading}
                     >
                       <Edit2 className="h-3 w-3" />
                       Modify
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-[#1e2124] border-white/5 text-white shadow-2xl">
+                  <DialogContent className="bg-sori-surface-main border-sori-border-subtle text-sori-text-strong shadow-2xl">
                     <DialogHeader>
                       <DialogTitle>Modify Alias</DialogTitle>
-                      <DialogDescription className="text-gray-400">
+                      <DialogDescription className="text-sori-text-muted">
                         Input a new designation for your Sori platform.
                       </DialogDescription>
                     </DialogHeader>
@@ -124,18 +124,18 @@ export default function SettingsTab() {
                         type="text" 
                         value={tempServerName}
                         onChange={(e) => setTempServerName(e.target.value)}
-                        className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-white focus:border-sori-error outline-none transition-all font-bold"
+                        className="w-full bg-sori-surface-panel border border-sori-border-subtle rounded-xl px-4 py-3 text-sori-text-strong focus:border-sori-accent-danger outline-none transition-all font-bold"
                         placeholder="e.g., Sori Sanctuary"
                       />
                     </div>
                     <DialogFooter>
                       <DialogClose asChild>
-                        <Button variant="ghost" className="text-gray-400 hover:text-white uppercase text-[10px] font-black tracking-widest">Abort</Button>
+                        <Button variant="ghost" className="text-sori-text-muted hover:text-sori-text-strong uppercase text-[10px] font-black tracking-widest">Abort</Button>
                       </DialogClose>
                       <Button 
                         onClick={handleSave} 
                         disabled={isSaving}
-                        className="bg-sori-error hover:brightness-110 text-white font-black uppercase text-[10px] tracking-widest"
+                        className="bg-sori-accent-danger hover:brightness-110 text-sori-text-on-accent font-black uppercase text-[10px] tracking-widest"
                       >
                         {isSaving ? "Syncing..." : "Commit Changes"}
                       </Button>
@@ -144,13 +144,13 @@ export default function SettingsTab() {
                 </Dialog>
               </div>
               
-              <p className="text-[10px] text-gray-500 leading-relaxed font-medium">
+              <p className="text-[10px] text-sori-text-dim leading-relaxed font-medium">
                 This value overrides the "Sori" designation across system headers, metadata, and local broadcasts.
               </p>
             </div>
 
-            <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[8px] text-gray-600 font-black uppercase tracking-widest italic">
+            <div className="pt-4 border-t border-sori-border-subtle flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[8px] text-sori-text-dim font-black uppercase tracking-widest italic">
                 <Activity className="h-2.5 w-2.5" />
                 Latest sync operation successful
               </div>

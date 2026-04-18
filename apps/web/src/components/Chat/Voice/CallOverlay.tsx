@@ -62,25 +62,25 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
   return (
     <div className="fixed bottom-8 right-8 z-[2000] animate-in slide-in-from-right duration-500">
       <div className={cn(
-        "bg-sori-server border p-6 rounded-[2.5rem] shadow-2xl min-w-[320px] flex flex-col items-center gap-6 relative overflow-hidden transition-all duration-500",
-        isIncoming ? "border-secondary shadow-secondary" : "border-muted shadow-2xl",
-        isConnected && "border-sori-primary"
+        "bg-sori-surface-panel border p-6 rounded-[2.5rem] shadow-2xl min-w-[320px] flex flex-col items-center gap-6 relative overflow-hidden transition-all duration-500",
+        isIncoming ? "border-sori-accent-secondary" : "border-sori-border-subtle shadow-2xl",
+        isConnected && "border-sori-accent-primary"
       )}>
         
-        {/* Background glow effects */}
-        {isIncoming && <div className="absolute inset-0 bg-muted animate-pulse pointer-events-none" />}
-        {isConnected && <div className="absolute -top-10 -right-10 w-32 h-32 bg-muted  rounded-full" />}
+        {/* Background effects */}
+        {isIncoming && <div className="absolute inset-0 bg-sori-surface-base animate-pulse pointer-events-none" />}
+        {isConnected && <div className="absolute -top-10 -right-10 w-32 h-32 bg-sori-surface-base  rounded-full" />}
 
         <div className="flex items-center w-full gap-4 relative z-10">
           <div className="relative shrink-0">
             <div className={cn(
-              "w-16 h-16 rounded-full bg-sori-sidebar border flex items-center justify-center text-2xl font-black text-muted-foreground overflow-hidden shadow-inner transition-all duration-500 relative",
-              isIncoming ? "border-secondary animate-pulse scale-110" : "border-muted",
-              isPartnerSpeaking && "ring-4 ring-sori-primary ring-offset-2 ring-offset-sori-server scale-105"
+              "w-16 h-16 rounded-full bg-sori-surface-base border border-sori-border-subtle flex items-center justify-center text-2xl font-black text-sori-text-dim overflow-hidden shadow-inner transition-all duration-500 relative",
+              isIncoming ? "border-sori-accent-secondary animate-pulse scale-110" : "border-sori-border-subtle",
+              isPartnerSpeaking && "ring-4 ring-sori-accent-primary ring-offset-2 ring-offset-sori-surface-panel scale-105"
             )}>
               {/* Speaking Pulse Ring */}
               {isPartnerSpeaking && (
-                <div className="absolute inset-0 rounded-full border-2 border-sori-primary animate-ping " />
+                <div className="absolute inset-0 rounded-full border-2 border-sori-accent-primary animate-ping " />
               )}
               {getAvatarUrl(partner?.avatarUrl) ? (
                 <img src={getAvatarUrl(partner?.avatarUrl)!} alt={partner?.username} className={cn("w-full h-full object-cover", isOutgoing && "grayscale ")} />
@@ -89,14 +89,14 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
               )}
             </div>
             {(isOutgoing || isConnected) && (
-              <div className="absolute -bottom-1 -right-1 bg-sori-server p-1 rounded-full border border-sori-sidebar transition-all duration-300">
+              <div className="absolute -bottom-1 -right-1 bg-sori-surface-base p-1 rounded-full border border-sori-border-subtle transition-all duration-300">
                 {isOutgoing ? (
-                   <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                   <Loader2 className="h-4 w-4 text-sori-accent-primary animate-spin" />
                 ) : (
                    <div className={cn(
-                     "w-4 h-4 rounded-full transition-all duration-300 shadow-[0_0_8px_#22c55e]",
+                     "w-4 h-4 rounded-full transition-all duration-300 shadow-lg",
                      isPartnerSpeaking 
-                      ? "bg-sori-primary scale-125 shadow-[0_0_15px_#a3a6ff] animate-[pulse_1s_cubic-bezier(0.4,0,0.6,1)_infinite]" 
+                      ? "bg-sori-accent-primary scale-125 animate-[pulse_1s_cubic-bezier(0.4,0,0.6,1)_infinite]" 
                       : "bg-sori-success animate-pulse"
                    )} />
                 )}
@@ -107,10 +107,10 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-black text-white uppercase tracking-tight truncate">{partner?.username}</h3>
             <div className="flex items-center gap-2">
-              {isIncoming && <p className="text-[9px] font-black text-secondary uppercase tracking-[0.2em] animate-pulse transition-all">Incoming Call...</p>}
-              {isOutgoing && <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Contacting...</p>}
+              {isIncoming && <p className="text-[9px] font-black text-sori-accent-secondary uppercase tracking-[0.2em] animate-pulse transition-all">Incoming Call...</p>}
+              {isOutgoing && <p className="text-[9px] font-black text-sori-text-muted uppercase tracking-[0.2em]">Contacting...</p>}
               {isConnected && (
-                <p className="text-[9px] font-black text-sori-primary uppercase tracking-[0.2em] flex items-center gap-1">
+                <p className="text-[9px] font-black text-sori-accent-primary uppercase tracking-[0.2em] flex items-center gap-1">
                   <span>Live Connection •</span>
                   <span className="font-mono tabular-nums tracking-normal">{duration}</span>
                 </p>
@@ -121,7 +121,7 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
           {isConnected && onToggleMaximize && (
             <button 
               onClick={onToggleMaximize}
-              className="w-10 h-10 rounded-xl bg-sori-sidebar hover:bg-muted text-gray-400 hover:text-white flex items-center justify-center transition-all group"
+              className="w-10 h-10 rounded-xl bg-sori-surface-base hover:bg-sori-surface-hover text-sori-text-muted hover:text-white flex items-center justify-center transition-all group"
             >
               <Maximize2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
             </button>
@@ -134,14 +134,14 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
               <Button 
                 variant="ghost" 
                 onClick={onReject}
-                className="flex-1 h-12 rounded-2xl hover:bg-muted hover:text-sori-error transition-all font-black uppercase text-[9px] tracking-widest gap-2 text-gray-500"
+                className="flex-1 h-12 rounded-2xl hover:bg-sori-surface-hover hover:text-sori-error transition-all font-black uppercase text-[9px] tracking-widest gap-2 text-sori-text-muted"
               >
                 <PhoneOff className="h-3.5 w-3.5" />
                 Ignore
               </Button>
               <Button 
                 onClick={onAccept}
-                className="flex-[2] h-12 bg-secondary text-black hover:brightness-110 active:scale-95 rounded-2xl transition-all font-black uppercase text-[9px] tracking-widest gap-2 shadow-[0_0_20px_#6df5e1]"
+                className="flex-[2] h-12 bg-sori-accent-secondary text-black hover:brightness-110 active:scale-95 rounded-2xl transition-all font-black uppercase text-[9px] tracking-widest gap-2"
               >
                 <Phone className="h-4 w-4 fill-current" />
                 Accept
@@ -153,7 +153,7 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
             <Button 
               onClick={isConnected ? onCancel : onCancel}
               variant="ghost"
-              className="w-full h-12 rounded-2xl hover:bg-muted hover:text-sori-error transition-all font-black uppercase text-[9px] tracking-widest gap-2 text-gray-500 group"
+              className="w-full h-12 rounded-2xl hover:bg-sori-surface-hover hover:text-sori-error transition-all font-black uppercase text-[9px] tracking-widest gap-2 text-sori-text-muted group"
             >
               <X className="h-4 w-4 group-hover:rotate-90 transition-transform" />
               {isOutgoing ? "Abort Call" : "Hang Up"}

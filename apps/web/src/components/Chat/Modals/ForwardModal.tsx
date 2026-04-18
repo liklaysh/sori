@@ -38,15 +38,15 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md p-0 overflow-hidden border-white/5 bg-sori-sidebar shadow-2xl rounded-[1.5rem] z-[1100]">
+      <DialogContent className="max-w-md p-0 overflow-hidden border-sori-border-subtle bg-sori-surface-panel shadow-2xl rounded-[1.5rem] z-[1100]">
         <div className="sr-only">
           <DialogTitle>Forward Message</DialogTitle>
           <DialogDescription>Select a user or channel to forward this content to.</DialogDescription>
         </div>
 
         <Command className="bg-transparent border-none">
-          <div className="flex items-center border-b border-white/5 px-6">
-            <Search className="mr-3 h-5 w-5 text-sori-primary opacity-50" />
+          <div className="flex items-center border-b border-sori-border-subtle px-6">
+            <Search className="mr-3 h-5 w-5 text-sori-text-dim" />
             <CommandInput 
               placeholder="Forward to..."
               className="bg-transparent border-none py-6 text-base focus:ring-0"
@@ -54,7 +54,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
           </div>
           
           <CommandList className="pb-4 max-h-[400px] no-scrollbar">
-            <CommandEmpty className="py-12 text-center text-gray-500 font-bold uppercase text-[10px] tracking-widest">
+            <CommandEmpty className="py-12 text-center text-sori-text-muted font-bold uppercase text-[10px] tracking-widest">
               No results found
             </CommandEmpty>
             
@@ -64,10 +64,10 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                   <CommandItem 
                     key={ch.id}
                     onSelect={() => onForward(ch.id, true)}
-                    className="flex items-center justify-between p-3 rounded-xl border border-transparent hover:bg-white/5 group cursor-pointer transition-all aria-selected:bg-white/5"
+                    className="flex items-center justify-between p-3 rounded-xl border border-transparent hover:bg-sori-surface-hover group cursor-pointer transition-all aria-selected:bg-sori-surface-hover"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-gray-500">
+                      <div className="w-9 h-9 rounded-xl bg-sori-surface-panel flex items-center justify-center text-sori-text-muted">
                         <Hash className="h-4 w-4" />
                       </div>
                       <span className="font-bold text-sm text-white">{ch.name}</span>
@@ -87,10 +87,10 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                   <CommandItem 
                     key={conv.id}
                     onSelect={() => onForward(conv.id, false)}
-                    className="flex items-center justify-between p-3 rounded-xl border border-transparent hover:bg-white/5 group cursor-pointer transition-all aria-selected:bg-white/5"
+                    className="flex items-center justify-between p-3 rounded-xl border border-transparent hover:bg-sori-surface-hover group cursor-pointer transition-all aria-selected:bg-sori-surface-hover"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-sori-primary/20 flex items-center justify-center text-[10px] font-black text-sori-primary border border-sori-primary/10 shrink-0">
+                      <div className="w-9 h-9 rounded-xl bg-sori-surface-accent-subtle flex items-center justify-center text-[10px] font-black text-sori-accent-primary border border-sori-border-accent shrink-0">
                         {targetUser.avatarUrl ? (
                           <img src={targetUser.avatarUrl} className="w-full h-full object-cover rounded-xl" />
                         ) : (

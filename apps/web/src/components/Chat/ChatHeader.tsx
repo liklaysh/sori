@@ -54,11 +54,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const isOnline = otherUser?.id ? onlineUsersSet?.has(otherUser.id) : false;
 
   return (
-    <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-sori-chat sticky top-0 z-30 shrink-0">
+    <header className="h-20 border-b border-sori-border-subtle flex items-center justify-between px-8 bg-sori-chat sticky top-0 z-30 shrink-0">
       <div className="flex items-center gap-5 min-w-0">
         <button 
           onClick={() => setIsChannelSidebarOpen(true)}
-          className="md:hidden w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white"
+          className="md:hidden w-10 h-10 flex items-center justify-center text-sori-text-muted hover:text-white"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -66,7 +66,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         {activeModule === 'dm' && otherUser ? (
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
-              <div className="w-12 h-12 rounded-2xl bg-sori-primary/10 flex items-center justify-center text-sori-primary font-black overflow-hidden border border-sori-primary/20">
+              <div className="w-12 h-12 rounded-2xl bg-sori-surface-base flex items-center justify-center text-sori-accent-primary font-black overflow-hidden border border-sori-border-accent">
                 {otherUser.avatarUrl ? (
                   <img src={otherUser.avatarUrl} alt={otherUser.username} className="w-full h-full object-cover" />
                 ) : (
@@ -74,8 +74,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 )}
               </div>
               <div className={cn(
-                "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-sori-chat transition-colors duration-300",
-                isOnline ? "bg-sori-success shadow-[0_0_10px_rgba(var(--sori-success-rgb),0.5)]" : "bg-gray-600"
+                "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-sori-border-subtle transition-colors duration-300",
+                isOnline ? "bg-sori-success shadow-lg" : "bg-sori-surface-disabled"
               )} />
             </div>
             <div className="flex flex-col min-w-0">
@@ -85,9 +85,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               <div className="flex items-center gap-2">
                 <span className={cn(
                   "w-1.5 h-1.5 rounded-full",
-                  isOnline ? "bg-sori-success" : "bg-gray-600"
+                  isOnline ? "bg-sori-success" : "bg-sori-surface-disabled"
                 )} />
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted">
                   {isOnline ? 'Online' : 'Offline'}
                 </p>
               </div>
@@ -95,11 +95,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         ) : (
           <div className="flex items-center gap-4">
-            <div className="p-2 bg-white/5 rounded-xl">
+            <div className="p-2 bg-sori-surface-base rounded-xl">
               {isVoice ? (
-                <Volume2 className="h-5 w-5 text-gray-400" />
+                <Volume2 className="h-5 w-5 text-sori-text-muted" />
               ) : (
-                <Hash className="h-5 w-5 text-gray-400" />
+                <Hash className="h-5 w-5 text-sori-text-muted" />
               )}
             </div>
             <h1 className="font-bold text-lg text-white truncate">
@@ -116,13 +116,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               <button 
                 className={cn(
                   "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
-                  isSearchOpen ? "bg-sori-primary text-white shadow-[0_0_15px_rgba(var(--sori-primary-rgb),0.3)]" : "bg-[#3c3d42] text-gray-400 hover:text-white hover:bg-[#4a4b51]"
+                  isSearchOpen ? "bg-sori-accent-primary text-black" : "bg-sori-surface-panel text-sori-text-muted hover:text-white hover:bg-sori-surface-hover"
                 )}
               >
                 <Search className="h-5 w-5" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-[400px] p-0 bg-[#323338] border-[#3c3d42] shadow-2xl rounded-2xl overflow-hidden mr-8" align="end">
+            <PopoverContent className="w-[400px] p-0 bg-sori-surface-panel border-sori-border-subtle shadow-2xl rounded-2xl overflow-hidden mr-8" align="end">
               <Command shouldFilter={false} className="bg-transparent">
                 <CommandInput 
                   placeholder="Search in conversation..." 
@@ -131,7 +131,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   className="py-6 border-none focus:ring-0"
                 />
                 <CommandList className="max-h-[300px] no-scrollbar">
-                  <CommandEmpty className="py-6 text-center text-sm text-gray-500">
+                  <CommandEmpty className="py-6 text-center text-sm text-sori-text-muted">
                     No results found...
                   </CommandEmpty>
                   <CommandGroup heading="Search Results" className="px-2 pb-2">
@@ -143,26 +143,34 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                             onResultClick?.(msg);
                             setIsSearchOpen(false);
                           }}
-                          className="flex flex-col items-start gap-1 p-3 rounded-xl hover:bg-[#3d3f5c] group cursor-pointer transition-all"
+                          className="flex flex-col items-start gap-1 p-3 rounded-xl hover:bg-sori-surface-accent-subtle group cursor-pointer transition-all"
                         >
                           <div className="flex items-center justify-between w-full mb-1">
                             <div className="flex items-center gap-2">
-                               <div className="w-6 h-6 rounded-lg bg-[#3d3f5c] flex items-center justify-center text-[10px] font-black text-sori-primary shrink-0 overflow-hidden">
-                                  {('author' in msg && msg.author?.avatarUrl) ? <img src={msg.author.avatarUrl} className="w-full h-full object-cover" alt="" /> : (('username' in msg ? msg.username?.[0] : undefined) || ('author' in msg ? msg.author?.username?.[0] : '?') || "?")}
+                               <div className="w-6 h-6 rounded-lg bg-sori-surface-accent-subtle flex items-center justify-center text-[10px] font-black text-sori-accent-primary shrink-0 overflow-hidden border border-sori-border-accent">
+                                  {'author' in msg && msg.author?.avatarUrl ? (
+                                    <img src={msg.author.avatarUrl} className="w-full h-full object-cover" alt="" />
+                                  ) : (
+                                    <span className="text-sori-text-dim">
+                                      {('username' in msg ? msg.username?.[0] : ('author' in msg ? msg.author?.username?.[0] : undefined)) || '?'}
+                                    </span>
+                                  )}
                                </div>
-                               <span className="font-bold text-xs text-white group-hover:text-sori-primary transition-colors">{('username' in msg ? msg.username : undefined) || ('author' in msg ? msg.author?.username : 'System')}</span>
+                               <span className="font-bold text-xs text-white group-hover:text-sori-accent-primary transition-colors">
+                                 {('username' in msg ? msg.username : ('author' in msg ? msg.author?.username : undefined)) || 'System'}
+                               </span>
                             </div>
-                            <span className="text-[9px] font-bold opacity-30 uppercase">
+                             <span className="text-[9px] font-bold text-sori-text-muted uppercase">
                                {new Date(msg.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                             </span>
                           </div>
-                          <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed pl-8">
-                             {'content' in msg ? msg.content : `Call Event`}
+                          <p className="text-[11px] text-sori-text-muted line-clamp-2 leading-relaxed pl-8">
+                             {'content' in msg ? msg.content : `System Event`}
                           </p>
                         </CommandItem>
                       ))
                     ) : (
-                      <div className="py-12 flex flex-col items-center justify-center opacity-20">
+                       <div className="py-12 flex flex-col items-center justify-center text-sori-text-muted">
                         <Search className="h-8 w-8 mb-2" />
                         <p className="text-[10px] font-black uppercase tracking-widest">Message Archive Mode</p>
                       </div>
@@ -177,7 +185,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         {activeModule === 'community' && !isVoice && (
           <button 
             onClick={() => setIsMemberSidebarOpen(true)}
-            className="xl:hidden w-12 h-12 rounded-2xl flex items-center justify-center bg-[#3c3d42] text-gray-400 hover:text-white hover:bg-[#4a4b51] transition-all"
+            className="xl:hidden w-12 h-12 rounded-2xl flex items-center justify-center bg-sori-surface-panel text-sori-text-muted hover:text-white hover:bg-sori-surface-hover transition-all"
           >
             <Users className="h-5 w-5" />
           </button>
@@ -185,14 +193,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
         {activeModule === 'dm' && otherUser && !isVoice && (
           <button 
-            onClick={() => {
-              console.log("[FINAL_FIX] Initiating 1-on-1 call", { otherUser });
-              onInitiateCall?.(otherUser);
-            }}
+            onClick={() => onInitiateCall?.(otherUser)}
             disabled={callStatus !== 'idle'}
             className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all bg-[#3d3f5c] text-sori-primary hover:bg-sori-primary hover:text-white border border-[#484a7a]",
-              callStatus !== 'idle' && "opacity-30 grayscale cursor-not-allowed"
+              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all bg-sori-surface-accent-subtle text-sori-accent-primary hover:bg-sori-accent-primary hover:text-black border border-sori-border-accent",
+               callStatus !== 'idle' && "bg-sori-surface-disabled text-sori-text-disabled border-sori-border-subtle grayscale cursor-not-allowed"
             )}
             title="Initiate Call"
           >
@@ -205,7 +210,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             onClick={() => setIsVoiceChatOpen?.(!isVoiceChatOpen)} 
             className={cn(
               "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
-              isVoiceChatOpen ? 'bg-sori-primary text-white shadow-[0_0_15px_rgba(var(--sori-primary-rgb),0.3)]' : 'bg-white/5 text-gray-400'
+              isVoiceChatOpen ? 'bg-sori-accent-primary text-black' : 'bg-sori-surface-panel text-sori-text-muted'
             )}
             title="Voice Chat"
           >

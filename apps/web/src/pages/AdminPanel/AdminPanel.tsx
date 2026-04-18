@@ -61,39 +61,34 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="h-screen flex bg-[#323338] font-sans text-white overflow-hidden relative">
+    <div className="h-screen flex bg-sori-surface-base font-sans text-sori-text-primary overflow-hidden relative">
       
       {/* Mobile Sidebar Backdrop */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 z-[100] lg:hidden" 
+          className="fixed inset-0 bg-sori-surface-overlay z-[100] lg:hidden" 
           onClick={() => setIsSidebarOpen(false)}
         ></div>
       )}
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-[110] w-72 bg-sori-sidebar border-r border-white/5 flex flex-col p-6 transition-transform duration-300
+        fixed inset-y-0 left-0 z-[110] w-72 bg-sori-surface-main border-r border-sori-border-subtle flex flex-col p-6 transition-transform duration-300
         lg:relative lg:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex items-center justify-between mb-8 ml-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sori-error/10 flex items-center justify-center text-sori-error border border-sori-error/20">
-              <ShieldCheck className="h-6 w-6" />
-            </div>
-            <h1 className="text-xl font-bold tracking-tight">Admin <span className="text-sori-error underline underline-offset-4 decoration-2">Panel</span></h1>
+        <div className="flex items-center gap-2 mb-8">
+          <div className="p-1.5 bg-sori-accent-danger rounded-lg">
+            <ShieldCheck className="h-5 w-5 text-sori-text-on-accent" />
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-all">
-            <X className="h-6 w-6" />
-          </button>
+          <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">System Pulse</h1>
         </div>
 
         <nav className="space-y-1 flex-1 overflow-y-auto custom-scrollbar pr-1">
           {tabs.map((tab, index) => (
             <React.Fragment key={tab.id}>
               {tab.section && (
-                <h2 className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-3 ml-4 mt-6 first:mt-2">
+                <h2 className="text-[10px] font-black uppercase text-sori-text-muted tracking-[0.2em] mb-3 ml-4 mt-6 first:mt-2">
                   {tab.section}
                 </h2>
               )}
@@ -107,10 +102,10 @@ export default function AdminPanel() {
           ))}
         </nav>
 
-        <div className="mt-4 pt-4 border-t border-white/5">
+        <div className="mt-4 pt-4 border-t border-sori-border-subtle">
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-sori-error/10 hover:text-sori-error transition-all group"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sori-text-muted hover:bg-sori-surface-hover hover:text-sori-text-strong transition-all group"
           >
             <LogOut className="h-5 w-5 group-hover:rotate-12 transition-transform" />
             <span className="text-sm font-bold">Logout System</span>
@@ -119,24 +114,23 @@ export default function AdminPanel() {
       </aside>
 
       {/* Main Content Pane */}
-      <div className="flex-1 flex flex-col relative overflow-hidden bg-[#323338]">
+      <div className="flex-1 flex flex-col relative overflow-hidden bg-sori-surface-base">
         {/* Header */}
-        <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-sori-sidebar/50 shrink-0">
+        <header className="h-16 border-b border-sori-border-subtle flex items-center justify-between px-8 bg-sori-surface-main shrink-0">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-gray-400 hover:text-white">
+            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-sori-text-muted hover:text-sori-text-strong">
               <Menu className="h-6 w-6" />
             </button>
             <div className="flex items-center gap-2">
-              <h2 className="font-bold text-sm tracking-widest uppercase text-gray-400">
+              <h2 className="font-bold text-sm tracking-widest uppercase text-sori-text-muted">
                 {tabs.find(t => t.id === activeTab)?.label}
               </h2>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="px-3 py-1 rounded-full bg-sori-error/10 border border-sori-error/20 text-[10px] font-black uppercase text-sori-error tracking-widest">
-              Live System
-            </div>
+          <div className="flex items-center gap-3 bg-sori-surface-main border border-sori-border-subtle px-4 py-2 rounded-xl shrink-0">
+            <div className="w-2 h-2 rounded-full bg-sori-accent-secondary shadow-lg animate-pulse"></div>
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-strong">Status: Stable</span>
           </div>
         </header>
 
@@ -164,8 +158,8 @@ const TabItem = ({ icon, label, active, onClick }: { icon: React.ReactNode, labe
     className={`
       w-full flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all group
       ${active 
-        ? 'bg-sori-error text-white shadow-lg shadow-sori-error/20' 
-        : 'text-gray-400 hover:bg-white/5 hover:text-white'}
+        ? 'bg-sori-accent-danger text-sori-text-on-accent shadow-lg' 
+        : 'text-sori-text-muted hover:bg-sori-surface-hover hover:text-sori-text-strong'}
     `}
   >
     <div className={`transition-all ${active ? 'scale-110' : 'group-hover:scale-110'}`}>

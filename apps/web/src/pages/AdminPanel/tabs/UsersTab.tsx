@@ -118,72 +118,72 @@ export default function UsersTab() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-l-4 border-sori-error pl-6 py-1">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-l-4 border-sori-accent-danger pl-6 py-1">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="p-1.5 bg-sori-error rounded-lg shadow-[0_0_15px_rgba(237,66,69,0.3)]">
-              <Users className="h-5 w-5 text-white" />
+            <div className="p-1.5 bg-sori-accent-danger rounded-lg">
+              <Users className="h-5 w-5 text-sori-text-on-accent" />
             </div>
-            <h1 className="text-2xl font-black tracking-tighter text-white uppercase">User Registry</h1>
+            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">User Registry</h1>
           </div>
-          <p className="text-gray-400 text-[10px] font-medium tracking-wide uppercase opacity-70">Provision identities and manage access levels.</p>
+          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">Provision identities and manage access levels.</p>
         </div>
       </div>
 
       {/* Provision New Account */}
-      <div className="bg-sori-sidebar border border-white/5 p-6 rounded-3xl shadow-xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-6 opacity-[0.02] text-white">
+      <div className="bg-sori-surface-main border border-sori-border-subtle p-6 rounded-3xl shadow-xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-6 text-sori-text-strong opacity-5">
           <UserPlus className="h-24 w-24" />
         </div>
         
         <div className="flex items-center gap-2 mb-4">
-          <UserPlus className="h-4 w-4 text-sori-error" />
-          <h2 className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Generate New Identity</h2>
+          <UserPlus className="h-4 w-4 text-sori-accent-danger" />
+          <h2 className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.2em]">Generate New Identity</h2>
         </div>
         
         <form onSubmit={handleCreateUser} className="flex flex-col md:flex-row gap-3 relative z-10">
           <div className="flex-1 relative group/input">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 group-focus-within/input:text-sori-error transition-colors" />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-sori-text-dim group-focus-within/input:text-sori-accent-danger transition-colors" />
             <input 
               type="email" 
               placeholder="Citizen Email Address" 
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              className="w-full bg-black/40 border border-white/5 rounded-xl pl-12 pr-5 py-3 text-sm text-white hover:border-sori-error/30 focus:border-sori-error outline-none transition-all placeholder:text-gray-600 font-medium"
+              className="w-full bg-sori-surface-panel border border-sori-border-subtle rounded-xl pl-12 pr-5 py-3 text-sm text-sori-text-strong hover:border-sori-accent-danger focus:border-sori-accent-danger outline-none transition-all placeholder:text-sori-text-dim font-medium"
             />
           </div>
           <button 
             type="submit" 
-            className="bg-sori-error text-white font-black px-8 py-3 rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-sori-error/10 text-xs uppercase tracking-widest"
+            className="bg-sori-accent-danger text-sori-text-on-accent font-black px-8 py-3 rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg text-xs uppercase tracking-widest"
           >
             Generate
           </button>
         </form>
 
         {generatedAuth && (
-          <div className="mt-6 bg-black/40 border-l-2 border-sori-error/50 p-4 rounded-xl relative animate-in zoom-in-95">
+          <div className="mt-6 bg-sori-surface-danger-subtle border-l-2 border-sori-accent-danger p-4 rounded-xl relative animate-in zoom-in-95">
             <button 
               onClick={() => setGeneratedAuth(null)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-white transition-all transform hover:rotate-90"
+              className="absolute top-3 right-3 text-sori-text-muted hover:text-sori-text-strong transition-all transform hover:rotate-90"
             >
               <X className="h-4 w-4" />
             </button>
             <div className="flex items-center gap-2 mb-2">
-              <AlertCircle className="h-3 w-3 text-sori-error" />
-              <h3 className="text-sori-error font-black uppercase tracking-widest text-[8px]">Security Credentials</h3>
+              <AlertCircle className="h-3 w-3 text-sori-accent-danger" />
+              <h3 className="text-sori-accent-danger font-black uppercase tracking-widest text-[8px]">Security Credentials</h3>
             </div>
-            <p className="text-[10px] font-medium mb-3 text-gray-400">Save this immediately. Keys are not stored in plain text.</p>
+            <p className="text-[10px] font-medium mb-3 text-sori-text-muted">Save this immediately. Keys are not stored in plain text.</p>
             
             <div className="flex items-center gap-3">
-              <div className="flex-1 font-mono text-sm bg-black/60 p-3 rounded-lg select-all tracking-wider text-green-400 border border-white/5 flex items-center justify-between">
+              <div className="flex-1 font-mono text-sm bg-sori-surface-base p-3 rounded-lg select-all tracking-wider text-sori-accent-secondary border border-sori-border-subtle flex items-center justify-between">
                 <span>{generatedAuth.pass}</span>
-                <button onClick={copyAuth} className="text-gray-500 hover:text-sori-error transition-colors">
+                <button onClick={copyAuth} className="text-sori-text-dim hover:text-sori-accent-danger transition-colors">
                   <Copy className="h-4 w-4" />
                 </button>
               </div>
               <button 
                 onClick={copyAuth} 
-                className="text-[9px] bg-sori-error text-white font-black px-4 py-3 rounded-lg flex items-center gap-2 hover:brightness-110 shadow-lg shadow-sori-error/10 uppercase tracking-widest"
+                className="text-[9px] bg-sori-accent-danger text-sori-text-on-accent font-black px-4 py-3 rounded-lg flex items-center gap-2 hover:brightness-110 shadow-lg uppercase tracking-widest"
               >
                 <Copy className="h-3 w-3" /> Copy
               </button>
@@ -195,38 +195,38 @@ export default function UsersTab() {
       {/* Search & Filter row */}
       <div className="flex justify-end mb-6">
         <div className="w-full md:w-80 relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 group-focus-within/input:text-sori-error transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-sori-text-dim group-focus-within/input:text-sori-accent-danger transition-colors" />
           <input 
             type="text"
             placeholder="Search citizen registry..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-sori-sidebar border border-white/5 rounded-xl pl-12 pr-5 py-3 text-xs font-bold text-white outline-none focus:border-sori-error transition-all placeholder:text-gray-600 uppercase tracking-widest"
+            className="w-full bg-sori-surface-main border border-sori-border-subtle rounded-xl pl-12 pr-5 py-3 text-xs font-bold text-sori-text-strong outline-none focus:border-sori-accent-danger transition-all placeholder:text-sori-text-dim uppercase tracking-widest"
           />
         </div>
       </div>
 
       {/* Users List */}
-      <div className="bg-sori-sidebar border border-white/5 rounded-3xl overflow-hidden shadow-xl">
+      <div className="bg-sori-surface-main border border-sori-border-subtle rounded-3xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full min-w-[600px] text-left">
-            <thead className="bg-white/5">
+            <thead className="bg-sori-surface-active">
               <tr>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">Avatar</th>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">Identity</th>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">Role</th>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500 text-right">Operations</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Avatar</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Identity</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Role</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted text-right">Operations</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-sori-border-subtle">
               {filteredUsers.map((u: User, index: number) => (
                 <tr 
                   key={u.id} 
                   ref={index === filteredUsers.length - 1 ? lastUserElementRef : null}
-                  className="hover:bg-white/[0.02] transition-colors group"
+                  className="hover:bg-sori-surface-hover transition-colors group"
                 >
                   <td className="px-6 py-4">
-                    <div className="w-10 h-10 rounded-xl bg-sori-error/10 flex items-center justify-center font-black overflow-hidden border border-sori-error/20 text-sori-error shadow-md transition-transform group-hover:scale-105">
+                    <div className="w-10 h-10 rounded-xl bg-sori-surface-danger-subtle flex items-center justify-center font-black overflow-hidden border border-sori-accent-danger text-sori-accent-danger shadow-md transition-transform group-hover:scale-105">
                       {u.avatarUrl ? (
                          <img src={u.avatarUrl} className="w-full h-full object-cover" /> 
                       ) : (
@@ -235,14 +235,14 @@ export default function UsersTab() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="font-bold text-white text-sm group-hover:text-sori-error transition-colors">{u.username}</div>
-                    <div className="text-[10px] text-gray-500">{u.email}</div>
+                    <div className="font-bold text-sori-text-strong text-sm group-hover:text-sori-accent-danger transition-colors">{u.username}</div>
+                    <div className="text-[10px] text-sori-text-muted">{u.email}</div>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`text-[8px] px-2 py-1 rounded-md font-black uppercase tracking-widest border transition-all ${
                       u.role === 'adminpanel' 
-                        ? 'bg-sori-error/10 border-sori-error/30 text-sori-error shadow-[0_0_10px_rgba(237,66,69,0.1)]' 
-                        : 'bg-white/5 border-white/10 text-gray-500'
+                        ? 'bg-sori-surface-danger-subtle border-sori-accent-danger text-sori-accent-danger shadow-sm' 
+                        : 'bg-sori-surface-active border-sori-border-strong text-sori-text-muted'
                     }`}>
                       {u.role}
                     </span>
@@ -251,14 +251,14 @@ export default function UsersTab() {
                     <div className="flex items-center justify-end gap-2">
                       <button 
                         onClick={() => handleResetPass(u.id)} 
-                        className="p-2.5 rounded-lg bg-white/5 hover:bg-green-400/10 hover:text-green-400 border border-transparent hover:border-green-400/20 transition-all font-sans" 
+                        className="p-2.5 rounded-lg bg-sori-surface-active hover:bg-sori-surface-accent-subtle hover:text-sori-accent-secondary border border-transparent hover:border-sori-accent-secondary transition-all font-sans" 
                         title="Rotate Keys"
                       >
                         <KeyRound className="h-3.5 w-3.5" />
                       </button>
                       <button 
                         onClick={() => handleDelete(u.id)} 
-                        className="p-2.5 rounded-lg bg-white/5 hover:bg-sori-error/10 hover:text-sori-error border border-transparent hover:border-sori-error/20 transition-all group/btn font-sans" 
+                        className="p-2.5 rounded-lg bg-sori-surface-active hover:bg-sori-surface-danger-subtle hover:text-sori-accent-danger border border-transparent hover:border-sori-accent-danger transition-all group/btn font-sans" 
                         title="Terminate Profile"
                       >
                         <Trash2 className="h-3.5 w-3.5 group-hover/btn:rotate-12 transition-transform" />
@@ -270,8 +270,8 @@ export default function UsersTab() {
               {isLoading && (
                 <tr>
                   <td colSpan={4} className="px-6 py-10 text-center">
-                    <div className="flex flex-col items-center gap-2 text-gray-500">
-                      <Loader2 className="h-6 w-6 animate-spin text-sori-error" />
+                    <div className="flex flex-col items-center gap-2 text-sori-text-muted">
+                      <Loader2 className="h-6 w-6 animate-spin text-sori-accent-danger" />
                       <p className="text-[10px] font-bold animate-pulse uppercase tracking-[0.2em]">Syncing citizens...</p>
                     </div>
                   </td>
@@ -279,7 +279,7 @@ export default function UsersTab() {
               )}
               {!isLoading && filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-20 text-center text-gray-600 font-bold uppercase tracking-widest text-[10px]">
+                  <td colSpan={4} className="px-6 py-20 text-center text-sori-text-dim font-bold uppercase tracking-widest text-[10px]">
                     No records identified
                   </td>
                 </tr>

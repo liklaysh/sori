@@ -17,22 +17,22 @@ export const SystemCallToast: React.FC<SystemCallToastProps> = ({ log, count = 1
         return {
           label: count > 1 ? `${count} Missed Calls` : "Missed Call",
           icon: <PhoneMissed className="h-3 w-3" />,
-          bgColor: "bg-[#FF4B4B]",
-          textColor: "text-white"
+          bgColor: "bg-sori-accent-danger",
+          textColor: "text-sori-text-on-accent"
         };
       case 'rejected':
         return {
           label: count > 1 ? `${count} Declined Calls` : "Declined Call",
           icon: <PhoneOff className="h-3 w-3" />,
-          bgColor: "bg-[#FF8A00]",
-          textColor: "text-white"
+          bgColor: "bg-sori-accent-warning",
+          textColor: "text-sori-text-on-accent"
         };
       case 'accepted':
         return {
           label: "Call Accepted",
           icon: isCaller ? <PhoneOutgoing className="h-3 w-3" /> : <PhoneIncoming className="h-3 w-3" />,
-          bgColor: "bg-[#00D1FF]",
-          textColor: "text-[#001D24]"
+          bgColor: "bg-sori-accent-secondary",
+          textColor: "text-sori-text-on-accent"
         };
       case 'ended':
         const durationStr = log.duration 
@@ -41,22 +41,22 @@ export const SystemCallToast: React.FC<SystemCallToastProps> = ({ log, count = 1
         return {
           label: durationStr ? `Call Ended • ${durationStr}` : "Call Ended",
           icon: <Clock className="h-3 w-3" />,
-          bgColor: "bg-surface-variant",
-          textColor: "text-on-surface-variant"
+          bgColor: "bg-sori-surface-base",
+          textColor: "text-sori-text-muted"
         };
       case 'timeout':
         return {
           label: "No Answer",
           icon: <AlertCircle className="h-3 w-3" />,
-          bgColor: "bg-surface-variant",
-          textColor: "text-on-surface-variant"
+          bgColor: "bg-sori-surface-base",
+          textColor: "text-sori-text-muted"
         };
       default:
         return {
           label: "Voice Event",
           icon: <PhoneIncoming className="h-3 w-3" />,
-          bgColor: "bg-surface-variant",
-          textColor: "text-on-surface-variant"
+          bgColor: "bg-sori-surface-base",
+          textColor: "text-sori-text-muted"
         };
     }
   };
@@ -78,7 +78,7 @@ export const SystemCallToast: React.FC<SystemCallToastProps> = ({ log, count = 1
           <span className="text-[10px] font-black uppercase tracking-wider">
             {config.label}
           </span>
-          <span className="text-[9px] font-bold text-black/40">
+          <span className="text-[9px] font-bold text-sori-text-dim">
             {timeStr}
           </span>
         </div>

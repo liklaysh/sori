@@ -4,20 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-transparent disabled:text-sori-text-dim active:scale-95",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20",
+        default: "bg-sori-accent-primary text-black hover:brightness-110 shadow-lg",
         destructive:
-          "bg-destructive text-destructive-foreground hover:brightness-110 shadow-lg shadow-destructive/20",
+          "bg-sori-accent-danger text-white hover:brightness-110 shadow-lg",
         outline:
-          "border border-white/10 bg-transparent hover:bg-white/5 hover:text-white",
+          "border border-sori-border-subtle bg-transparent hover:bg-sori-surface-hover hover:text-sori-text-strong",
         secondary:
-          "bg-secondary text-secondary-foreground hover:brightness-110 shadow-lg shadow-secondary/20",
-        ghost: "hover:bg-white/5 hover:text-white",
-        link: "text-primary underline-offset-4 hover:underline",
-        sori: "bg-[#1e2124] text-white border border-white/10 hover:border-primary/50 transition-colors",
+          "bg-sori-accent-secondary text-black hover:brightness-90",
+        ghost: "hover:bg-sori-surface-hover hover:text-sori-text-strong",
+        link: "text-sori-accent-primary underline-offset-4 hover:underline",
+        sori: "bg-sori-surface-base text-sori-text-strong border border-sori-border-subtle hover:border-sori-accent-primary transition-colors",
       },
       size: {
         default: "h-11 px-6 py-2",

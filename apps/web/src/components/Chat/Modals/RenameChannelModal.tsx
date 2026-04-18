@@ -24,7 +24,7 @@ export const RenameChannelModal: React.FC<RenameChannelModalProps> = ({
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-xl font-headline font-bold text-white text-center flex items-center justify-center gap-2">
-            <Hash className="h-5 w-5 text-primary" />
+            <Hash className="h-5 w-5 text-sori-accent-primary" />
             Rename Channel
           </DialogTitle>
         </DialogHeader>
@@ -32,7 +32,7 @@ export const RenameChannelModal: React.FC<RenameChannelModalProps> = ({
           <div className="relative">
             <input 
               autoFocus 
-              className="w-full bg-black/20 border border-white/5 rounded-xl py-4 px-4 text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" 
+              className="w-full bg-sori-surface-panel border border-sori-border-subtle rounded-xl py-4 px-4 text-white outline-none focus:ring-1 focus:ring-sori-accent-primary transition-all" 
               placeholder="channel-name"
               value={editChannelName} 
               onChange={(e) => setEditChannelName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} 
@@ -42,13 +42,13 @@ export const RenameChannelModal: React.FC<RenameChannelModalProps> = ({
             <button 
               type="button" 
               onClick={onClose} 
-              className="px-4 py-2 text-sm font-bold text-on-surface-variant hover:text-white transition-colors"
+              className="px-4 py-2 text-sm font-bold text-sori-text-muted hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button 
               type="submit" 
-              className="bg-primary hover:bg-primary/90 text-white px-8 py-2 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/20"
+              className="bg-sori-accent-primary text-black hover:brightness-110 px-8 py-2 rounded-xl font-bold text-sm transition-all shadow-lg"
             >
               Save Changes
             </button>

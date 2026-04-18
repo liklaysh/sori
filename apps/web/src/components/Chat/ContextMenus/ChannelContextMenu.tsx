@@ -26,24 +26,24 @@ export const ChannelContextMenu: React.FC<ChannelContextMenuProps> = ({ visible,
 
   return (
     <div 
-      className="fixed z-[250] bg-sori-sidebar border border-white/5 rounded-2xl shadow-2xl py-2 min-w-[200px] animate-in fade-in zoom-in-95 shadow-black/80 ring-1 ring-white/10" 
+      className="fixed z-[250] bg-sori-sidebar border border-sori-border-subtle rounded-2xl shadow-2xl py-2 min-w-[200px] animate-in fade-in zoom-in-95 shadow-black ring-1 ring-sori-border-medium" 
       style={getMenuStyles(x, y)}
     >
-      <div className="px-4 py-2 text-[9px] font-black uppercase tracking-widest text-on-surface-variant opacity-60">
+      <div className="px-4 py-2 text-[9px] font-black uppercase tracking-widest text-sori-text-dim">
         Channel Options
       </div>
       <button 
         onClick={onRename} 
-        className="w-full px-4 py-2.5 hover:bg-primary/10 hover:text-primary cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
+        className="w-full px-4 py-2.5 hover:bg-sori-surface-hover hover:text-primary cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
       >
-        <Edit2 className="h-4 w-4 text-on-surface-variant group-hover:text-primary" />
+        <Edit2 className="h-4 w-4 text-sori-text-muted group-hover:text-primary" />
         Rename Channel
       </button>
       <button 
         onClick={onDelete} 
-        className="w-full px-4 py-2.5 hover:bg-sori-error/10 hover:text-sori-error cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
+        className="w-full px-4 py-2.5 hover:bg-sori-error-subtle hover:text-sori-error cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
       >
-        <Trash2 className="h-4 w-4 text-on-surface-variant group-hover:text-sori-error" />
+        <Trash2 className="h-4 w-4 text-sori-text-muted group-hover:text-sori-error" />
         Delete Channel
       </button>
     </div>

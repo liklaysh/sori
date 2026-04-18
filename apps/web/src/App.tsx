@@ -17,8 +17,8 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="bg-sori-server min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-primary font-headline text-2xl">Synchronizing Sori...</div>
+      <div className="bg-sori-surface-base min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-sori-accent-primary font-headline text-2xl">Synchronizing Sori...</div>
       </div>
     );
   }

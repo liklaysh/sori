@@ -198,18 +198,18 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
               key={`${track.participant.identity}-${track.source}`}
               onClick={() => isScreenShare && isTrackReference(track) && setFocusedTrack(track)}
               className={cn(
-                "relative aspect-video bg-sori-sidebar rounded-[2.5rem] overflow-hidden border border-muted shadow-2xl transition-all hover:border-primary group cursor-pointer",
+                "relative aspect-video bg-sori-sidebar rounded-[2.5rem] overflow-hidden border border-sori-border-subtle shadow-2xl transition-all hover:border-sori-accent-primary group cursor-pointer",
                 isLastOfThree && "col-span-2 mx-auto w-full max-w-[calc(50%-1.5rem)]"
               )}
             >
               <SoriParticipantTile trackRef={track as TrackReference} />
               {isScreenShare && (
                  <div className="absolute inset-0 hidden group-hover:flex items-center justify-center pointer-events-none">
-                    <div className="bg-black px-4 py-2 rounded-xl border border-primary flex items-center gap-2 shadow-[0_0_20px_rgba(0,0,0,0.8)]">
-                       <Maximize2 className="h-4 w-4 text-primary" />
-                       <span className="text-[10px] font-black uppercase text-white tracking-widest">Expand</span>
-                    </div>
-                 </div>
+                  <div className="bg-sori-surface-overlay px-4 py-2 rounded-xl border border-sori-accent-primary flex items-center gap-2">
+                     <Maximize2 className="h-4 w-4 text-sori-accent-primary" />
+                     <span className="text-[10px] font-black uppercase text-sori-text-strong tracking-widest">Expand</span>
+                  </div>
+               </div>
               )}
             </div>
           );
@@ -222,14 +222,14 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
     <div className="flex-1 flex overflow-hidden relative h-full">
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header Unified */}
-        <div className="h-14 flex items-center justify-between px-8 bg-sori-server border-b border-muted shrink-0 z-50">
+        <div className="h-14 flex items-center justify-between px-8 bg-sori-surface-main border-b border-sori-border-subtle shrink-0 z-50">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center border border-primary shadow-sm">
-              <Phone className="h-5 w-5 text-primary" />
+            <div className="w-10 h-10 rounded-xl bg-sori-surface-hover flex items-center justify-center border border-sori-accent-primary shadow-sm">
+              <Phone className="h-5 w-5 text-sori-accent-primary" />
             </div>
             <div>
-              <h2 className="text-sm font-black text-white uppercase tracking-widest">{channelName}</h2>
-              <p className="text-[10px] font-bold text-secondary uppercase flex items-center gap-1">
+              <h2 className="text-sm font-black text-sori-text-strong uppercase tracking-widest">{channelName}</h2>
+              <p className="text-[10px] font-bold text-sori-text-muted uppercase flex items-center gap-1">
                 <span>Call Protocol Active •</span>
                 <span className="font-mono tabular-nums tracking-normal">{duration}</span>
               </p>
@@ -240,7 +240,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
             {onMinimize && (
               <button 
                 onClick={onMinimize}
-                className="w-10 h-10 rounded-xl bg-muted border border-muted hover:bg-sori-sidebar text-on-surface-variant flex items-center justify-center transition-all"
+                className="w-10 h-10 rounded-xl bg-sori-surface-hover border border-sori-border-subtle hover:bg-sori-sidebar text-sori-text-muted flex items-center justify-center transition-all"
                 title="Minimize Call"
               >
                 <Minimize2 className="h-5 w-5" />
@@ -249,7 +249,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
             {onOpenFindFriend && (
               <button 
                 onClick={onOpenFindFriend}
-                className="w-10 h-10 rounded-xl bg-muted border border-muted hover:bg-sori-sidebar text-on-surface-variant flex items-center justify-center transition-all"
+                className="w-10 h-10 rounded-xl bg-sori-surface-hover border border-sori-border-subtle hover:bg-sori-sidebar text-sori-text-muted flex items-center justify-center transition-all"
                 title="Add to call"
               >
                 <UserPlus className="h-5 w-5" />
@@ -259,7 +259,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
               onClick={() => setIsChatOpen(!isChatOpen)}
               className={cn(
                 "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                isChatOpen ? "bg-primary text-black shadow-lg" : "bg-muted border border-muted text-on-surface-variant hover:bg-sori-sidebar hover:text-white"
+                isChatOpen ? "bg-sori-accent-primary text-black shadow-lg" : "bg-sori-surface-hover border border-sori-border-subtle text-sori-text-muted hover:bg-sori-sidebar hover:text-sori-text-strong"
               )}
               title="Toggle Chat"
             >
@@ -269,16 +269,16 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden bg-sori-server">
+        <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden bg-sori-surface-base">
           {focusedTrack ? (
             /* FOCUSED VIEW */
             <div className="flex-1 w-full h-full flex flex-col relative overflow-hidden">
                <div className="flex-1 w-full h-full relative p-8 pb-0">
-                  <div className="w-full h-full rounded-[3rem] overflow-hidden border border-muted bg-sori-sidebar relative group shadow-2xl">
+                  <div className="w-full h-full rounded-[3rem] overflow-hidden border border-sori-border-subtle bg-sori-sidebar relative group shadow-2xl">
                      <SoriParticipantTile trackRef={focusedTrack} />
                      <button 
                         onClick={() => setFocusedTrack(null)}
-                        className="absolute top-6 right-6 w-12 h-12 rounded-2xl bg-black border border-muted text-white hidden group-hover:flex items-center justify-center transition-all hover:bg-sori-error hover:scale-110"
+                        className="absolute top-6 right-6 w-12 h-12 rounded-2xl bg-sori-surface-overlay border border-sori-border-subtle text-sori-text-strong hidden group-hover:flex items-center justify-center transition-all hover:bg-sori-accent-danger hover:scale-110"
                      >
                         <Minimize2 className="h-6 w-6" />
                      </button>
@@ -295,8 +295,8 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
                            className={cn(
                              "h-full aspect-video rounded-2xl overflow-hidden border shrink-0 transition-all cursor-pointer hover:scale-105 shadow-xl",
                              focusedTrack.participant.identity === t.participant.identity && focusedTrack.source === t.source 
-                              ? 'border-primary ring-2 ring-primary scale-105' 
-                              : 'border-muted hover:border-white'
+                              ? 'border-sori-accent-primary ring-2 ring-sori-accent-primary scale-105' 
+                              : 'border-sori-border-subtle hover:border-sori-border-strong'
                            )}
                         >
                            <SoriParticipantTile trackRef={t as TrackReference} />
@@ -313,24 +313,25 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
               </div>
               
               {totalPages > 1 && (
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 bg-sori-server px-6 py-3 rounded-2xl border border-muted z-50 shadow-2xl">
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 bg-sori-surface-main px-6 py-3 rounded-2xl border border-sori-border-subtle z-50 shadow-2xl">
                   <button 
                     disabled={currentPage === 0}
                     onClick={() => setCurrentPage(p => p - 1)}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white disabled:text-gray-600 hover:bg-muted transition-colors"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-sori-text-strong disabled:text-sori-text-dim hover:bg-sori-surface-hover transition-colors"
                   >
                     <ChevronLeft className="h-6 w-6" />
                   </button>
-                  <span className="text-[11px] font-black uppercase text-secondary tracking-widest">
+                  <span className="text-[11px] font-black uppercase text-sori-text-muted tracking-widest">
                     Page {currentPage + 1} / {totalPages}
                   </span>
                   <button 
                     disabled={currentPage === totalPages - 1}
                     onClick={() => setCurrentPage(p => p + 1)}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white disabled:text-gray-600 hover:bg-muted transition-colors"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-sori-text-strong disabled:text-sori-text-dim hover:bg-sori-surface-hover transition-colors"
                   >
                     <ChevronRight className="h-6 w-6" />
                   </button>
+
                 </div>
               )}
             </>

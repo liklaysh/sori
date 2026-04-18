@@ -7,11 +7,11 @@ export const Toaster = () => {
             position="top-right"
             toastOptions={{
                 style: {
-                    background: 'rgba(50, 51, 56, 0.8)',
-                    backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#ffffff',
+                    background: 'var(--sori-surface-main)',
+                    border: '1px solid var(--sori-border-subtle)',
+                    color: 'var(--sori-text-primary)',
                     fontFamily: 'Inter, sans-serif',
+                    borderRadius: '12px',
                 },
                 className: 'sori-toast',
             }}

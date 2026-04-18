@@ -98,49 +98,50 @@ export function useCall({ socket, currentUser }: UseCallProps) {
     };
 
     const safeReset = (reason?: string) => {
-      console.trace(`🧹 [useCall] reset triggered${reason ? ': ' + reason : ''}`);
       reset();
     };
+
+    const onCallRejected = () => safeReset("call_rejected");
+    const onCallEnded = () => safeReset("call_ended");
+    const onCallMissed = () => safeReset("call_missed");
+    const onCallTimedOut = () => safeReset("call_timed_out");
+    const onDisconnect = () => safeReset("socket_disconnect");
 
     socket.on("incoming_call", handleIncoming);
     socket.on("outgoing_call_started", handleStarted);
     socket.on("call_accepted", handleAccepted);
-    socket.on("call_rejected", () => safeReset("call_rejected"));
-    socket.on("call_ended", () => safeReset("call_ended"));
-    socket.on("call_missed", () => safeReset("call_missed"));
-    socket.on("call_timed_out", () => safeReset("call_timed_out"));
+    socket.on("call_rejected", onCallRejected);
+    socket.on("call_ended", onCallEnded);
+    socket.on("call_missed", onCallMissed);
+    socket.on("call_timed_out", onCallTimedOut);
     socket.on("direct_call_error", (data: { message: string }) => {
-      console.error("❌ [useCall] direct_call_error:", data.message);
       toast.error(data.message);
       safeReset("direct_call_error");
     });
-    socket.on("disconnect", () => safeReset("socket_disconnect"));
+    socket.on("disconnect", onDisconnect);
 
     return () => {
       socket.off("incoming_call", handleIncoming);
       socket.off("outgoing_call_started", handleStarted);
       socket.off("call_accepted", handleAccepted);
-      socket.off("call_rejected", safeReset);
-      socket.off("call_ended", safeReset);
-      socket.off("call_missed", safeReset);
-      socket.off("call_timed_out", safeReset);
+      socket.off("call_rejected", onCallRejected);
+      socket.off("call_ended", onCallEnded);
+      socket.off("call_missed", onCallMissed);
+      socket.off("call_timed_out", onCallTimedOut);
       socket.off("direct_call_error");
-      socket.off("disconnect", safeReset);
+      socket.off("disconnect", onDisconnect);
     };
   }, [socket, setToken, setStatus, setCallData, endCall, reset]);
 
   const getChannelToken = useCallback(async (channelId: string) => {
-    console.log("📡 [useCall] getChannelToken starting for:", channelId);
     try {
       const res = await api.post("/calls/token", { channelId });
       const tokenData = res.data as { token: string; startedAt?: number };
       
-      console.log("📡 [useCall] token received successfully");
       setToken(tokenData.token);
       setStatus("connected");
       setCallData({ startTime: tokenData.startedAt || Date.now() });
       setConnectedChannel(channelId);
-      console.log("📡 [useCall] Zustand store updated: status=connected, channel=", channelId);
       
       return tokenData.token;
     } catch (err) {

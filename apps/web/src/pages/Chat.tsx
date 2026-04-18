@@ -61,7 +61,7 @@ const Chat: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="flex h-screen pl-20 overflow-hidden bg-sori-chat text-on-background font-body relative select-none">
+    <div className="flex h-screen pl-20 overflow-hidden bg-sori-surface-base text-sori-text-primary font-body relative select-none">
       <ServerSidebar 
         onLogout={() => setIsLogoutModalOpen(true)} 
         onOpenSettings={() => setSettingsOpen(true)} 
@@ -72,7 +72,7 @@ const Chat: React.FC = () => {
 
       <div className="flex flex-1 overflow-hidden relative">
         <div className={`fixed inset-y-0 left-20 right-0 z-40 md:relative md:left-0 md:inset-auto md:z-auto md:flex ${isChannelSidebarOpen ? "flex" : "hidden"}`}>
-          <div className="absolute inset-0 bg-black/90 md:hidden" onClick={() => setChannelSidebarOpen(false)} />
+          <div className="absolute inset-0 bg-sori-surface-overlay md:hidden" onClick={() => setChannelSidebarOpen(false)} />
           
           <div className="relative h-full flex-shrink-0 z-50">
             {activeModule === "community" ? (
@@ -103,7 +103,7 @@ const Chat: React.FC = () => {
 
         {activeModule === "community" && !isVoiceChatOpen && (
           <div className={`fixed inset-0 z-40 xl:relative xl:inset-auto xl:z-auto ${isMemberSidebarOpen ? "flex xl:flex" : "hidden xl:hidden"}`}>
-            <div className="absolute inset-0 bg-black/90 xl:hidden" onClick={() => setMemberSidebarOpen(false)} />
+            <div className="absolute inset-0 bg-sori-surface-overlay xl:hidden" onClick={() => setMemberSidebarOpen(false)} />
             <MemberSidebar onlineUsersSet={onlineUsersSet} />
           </div>
         )}

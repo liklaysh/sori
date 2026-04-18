@@ -23,7 +23,7 @@ export const OccupantItem: React.FC<OccupantItemProps> = ({ occupant, onContextM
       <div className="flex items-center gap-2 min-w-0">
         <div className="relative shrink-0">
           <div className={cn(
-            "w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[8px] font-black text-on-surface-variant border border-transparent transition-all overflow-hidden",
+            "w-6 h-6 rounded-full bg-sori-surface-base flex items-center justify-center text-[8px] font-black text-sori-text-muted border border-transparent transition-all overflow-hidden",
             isSpeaking ? 'speaking-pulse scale-110' : ''
           )}>
             {getAvatarUrl(occupant.avatarUrl) ? (
@@ -37,13 +37,16 @@ export const OccupantItem: React.FC<OccupantItemProps> = ({ occupant, onContextM
             )}
           </div>
         </div>
-        <span className={`text-[11px] font-bold truncate transition-colors ${isSpeaking ? 'text-white' : 'text-on-surface-variant group-hover:text-on-surface'}`}>
+        <span className={cn(
+          "text-[11px] font-bold truncate transition-colors",
+          isSpeaking ? 'text-white' : 'text-sori-text-muted group-hover:text-sori-text-primary'
+        )}>
           {occupant.username}
         </span>
       </div>
       
       {occupant.isStreaming && (
-        <div className="bg-[#ED4245] text-white text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none uppercase tracking-tighter ml-2 shadow-sm shrink-0 flex items-center justify-center">
+        <div className="bg-sori-error text-white text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none uppercase tracking-tighter ml-2 shadow-sm shrink-0 flex items-center justify-center">
           LIVE
         </div>
       )}

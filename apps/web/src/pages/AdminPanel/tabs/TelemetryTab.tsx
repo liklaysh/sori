@@ -73,17 +73,17 @@ export default function TelemetryTab() {
   };
 
   const getMOSColor = (mos: string | null) => {
-    if (!mos) return "text-gray-500";
+    if (!mos) return "text-sori-text-muted";
     const val = parseFloat(mos);
-    if (val >= 4.0) return "text-sori-success";
-    if (val >= 3.0) return "text-white opacity-80";
-    return "text-sori-error";
+    if (val >= 4.0) return "text-sori-accent-secondary";
+    if (val >= 3.0) return "text-sori-text-strong";
+    return "text-sori-accent-danger";
   };
 
   if (loading && calls.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 text-gray-400">
-        <Activity className="h-10 w-10 animate-pulse mb-4 text-sori-error/40" />
+      <div className="flex flex-col items-center justify-center p-20 text-sori-text-muted">
+        <Activity className="h-10 w-10 animate-pulse mb-4 text-sori-accent-danger" />
         <p className="font-bold uppercase tracking-widest text-[10px]">Analyzing Protocol Data...</p>
       </div>
     );
@@ -91,33 +91,33 @@ export default function TelemetryTab() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-sori-error pl-6 py-1">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-sori-accent-danger pl-6 py-1">
         <div>
-          <h2 className="text-2xl font-black text-white uppercase tracking-tight">Call Protocol Telemetry</h2>
-          <p className="text-gray-400 text-[10px] font-medium tracking-wide uppercase opacity-70">Real-time monitoring of WebRTC quality and session health.</p>
+          <h2 className="text-2xl font-black text-sori-text-strong uppercase tracking-tight">Call Protocol Telemetry</h2>
+          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">Real-time monitoring of WebRTC quality and session health.</p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <div className="px-4 py-2 rounded-xl bg-sori-error/10 border border-sori-error/20 flex items-center gap-2">
+          <div className="px-4 py-2 rounded-xl bg-sori-error-subtle border border-sori-error flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-sori-error animate-pulse" />
             <span className="text-[10px] font-black text-sori-error uppercase tracking-widest">Live Monitoring Active</span>
           </div>
-          <div className="flex items-center gap-1.5 opacity-40">
-            <Clock className="h-3 w-3 text-gray-500" />
-            <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Auto-purification active (72h policy)</span>
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3 w-3 text-sori-text-dim" />
+            <span className="text-[8px] font-bold text-sori-text-dim uppercase tracking-widest">Auto-purification active (72h policy)</span>
           </div>
         </div>
       </div>
 
       {/* Automated Cleanup Notice */}
-      <div className="bg-sori-error/5 border border-sori-error/10 rounded-2xl p-4 flex items-center gap-3 shadow-inner">
-        <AlertCircle className="h-4 w-4 text-sori-error opacity-60" />
-        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+      <div className="bg-sori-error-subtle border border-sori-accent-danger rounded-2xl p-4 flex items-center gap-3 shadow-inner">
+        <AlertCircle className="h-4 w-4 text-sori-accent-danger" />
+        <p className="text-[10px] text-sori-text-dim font-bold uppercase tracking-wider">
           System Orchestration: Interaction streams older than 72 hours are automatically purged every 3 days to optimize database performance.
         </p>
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-sori-error/10 border border-sori-error/20 text-sori-error flex items-center gap-3">
+        <div className="p-4 rounded-xl bg-sori-error-subtle border border-sori-accent-danger text-sori-accent-danger flex items-center gap-3">
           <AlertCircle className="h-5 w-5" />
           <p className="text-xs font-bold">{error}</p>
         </div>
@@ -126,12 +126,12 @@ export default function TelemetryTab() {
       <div className="max-h-[500px] overflow-auto custom-scrollbar pr-2 -mr-2">
         <div className="grid gap-4">
           {calls.map((call) => (
-            <div key={call.id} className="group relative bg-[#2b2d31]/50 border border-white/5 rounded-2xl p-5 hover:bg-[#2b2d31] transition-all overflow-hidden font-sans">
+            <div key={call.id} className="group relative bg-sori-surface-main border border-sori-border-subtle rounded-2xl p-5 hover:bg-sori-surface-hover transition-all overflow-hidden font-sans">
               {/* MOS Indicator Line */}
               <div className={cn(
                 "absolute left-0 top-0 bottom-0 w-1",
-                call.status === 'active' ? "bg-sori-error" : 
-                call.mos ? (parseFloat(call.mos) > 3.5 ? "bg-sori-success" : "bg-sori-error") : "bg-gray-700"
+                call.status === 'active' ? "bg-sori-accent-danger" : 
+                call.mos ? (parseFloat(call.mos) > 3.5 ? "bg-sori-accent-secondary" : "bg-sori-accent-danger") : "bg-sori-surface-active"
               )} />
 
               <div className="flex flex-col lg:flex-row lg:items-center gap-6">
@@ -139,38 +139,38 @@ export default function TelemetryTab() {
                 <div className="flex items-center gap-4 min-w-[180px]">
                   <div className={cn(
                     "w-12 h-12 rounded-xl flex items-center justify-center shadow-inner shrink-0",
-                    call.status === 'active' ? "bg-sori-error/10 text-sori-error" : "bg-white/5 text-gray-500"
+                    call.status === 'active' ? "bg-sori-error-subtle text-sori-accent-danger" : "bg-sori-surface-active text-sori-text-muted"
                   )}>
                     {call.type === 'direct' ? <Users className="h-6 w-6" /> : <Activity className="h-6 w-6" />}
                   </div>
                   <div>
-                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-0.5">{call.type === 'direct' ? 'Direct Call' : 'Channel'}</p>
+                     <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-0.5">{call.type === 'direct' ? 'Direct Call' : 'Channel'}</p>
                      <div className="flex items-center gap-2">
-                       <h4 className="font-bold text-sm text-white">{call.channel?.name || "Private Session"}</h4>
-                       {call.status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-sori-error animate-pulse" />}
+                       <h4 className="font-bold text-sm text-sori-text-strong">{call.channel?.name || "Private Session"}</h4>
+                       {call.status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-sori-accent-danger animate-pulse" />}
                      </div>
                   </div>
                 </div>
 
                 {/* Participants */}
                 <div className="flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Participants</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-2">Participants</p>
                   <div className="flex items-center gap-2">
                     {call.type === 'direct' ? (
                       <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-white">{call.caller?.username}</span>
-                        <ArrowRight className="h-3 w-3 text-gray-600" />
-                        <span className="text-xs font-bold text-white">{call.callee?.username}</span>
+                        <span className="text-xs font-bold text-sori-text-strong">{call.caller?.username}</span>
+                        <ArrowRight className="h-3 w-3 text-sori-text-dim" />
+                        <span className="text-xs font-bold text-sori-text-strong">{call.callee?.username}</span>
                       </div>
                     ) : (
                       <div className="flex -space-x-2">
                         {call.participants.slice(0, 5).map((p, i) => (
-                          <div key={i} className="w-7 h-7 rounded-lg bg-sori-sidebar border border-sori-chat flex items-center justify-center text-[10px] font-bold text-white shadow-sm overflow-hidden">
+                          <div key={i} className="w-7 h-7 rounded-lg bg-sori-surface-main border border-sori-border-subtle flex items-center justify-center text-[10px] font-bold text-sori-text-strong shadow-lg overflow-hidden">
                             {getAvatarUrl(p.user.avatarUrl) ? <img src={getAvatarUrl(p.user.avatarUrl)!} className="w-full h-full object-cover" /> : p.user.username[0].toUpperCase()}
                           </div>
                         ))}
                         {call.participants.length > 5 && (
-                          <div className="w-7 h-7 rounded-lg bg-sori-sidebar border border-sori-chat flex items-center justify-center text-[8px] font-bold text-gray-500 shadow-sm">
+                          <div className="w-7 h-7 rounded-lg bg-sori-surface-panel border border-sori-border-subtle flex items-center justify-center text-[8px] font-bold text-sori-text-muted shadow-lg">
                             +{call.participants.length - 5}
                           </div>
                         )}
@@ -180,34 +180,34 @@ export default function TelemetryTab() {
                 </div>
 
                 {/* Quality Metrics */}
-                <div className="grid grid-cols-3 gap-6 lg:border-l lg:border-white/5 lg:pl-6 min-w-[280px]">
+                <div className="grid grid-cols-3 gap-6 lg:border-l lg:border-sori-border-subtle lg:pl-6 min-w-[280px]">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">MOS (Quality)</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">MOS (Quality)</p>
                     <p className={cn("text-sm font-black italic", getMOSColor(call.mos))}>
                       {call.mos || (call.status === 'active' ? "CALCULATING..." : "N/A")}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Bitrate</p>
-                    <p className="text-sm font-bold text-white">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">Bitrate</p>
+                    <p className="text-sm font-bold text-sori-text-strong">
                       {call.avgBitrate ? `${(call.avgBitrate / 1000).toFixed(1)} kbps` : (call.status === 'active' ? "SIGNALING..." : "—")}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Loss</p>
-                    <p className={cn("text-sm font-bold", call.packetLoss && parseFloat(call.packetLoss) > 5 ? "text-sori-error" : "text-white")}>
-                      {call.packetLoss ? `${call.packetLoss}%` : "0%"}
+                  <div className="flex flex-col">
+                    <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest leading-none">Status</p>
+                    <p className={cn("text-sm font-bold", call.packetLoss && parseFloat(call.packetLoss) > 5 ? "text-sori-accent-danger" : "text-sori-text-strong")}>
+                        {call.packetLoss && parseFloat(call.packetLoss) > 5 ? 'Congested' : 'Stable'}
                     </p>
-                  </div>
                 </div>
+               </div>
 
                 {/* Timing */}
-                <div className="min-w-[120px] lg:border-l lg:border-white/5 lg:pl-6 text-right">
-                  <div className="flex items-center justify-end gap-1.5 text-gray-500 mb-1">
+                <div className="min-w-[120px] lg:border-l lg:border-sori-border-subtle lg:pl-6 text-right">
+                  <div className="flex items-center justify-end gap-1.5 text-sori-text-dim mb-1">
                     <Clock className="h-3 w-3" />
                     <span className="text-[9px] font-black uppercase tracking-widest">{formatDuration(call.startedAt, call.endedAt)}</span>
                   </div>
-                  <p className="text-[10px] font-bold text-gray-600">
+                  <p className="text-[10px] font-bold text-sori-text-dim">
                     {new Date(call.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -216,9 +216,9 @@ export default function TelemetryTab() {
           ))}
 
           {calls.length === 0 && (
-            <div className="p-12 border-2 border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center text-center opacity-30">
-              <Signal className="h-10 w-10 mb-4 text-sori-error" />
-              <p className="font-bold uppercase tracking-widest text-xs">No Recent Call Traffic Detected</p>
+            <div className="p-12 border-2 border-dashed border-sori-border-subtle rounded-3xl flex flex-col items-center justify-center text-center">
+              <Signal className="h-10 w-10 mb-4 text-sori-text-dim" />
+              <p className="font-bold uppercase tracking-widest text-xs text-sori-text-dim">No Recent Call Traffic Detected</p>
             </div>
           )}
         </div>

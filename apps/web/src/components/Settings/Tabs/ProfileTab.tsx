@@ -84,19 +84,19 @@ export const ProfileTab: React.FC = () => {
   return (
     <div className="space-y-8 md:space-y-12 animate-in slide-in-from-bottom-4">
       <div>
-        <h1 className="text-2xl md:text-3xl font-black text-white mb-2">My Account</h1>
-        <p className="text-gray-400 text-sm">Manage your identity in Sanctuary.</p>
+        <h1 className="text-2xl md:text-3xl font-black text-sori-text-strong mb-2">My Account</h1>
+        <p className="text-sori-text-muted text-sm">Manage your identity in Sanctuary.</p>
       </div>
 
-      <div className="bg-sori-sidebar rounded-[2.5rem] p-6 md:p-10 border border-white/5 space-y-10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-10 opacity-[0.02] text-white">
+      <div className="bg-sori-surface-panel rounded-[2.5rem] p-6 md:p-10 border border-sori-border-subtle space-y-10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-10 opacity-5 text-sori-text-strong">
           <UserIcon className="h-48 w-48" />
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-8 relative z-10">
           <input type="file" className="hidden" ref={fileInputRef} accept="image/*" onChange={handleAvatarUpload} />
           <div className="relative group cursor-pointer shrink-0" onClick={() => fileInputRef.current?.click()}>
-             <div className="w-32 h-32 rounded-[2.5rem] bg-sori-primary/20 flex items-center justify-center text-5xl font-black text-sori-primary shadow-2xl overflow-hidden border border-sori-primary/20 transition-transform group-hover:scale-95 duration-500">
+             <div className="w-32 h-32 rounded-[2.5rem] bg-sori-surface-base flex items-center justify-center text-5xl font-black text-sori-accent-primary shadow-2xl overflow-hidden border border-sori-border-subtle transition-transform group-hover:scale-95 duration-500">
                 {isUploadingAvatar ? (
                   <Loader2 className="h-10 w-10 animate-spin" />
                 ) : getAvatarUrl(user.avatarUrl) ? (
@@ -105,8 +105,8 @@ export const ProfileTab: React.FC = () => {
                   user.username?.[0]?.toUpperCase()
                 )}
              </div>
-             <div className="absolute inset-0 bg-sori-bg/80 opacity-0 group-hover:opacity-100 rounded-[2.5rem] flex items-center justify-center transition-all duration-500 border border-sori-primary/40">
-                <Camera className="h-8 w-8 text-white animate-bounce" />
+             <div className="absolute inset-0 bg-sori-surface-overlay opacity-0 group-hover:opacity-100 rounded-[2.5rem] flex items-center justify-center transition-all duration-500 border border-sori-border-accent">
+                <Camera className="h-8 w-8 text-sori-text-strong animate-bounce" />
              </div>
           </div>
 
@@ -114,40 +114,40 @@ export const ProfileTab: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <Shield className="h-3 w-3 text-sori-primary" />
-                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Username</label>
+                  <Shield className="h-3 w-3 text-sori-accent-primary" />
+                  <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">Username</label>
                 </div>
-                <p className="text-xl font-black text-white tracking-tight">{user.username}</p>
+                <p className="text-xl font-black text-sori-text-strong tracking-tight">{user.username}</p>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <Mail className="h-3 w-3 text-sori-secondary" />
-                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Email</label>
+                  <Mail className="h-3 w-3 text-sori-accent-secondary" />
+                  <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">Email</label>
                 </div>
-                <p className="text-xl font-black text-white tracking-tight">{user.email || "Not specified"}</p>
+                <p className="text-xl font-black text-sori-text-strong tracking-tight">{user.email || "Not specified"}</p>
               </div>
             </div>
 
             <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-sori-primary hover:bg-sori-primary/90 text-white font-black px-8 py-4 rounded-2xl shadow-lg shadow-sori-primary/20 active:scale-95 transition-all text-xs gap-2">
+                <Button className="bg-sori-accent-primary hover:brightness-110 text-sori-text-on-primary font-black px-8 py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-xs gap-2 border-none">
                   <Edit2 className="h-3.5 w-3.5" />
                   Edit Profile
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-sori-sidebar border-white/5 text-white max-w-md rounded-[2.5rem] p-8 z-[2001]">
+              <DialogContent className="bg-sori-surface-main border-sori-border-subtle text-sori-text-strong max-w-md rounded-[2.5rem] p-8 z-[2001]">
                 <DialogHeader className="mb-6">
                   <DialogTitle className="text-xl">Personal Information</DialogTitle>
-                  <DialogDescription className="text-gray-400">Visibility: Residents Only.</DialogDescription>
+                  <DialogDescription className="text-sori-text-muted">Visibility: Residents Only.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6 py-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">New Username</label>
-                    <input type="text" value={tempNickname} onChange={(e) => setTempNickname(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-xl px-5 py-3.5 text-white focus:border-sori-primary outline-none transition-all font-bold" />
+                    <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest ml-1">New Username</label>
+                    <input type="text" value={tempNickname} onChange={(e) => setTempNickname(e.target.value)} className="w-full bg-sori-surface-base border border-sori-border-subtle rounded-xl px-5 py-3.5 text-sori-text-strong focus:border-sori-accent-primary outline-none transition-all font-bold" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">Email Address</label>
-                    <input type="email" value={tempEmail} onChange={(e) => setTempEmail(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-xl px-5 py-3.5 text-white focus:border-sori-secondary outline-none transition-all font-bold" />
+                    <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest ml-1">Email Address</label>
+                    <input type="email" value={tempEmail} onChange={(e) => setTempEmail(e.target.value)} className="w-full bg-sori-surface-base border border-sori-border-subtle rounded-xl px-5 py-3.5 text-sori-text-strong focus:border-sori-accent-secondary outline-none transition-all font-bold" />
                   </div>
                 </div>
                 <DialogFooter className="mt-8 flex flex-col sm:flex-row gap-3">

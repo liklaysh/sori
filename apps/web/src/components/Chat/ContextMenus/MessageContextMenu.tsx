@@ -33,14 +33,14 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
 
   return (
     <div 
-      className="fixed z-[300] bg-sori-sidebar border border-white/5 rounded-2xl shadow-2xl py-2 min-w-[200px] animate-in fade-in zoom-in-95 shadow-black/80 ring-1 ring-white/10" 
+      className="fixed z-[300] bg-sori-sidebar border border-sori-border-subtle rounded-2xl shadow-2xl py-2 min-w-[200px] animate-in fade-in zoom-in-95 shadow-black ring-1 ring-sori-border-medium" 
       style={getMenuStyles(x, y)}
     >
       <button 
         onClick={onReply} 
-        className="w-full px-4 py-2.5 hover:bg-primary/10 hover:text-primary cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
+        className="w-full px-4 py-2.5 hover:bg-sori-surface-hover hover:text-primary cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
       >
-        <Reply className="h-4 w-4 text-on-surface-variant group-hover:text-primary" />
+        <Reply className="h-4 w-4 text-sori-text-muted group-hover:text-primary" />
         Reply
       </button>
 
@@ -48,33 +48,33 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
         <>
           <button 
             onClick={onEdit} 
-            className="w-full px-4 py-2.5 hover:bg-primary/10 hover:text-primary cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
+            className="w-full px-4 py-2.5 hover:bg-sori-surface-hover hover:text-primary cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
           >
-            <Edit2 className="h-4 w-4 text-on-surface-variant group-hover:text-primary" />
+            <Edit2 className="h-4 w-4 text-sori-text-muted group-hover:text-primary" />
             Edit Message
           </button>
           <button 
             onClick={onDelete} 
-            className="w-full px-4 py-2.5 hover:bg-sori-error/10 hover:text-sori-error cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
+            className="w-full px-4 py-2.5 hover:bg-sori-error-subtle hover:text-sori-error cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
           >
-            <Trash2 className="h-4 w-4 text-on-surface-variant group-hover:text-sori-error" />
+            <Trash2 className="h-4 w-4 text-sori-text-muted group-hover:text-sori-error" />
             Delete Message
           </button>
         </>
       )}
 
-      <div className="h-px bg-white/5 my-1 mx-2"></div>
+      <div className="h-px bg-sori-border-subtle my-1 mx-2"></div>
       
-      <div className="px-4 py-2 text-[9px] font-black uppercase tracking-widest text-on-surface-variant opacity-60">
+      <div className="px-4 py-2 text-[9px] font-black uppercase tracking-widest text-sori-text-dim">
         Reactions
       </div>
       
       <div className="px-4 py-1.5 flex justify-between gap-1">
         {["👍", "❤️", "😂", "😮", "😢", "🔥"].map(emoji => (
-          <button 
+            <button 
             key={emoji} 
             onClick={() => onReaction(emoji)} 
-            className="text-xl hover:scale-125 hover:bg-white/5 p-1 rounded-lg transition-all cursor-pointer active:scale-90"
+            className="text-xl hover:scale-125 hover:bg-sori-surface-hover p-1 rounded-lg transition-all cursor-pointer active:scale-90"
           >
             {emoji}
           </button>
