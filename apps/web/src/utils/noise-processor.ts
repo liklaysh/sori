@@ -11,7 +11,6 @@ export class RNNoiseProcessor {
   constructor() {}
 
   async init(opts: { audioContext: AudioContext }): Promise<void> {
-    console.log("🎙️ [RNNoise] init:start");
     this.audioContext = opts.audioContext;
     
     try {
@@ -62,9 +61,7 @@ export class RNNoiseProcessor {
       const url = URL.createObjectURL(blob);
       try {
         await this.audioContext.audioWorklet.addModule(url);
-      } catch (err) {
-        console.warn("🎙️ [RNNoise] init:worklet_exists (skipped)");
-      }
+      } catch {}
 
       this.workletNode = new AudioWorkletNode(this.audioContext, 'rnnoise-worklet');
       
@@ -75,8 +72,6 @@ export class RNNoiseProcessor {
           this.workletNode?.port.postMessage({ type: 'processed', samples });
         }
       };
-
-      console.log("🎙️ [RNNoise] init:success");
     } catch (err) {
       console.error("🎙️ [RNNoise] init:error", err);
       throw err;
@@ -100,7 +95,6 @@ export class RNNoiseProcessor {
     }
     this.rnnoise = null;
     this.audioContext = null;
-    console.log("🎙️ [RNNoise] status:destroyed");
   }
 }
 

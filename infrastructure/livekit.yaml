@@ -2,7 +2,5 @@ port: 7880
 rtc:
   udp_port: 7882
   use_external_ip: false
-keys:
-  devkey: secret
 logging:
   level: info

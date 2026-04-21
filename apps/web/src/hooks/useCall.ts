@@ -1,9 +1,8 @@
-import { useEffect, useCallback, useRef, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useRef } from "react";
 import { Socket } from "socket.io-client";
 import api from "../lib/api";
 import { toast } from "sonner";
-import { User } from "../types/chat";
-import { useVoiceStore, CallStatus } from "../store/useVoiceStore";
+import { useVoiceStore } from "../store/useVoiceStore";
 
 interface CallMetrics {
   duration?: number;
@@ -20,24 +19,28 @@ interface CallerData {
 
 interface UseCallProps {
   socket: Socket | null;
-  currentUser: User;
 }
 
-export function useCall({ socket, currentUser }: UseCallProps) {
+export function useCall({ socket }: UseCallProps) {
   const { 
     livekitToken, connectedChannelId, status, partner, callId, startTime,
-    setToken, setConnectedChannel, setStatus, setCallData, reset 
+    isDisconnecting, setIsDisconnecting, isPartnerSpeaking,
+    setToken, setConnectedChannel, setStatus, setCallData, setPartnerSpeaking, reset 
   } = useVoiceStore();
-  
-  // Keep refs for latest values needed in socket listeners to avoid effect re-binds
-  const propsRef = useRef({ socket });
+  const socketRef = useRef(socket);
+  const callIdRef = useRef(callId);
+  const connectedChannelIdRef = useRef(connectedChannelId);
+  const statusRef = useRef(status);
 
-  useEffect(() => { 
-    propsRef.current = { socket };
-  }, [socket]);
+  useEffect(() => { socketRef.current = socket; }, [socket]);
+  useEffect(() => { callIdRef.current = callId; }, [callId]);
+  useEffect(() => { connectedChannelIdRef.current = connectedChannelId; }, [connectedChannelId]);
+  useEffect(() => { statusRef.current = status; }, [status]);
 
   const initiateCall = useCallback((targetUser: CallerData) => {
-    if (!socket || status !== "idle") return;
+    if (!socket || status !== "idle") {
+      return;
+    }
     setStatus("calling");
     setCallData({ partner: targetUser });
     socket.emit("direct_call_initiate", { targetUserId: targetUser.id });
@@ -97,7 +100,7 @@ export function useCall({ socket, currentUser }: UseCallProps) {
       }
     };
 
-    const safeReset = (reason?: string) => {
+    const safeReset = (_reason?: string) => {
       reset();
     };
 
@@ -107,6 +110,18 @@ export function useCall({ socket, currentUser }: UseCallProps) {
     const onCallTimedOut = () => safeReset("call_timed_out");
     const onDisconnect = () => safeReset("socket_disconnect");
 
+    const onDirectCallError = (data: { message: string }) => {
+      toast.error(data.message);
+      safeReset("direct_call_error");
+    };
+
+    const onUserSpeakingStatus = (data: { userId: string, isSpeaking: boolean }) => {
+      const currentPartner = useVoiceStore.getState().partner;
+      if (currentPartner && data.userId === currentPartner.id) {
+        setPartnerSpeaking(data.isSpeaking);
+      }
+    };
+
     socket.on("incoming_call", handleIncoming);
     socket.on("outgoing_call_started", handleStarted);
     socket.on("call_accepted", handleAccepted);
@@ -114,11 +129,9 @@ export function useCall({ socket, currentUser }: UseCallProps) {
     socket.on("call_ended", onCallEnded);
     socket.on("call_missed", onCallMissed);
     socket.on("call_timed_out", onCallTimedOut);
-    socket.on("direct_call_error", (data: { message: string }) => {
-      toast.error(data.message);
-      safeReset("direct_call_error");
-    });
+    socket.on("direct_call_error", onDirectCallError);
     socket.on("disconnect", onDisconnect);
+    socket.on("user_speaking_status", onUserSpeakingStatus);
 
     return () => {
       socket.off("incoming_call", handleIncoming);
@@ -128,7 +141,8 @@ export function useCall({ socket, currentUser }: UseCallProps) {
       socket.off("call_ended", onCallEnded);
       socket.off("call_missed", onCallMissed);
       socket.off("call_timed_out", onCallTimedOut);
-      socket.off("direct_call_error");
+      socket.off("direct_call_error", onDirectCallError);
+      socket.off("user_speaking_status", onUserSpeakingStatus);
       socket.off("disconnect", onDisconnect);
     };
   }, [socket, setToken, setStatus, setCallData, endCall, reset]);
@@ -140,7 +154,11 @@ export function useCall({ socket, currentUser }: UseCallProps) {
       
       setToken(tokenData.token);
       setStatus("connected");
-      setCallData({ startTime: tokenData.startedAt || Date.now() });
+      setCallData({
+        callId: null,
+        partner: null,
+        startTime: tokenData.startedAt || Date.now(),
+      });
       setConnectedChannel(channelId);
       
       return tokenData.token;
@@ -150,6 +168,30 @@ export function useCall({ socket, currentUser }: UseCallProps) {
       throw err;
     }
   }, [setToken, setStatus, setCallData, setConnectedChannel]);
+
+  useEffect(() => {
+    const handlePageHide = () => {
+      const activeSocket = socketRef.current;
+      if (!activeSocket) {
+        return;
+      }
+
+      const activeChannelId = connectedChannelIdRef.current;
+      const activeCallId = callIdRef.current;
+      const currentStatus = statusRef.current;
+
+      if (activeChannelId) {
+        activeSocket.emit("leave_voice_channel", activeChannelId);
+      }
+
+      if (activeCallId && currentStatus !== "idle") {
+        activeSocket.emit("direct_call_end", { callId: activeCallId });
+      }
+    };
+
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
+  }, []);
 
   return useMemo(() => ({
     livekitToken,
@@ -163,9 +205,12 @@ export function useCall({ socket, currentUser }: UseCallProps) {
     rejectCall,
     endCall,
     getChannelToken,
-    resetCall: reset
+    resetCall: reset,
+    setIsDisconnecting,
+    isDisconnecting,
+    isPartnerSpeaking
   }), [
     livekitToken, connectedChannelId, status, partner, callId, startTime,
-    initiateCall, acceptCall, rejectCall, endCall, getChannelToken, reset
+    initiateCall, acceptCall, rejectCall, endCall, getChannelToken, reset, setIsDisconnecting, isDisconnecting, isPartnerSpeaking
   ]);
 }

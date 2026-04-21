@@ -5,35 +5,26 @@ import {
   ShieldCheck, 
   Eraser, 
   Download, 
-  Activity, 
-  History,
   User,
-  Zap,
   Clock,
-  ExternalLink,
   RefreshCw,
   Search
 } from "lucide-react";
 
 export default function AuditLogTab() {
   const [logs, setLogs] = useState<any[]>([]);
-  const [callLogs, setCallLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const api = useAdminApi();
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [auditRes, callRes] = await Promise.all([
-        api.getAuditLogs(),
-        api.getCalls()
-      ]);
-      
+      const auditRes = await api.getAuditLogs();
+
       if (auditRes.data) setLogs(auditRes.data);
-      if (callRes.data) setCallLogs(callRes.data);
     } catch (e) {
       console.error(e);
-      toast.error("Telemetry sync failed");
+      toast.error("Audit sync failed");
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +144,7 @@ export default function AuditLogTab() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-sori-error-subtle flex items-center justify-center border border-sori-accent-danger">
+                          <div className="w-7 h-7 rounded-lg bg-sori-accent-danger-subtle flex items-center justify-center border border-sori-accent-danger">
                             <User className="h-3.5 w-3.5 text-sori-accent-danger" />
                           </div>
                           <span className="text-[11px] font-black text-sori-text-strong font-mono tracking-tighter">{l.adminId.slice(0, 12)}</span>
@@ -171,97 +162,6 @@ export default function AuditLogTab() {
                       </td>
                     </tr>
                   ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* Call protocol telemetry Section */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-2 border-l-4 border-sori-accent-secondary pl-6 py-1">
-          <div className="p-1.5 bg-sori-surface-accent-subtle rounded-lg border border-sori-accent-secondary">
-            <Activity className="h-5 w-5 text-sori-accent-secondary" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">Interaction Streams</h2>
-            <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">Real-time media frequency orchestration.</p>
-          </div>
-        </div>
-
-        <div className="bg-sori-surface-main border border-sori-border-subtle rounded-3xl overflow-hidden shadow-xl">
-          <div className="max-h-[450px] overflow-auto custom-scrollbar">
-            <table className="w-full min-w-[900px] text-left">
-              <thead className="bg-sori-surface-active">
-                <tr>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-accent-secondary">Initiated</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-accent-secondary">Medium</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-accent-secondary">State</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-accent-secondary">Integrity (MOS)</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-accent-secondary">Bitrate</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-accent-secondary text-right">Loss</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-sori-border-subtle">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-16 text-center text-sori-text-muted font-bold uppercase text-[10px] animate-pulse">Scanning Frequencies...</td>
-                  </tr>
-                ) : callLogs.map(c => (
-                  <tr key={c.id} className="hover:bg-sori-surface-hover transition-colors border-l-2 border-transparent hover:border-sori-accent-secondary group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-[10px] text-sori-text-muted font-mono tracking-tighter">
-                         <History className="h-3 w-3" />
-                         {new Date(c.startedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-3 w-3 text-sori-accent-secondary" />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-sori-text-strong">{c.type}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${c.status === 'active' ? 'text-sori-accent-secondary' : 'text-sori-text-dim'}`}>
-                        {c.status === 'active' && <div className="w-1.5 h-1.5 rounded-full bg-sori-accent-secondary animate-pulse shadow-lg"></div>}
-                        {c.status}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 w-40">
-                      {c.mos ? (
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 h-1 bg-sori-surface-panel rounded-full overflow-hidden border border-sori-border-subtle">
-                            <div 
-                              className="h-full bg-sori-accent-secondary shadow-lg" 
-                              style={{ width: `${(parseFloat(c.mos) / 4.5) * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sori-accent-secondary font-black text-[10px] tabular-nums">{c.mos}</span>
-                        </div>
-                      ) : "-"}
-                    </td>
-                    <td className="px-6 py-4">
-                       <span className="text-[10px] font-mono text-sori-text-muted font-bold">
-                         {c.avgBitrate ? `${(c.avgBitrate / 1000).toFixed(1)} kbps` : "N/A"}
-                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className={`text-[10px] font-black ${parseFloat(c.packetLoss) > 5 ? 'text-sori-accent-danger' : 'text-sori-accent-secondary'} font-mono`}>
-                        {c.packetLoss ? `${parseFloat(c.packetLoss).toFixed(1)}%` : "0.0%"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {!isLoading && callLogs.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center">
-                      <div className="flex flex-col items-center gap-4">
-                        <Activity className="h-10 w-10 text-sori-text-dim" />
-                        <p className="font-black uppercase tracking-[0.3em] text-[10px] text-sori-text-dim">Zero Interactions</p>
-                      </div>
-                    </td>
-                  </tr>
                 )}
               </tbody>
             </table>

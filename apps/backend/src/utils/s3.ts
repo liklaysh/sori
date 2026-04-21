@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, CreateBucketCommand, HeadBucketCommand, PutBucketPolicyCommand, ListObjectsV2Command, HeadObjectCommand } from "@aws-sdk/client-s3";
+import type { Readable } from "node:stream";
 import { config } from "../config.js";
 import { logger } from "./logger.js";
 
@@ -59,13 +60,22 @@ export async function ensureBucket() {
   }
 }
 
-export async function uploadFile(key: string, body: Buffer, contentType: string) {
+export async function uploadFile(
+  key: string,
+  body: Buffer | Readable,
+  contentType: string,
+  contentLength?: number,
+  originalFileName?: string,
+) {
   try {
     const command = new PutObjectCommand({
       Bucket: BUCKET_NAME,
       Key: key,
       Body: body,
       ContentType: contentType,
+      ContentLength: contentLength,
+      CacheControl: "public, max-age=31536000, immutable",
+      ContentDisposition: buildContentDisposition(contentType, originalFileName),
     });
     await s3Client.send(command);
     
@@ -78,6 +88,31 @@ export async function uploadFile(key: string, body: Buffer, contentType: string)
     logger.error(`❌ [S3] Upload failed for key: ${key}`, { error: err as Error, bucket: BUCKET_NAME });
     throw new Error("Failed to upload file to storage.");
   }
+}
+
+function sanitizeDownloadName(fileName?: string) {
+  if (!fileName) {
+    return "download";
+  }
+
+  const cleaned = fileName
+    .replace(/[\r\n"]/g, "")
+    .replace(/[^A-Za-z0-9._ -]/g, "_")
+    .trim();
+
+  return cleaned || "download";
+}
+
+function buildContentDisposition(contentType: string, fileName?: string) {
+  const safeName = sanitizeDownloadName(fileName);
+  const inlineSafe = contentType.startsWith("image/")
+    || contentType.startsWith("video/")
+    || contentType.startsWith("audio/")
+    || contentType === "application/pdf"
+    || contentType === "text/plain";
+
+  const disposition = inlineSafe ? "inline" : "attachment";
+  return `${disposition}; filename="${safeName}"`;
 }
 
 export async function getStorageStats() {

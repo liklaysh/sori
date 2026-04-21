@@ -28,8 +28,6 @@ export const useServerTime = () => {
         globalClockOffset = serverTimestamp - (endTime - latency);
         isSynced = true;
         setSynced(true);
-        
-        console.log(`[TimeSync] Server offset calculated: ${globalClockOffset}ms (latency: ${latency}ms)`);
       } catch (err) {
         console.error("[TimeSync] Failed to sync with server time:", err);
       }

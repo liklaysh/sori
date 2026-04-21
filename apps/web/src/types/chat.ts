@@ -7,10 +7,10 @@ export interface Reaction {
 }
 
 export interface Attachment {
-  url: string;
-  name: string;
-  size: number;
-  type: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize?: number | null;
+  fileType?: string | null;
 }
 
 export interface CallLog {
@@ -30,7 +30,8 @@ export interface Message {
   authorId: string;
   username?: string;
   author?: User;
-  channelId: string;
+  channelId?: string | null;
+  conversationId?: string | null;
   createdAt: number | string;
   parentId?: string | null;
   parent?: Message | null;
@@ -39,12 +40,9 @@ export interface Message {
   isDeleted?: boolean;
   linkMetadata?: string | null;
   reactions?: Reaction[];
-  attachments?: Attachment[];
+  attachment?: Attachment | null;
   type?: "text" | "call_missed" | "call_ended" | "call_rejected" | "system_call" | string;
-  fileUrl?: string | null;
-  fileName?: string | null;
-  fileSize?: number | null;
-  fileType?: string | null;
+  requestId?: string;
 }
 
 export type DirectMessage = (Message & { conversationId: string; isRead: boolean; isDelivered?: boolean; callId?: string | null }) | CallLog;
@@ -98,6 +96,9 @@ export interface VoiceOccupant {
   avatarUrl?: string;
   joinedAt: number;
   isStreaming?: boolean;
+  isSpeaking?: boolean;
+  isMuted?: boolean;
+  isDeafened?: boolean;
 }
 
 export interface User {

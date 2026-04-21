@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAdminApi } from "../../../hooks/useAdminApi";
+import http from "../../../lib/api";
 import { toast } from "sonner";
 import { 
   Download, 
@@ -12,7 +13,6 @@ import {
   Clock,
   FileArchive
 } from "lucide-react";
-import { API_URL } from "../../../config";
 
 interface BackupFile {
   filename: string;
@@ -45,19 +45,25 @@ export default function BackupsTab() {
     fetchBackups();
   }, []);
 
-  const handleDownload = (filename: string) => {
-    const token = localStorage.getItem("sori_token");
-    const url = `${API_URL}/admin/backup/download/${filename}?token=${token}`;
-    
-    // Create a temporary link and trigger download
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast.success(`Downloading payload: ${filename}`);
+  const handleDownload = async (filename: string) => {
+    try {
+      const response = await http.get(`/admin/backup/download/${encodeURIComponent(filename)}`, {
+        responseType: "blob",
+      });
+
+      const blobUrl = URL.createObjectURL(response.data as Blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+
+      toast.success(`Downloading payload: ${filename}`);
+    } catch (error) {
+      toast.error("Failed to download backup");
+    }
   };
 
   const formatSize = (bytes: number) => {
@@ -83,7 +89,7 @@ export default function BackupsTab() {
         </div>
         <div className="flex items-center gap-3 bg-sori-surface-main border border-sori-border-subtle px-4 py-2 rounded-xl shrink-0">
           <div className={`w-2 h-2 rounded-full ${status === 'active' ? 'bg-sori-accent-secondary' : 'bg-sori-accent-danger'} animate-pulse shadow-lg`}></div>
-          <div className={`w-2 h-2 rounded-full ${status === 'active' ? 'bg-sori-success' : 'bg-sori-accent-danger'} animate-pulse shadow-lg`}></div>
+          <div className={`w-2 h-2 rounded-full ${status === 'active' ? 'bg-sori-accent-success' : 'bg-sori-accent-danger'} animate-pulse shadow-lg`}></div>
           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-strong">Service: {status === 'active' ? 'Operational' : 'Error'}</span>
         </div>
       </div>
@@ -173,7 +179,7 @@ export default function BackupsTab() {
         <div className="relative z-10">
            <h3 className="text-[9px] font-black text-sori-text-strong uppercase tracking-[0.2em] mb-1">Infrastructure Notice</h3>
            <p className="text-[10px] text-sori-text-dim font-medium leading-relaxed max-w-2xl">
-              Sanctuary backups are automated every 12 hours. Restoration requires direct infrastructure access for security integrity.
+              Database snapshots are generated every 24 hours. Only the latest 3 daily backups are retained to keep local storage bounded.
            </p>
         </div>
       </div>
@@ -181,9 +187,9 @@ export default function BackupsTab() {
       {/* Informative Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { icon: ShieldCheck, title: "Automated", desc: "Backups generated every 12h by infra-service" },
+          { icon: ShieldCheck, title: "Automated", desc: "Backups generated every 24h by infra-service" },
           { icon: Database, title: "PostgreSQL", desc: "Native SQL dumps optimized for relational integrity" },
-          { icon: Info, title: "Retention", desc: "Local snapshots are retained for 7 diurnal periods" }
+          { icon: Info, title: "Retention", desc: "Only the latest 3 daily snapshots are kept" }
         ].map((item, i) => (
           <div key={i} className="bg-sori-surface-main border border-sori-border-subtle rounded-2xl p-4 flex gap-3 items-center">
             <item.icon className="h-4 w-4 text-sori-accent-danger shrink-0" />

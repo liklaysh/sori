@@ -1,11 +1,12 @@
 import { Server, Socket } from "socket.io";
 import { nanoid } from "nanoid";
 import { db } from "../../db/index.js";
-import { messages, reactions, dmConversations, directMessages, callLogs } from "../../db/schema.js";
-import { eq, and, not } from "drizzle-orm";
+import { messages, reactions, dmConversations, directMessages } from "../../db/schema.js";
+import { eq, and } from "drizzle-orm";
 import { sendMessageSchema, sendDirectMessageSchema } from "../../validation/schemas.js";
 import { getLinkPreviews } from "../../utils/linkPreview.js";
 import { logger } from "../../utils/logger.js";
+import { extractAttachment, serializeMessage } from "../../utils/messageContract.js";
 
 export function handleMessages(io: Server, socket: Socket, user: { id: string, username: string }, isAdminPanel: boolean) {
 
@@ -16,24 +17,26 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       if (!result.success) {
         return socket.emit("error", { message: "Invalid message data", details: result.error.format() });
       }
-      const { channelId, content, parentId, attachment, attachments } = result.data;
-
-      // Extract the first attachment from the new array if present, or fallback to singular
-      const finalAttachment = (attachments && attachments.length > 0) ? attachments[0] : attachment;
+      const { channelId } = result.data;
+      const content = result.data.content?.trim() || "";
+      const parentId = result.data.parentId || null;
+      const finalAttachment = extractAttachment(result.data);
+      const requestId = result.data.requestId || socket.data.requestId;
 
       const messageId = nanoid();
       const linkPreviews = content ? await getLinkPreviews(content) : [];
 
       await db.insert(messages).values({
         id: messageId,
-        content: content || "",
+        content,
         authorId: user.id,
         channelId,
-        parentId: parentId || null,
+        parentId,
         fileUrl: finalAttachment?.fileUrl,
         fileName: finalAttachment?.fileName,
         fileSize: finalAttachment?.fileSize,
         fileType: finalAttachment?.fileType,
+        type: finalAttachment ? "file" : "text",
         linkMetadata: linkPreviews.length > 0 ? JSON.stringify(linkPreviews) : null,
         createdAt: new Date()
       });
@@ -47,7 +50,10 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
         }
       });
 
-      io.to(channelId).emit("new_message", newMessage);
+      io.to(channelId).emit("new_message", {
+        ...serializeMessage(newMessage),
+        requestId,
+      });
     } catch (err: any) {
       logger.error("[Messages] Send Error", { error: err });
       socket.emit("error", { message: "Failed to send message" });
@@ -127,10 +133,10 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       if (!result.success) {
         return socket.emit("error", { message: "Invalid DM data", details: result.error.format() });
       }
-      const { conversationId, content, attachment, attachments } = result.data;
-
-      // Extract the first attachment from the new array if present
-      const finalAttachment = (attachments && attachments.length > 0) ? attachments[0] : attachment;
+      const { conversationId } = result.data;
+      const content = result.data.content?.trim() || "";
+      const finalAttachment = extractAttachment(result.data);
+      const requestId = result.data.requestId || socket.data.requestId;
 
       const conv = await db.query.dmConversations.findFirst({
         where: eq(dmConversations.id, conversationId)
@@ -143,12 +149,13 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       await db.insert(directMessages).values({
         id: messageId,
         conversationId,
-        content: content || "",
+        content,
         authorId: user.id,
         fileUrl: finalAttachment?.fileUrl,
         fileName: finalAttachment?.fileName,
         fileSize: finalAttachment?.fileSize,
         fileType: finalAttachment?.fileType,
+        type: finalAttachment ? "file" : "text",
         linkMetadata: linkPreviews.length > 0 ? JSON.stringify(linkPreviews) : null,
         createdAt: new Date()
       });
@@ -162,35 +169,17 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
         with: { author: true }
       });
 
-      const targetUserId = conv.user1Id === user.id ? conv.user2Id : conv.user1Id;
-      
-      socket.emit("new_direct_message", newMessage);
-      io.to(`user:${targetUserId}`).emit("new_direct_message", newMessage);
-      io.to(`user:${user.id}`).emit("new_direct_message", newMessage);
+      const payload = {
+        ...serializeMessage(newMessage),
+        conversationId,
+        requestId,
+      };
+
+      io.to(`user:${conv.user1Id}`).emit("new_direct_message", payload);
+      io.to(`user:${conv.user2Id}`).emit("new_direct_message", payload);
 
       logger.debug(`[Socket] DM Message delivered: ${messageId}`, { conversationId });
     } catch (err) { logger.error("[Messages] DM Send Error", { error: err }); }
   });
 
-  socket.on("mark_read", async (conversationId: string) => {
-    try {
-      // Mark messages as read
-      await db.update(directMessages)
-        .set({ isRead: true })
-        .where(and(
-          eq(directMessages.conversationId, conversationId),
-          not(eq(directMessages.authorId, user.id))
-        ));
-
-      // Mark call logs as read (if current user was the receiver)
-      await db.update(callLogs)
-        .set({ isRead: true })
-        .where(and(
-          eq(callLogs.conversationId, conversationId),
-          eq(callLogs.calleeId, user.id)
-        ));
-
-      io.emit("message_read", { conversationId, userId: user.id });
-    } catch (err) { console.error(err); }
-  });
 }

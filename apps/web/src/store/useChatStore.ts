@@ -1,53 +1,133 @@
 import { create } from "zustand";
 import api from "../lib/api";
-import { Message, Channel, Community, Member, VoiceOccupant, DMConversation, ChatItem } from "../types/chat";
-import { Socket } from "socket.io-client";
+import { Channel, Community, Member, VoiceOccupant, DMConversation, ChatItem, Message } from "../types/chat";
+import { useUserStore } from "./useUserStore";
+import {
+  getChannelContextKey,
+  getConversationContextKey,
+  getMessageContextKey,
+  normalizeChatItems,
+  normalizeMessage,
+} from "../utils/chatMessages";
+
+interface FetchMessagesOptions {
+  search?: string;
+  before?: string;
+  append?: boolean;
+}
 
 interface ChatState {
   communities: Community[];
   channels: Channel[];
-  messages: ChatItem[];
+  messagesByContext: Record<string, ChatItem[]>;
   members: Member[];
   conversations: DMConversation[];
   voiceOccupants: Record<string, VoiceOccupant[]>;
+  activeCommunityId: string | null;
   typingUsers: Record<string, string>;
-  
-  // Actions
+
   setCommunities: (cms: Community[]) => void;
   setChannels: (chs: Channel[]) => void;
-  setMessages: (msgs: ChatItem[] | ((prev: ChatItem[]) => ChatItem[])) => void;
+  setContextMessages: (contextKey: string, msgs: ChatItem[] | ((prev: ChatItem[]) => ChatItem[])) => void;
   addMessage: (msg: ChatItem) => void;
+  updateMessage: (messageId: string, data: Partial<Message>) => void;
   setMembers: (mbs: Member[]) => void;
   setConversations: (convs: DMConversation[]) => void;
   setVoiceOccupants: (occupants: Record<string, VoiceOccupant[]>) => void;
   updateVoiceOccupants: (channelId: string, occupants: VoiceOccupant[]) => void;
+  updateOccupantStatus: (channelId: string, userId: string, data: Partial<VoiceOccupant>) => void;
   setTyping: (channelId: string, username: string | null) => void;
   upsertConversation: (conv: DMConversation) => void;
-  
-  // Async Fetches
+  startDM: (targetUserId: string) => Promise<DMConversation | null>;
   fetchInitialData: (communityId: string) => Promise<void>;
   fetchConversations: () => Promise<void>;
-  fetchMessages: (channelId: string, search?: string) => Promise<void>;
-  fetchDMMessages: (conversationId: string) => Promise<void>;
+  fetchMessages: (channelId: string, options?: FetchMessagesOptions) => Promise<ChatItem[]>;
+  fetchDMMessages: (conversationId: string, options?: FetchMessagesOptions) => Promise<ChatItem[]>;
+  markConversationAsRead: (conversationId: string) => Promise<void>;
+}
+
+function dedupeMessages(messages: ChatItem[]) {
+  const seen = new Set<string>();
+
+  return messages.filter((message) => {
+    if (seen.has(message.id)) {
+      return false;
+    }
+
+    seen.add(message.id);
+    return true;
+  });
+}
+
+function mergeMessagePages(existing: ChatItem[], incoming: ChatItem[], append: boolean) {
+  return dedupeMessages(append ? [...incoming, ...existing] : incoming);
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
   communities: [],
   channels: [],
-  messages: [],
+  messagesByContext: {},
   members: [],
   conversations: [],
   voiceOccupants: {},
+  activeCommunityId: null,
   typingUsers: {},
 
   setCommunities: (communities) => set({ communities }),
   setChannels: (channels) => set({ channels }),
-  setMessages: (messages) => set((state) => ({ 
-    messages: typeof messages === "function" ? messages(state.messages) : messages 
-  })),
-  addMessage: (msg) => set((state) => {
-    if (state.messages.some(m => m.id === msg.id)) return state;
-    return { messages: [...state.messages, msg] };
+  setContextMessages: (contextKey, messages) => set((state) => {
+    const previous = state.messagesByContext[contextKey] || [];
+    const nextMessages = typeof messages === "function" ? messages(previous) : messages;
+
+    return {
+      messagesByContext: {
+        ...state.messagesByContext,
+        [contextKey]: normalizeChatItems(nextMessages),
+      },
+    };
+  }),
+  addMessage: (message) => set((state) => {
+    if (message.type === "system_call") {
+      return state;
+    }
+
+    const normalizedMessage = normalizeMessage(message as Message);
+    const contextKey = getMessageContextKey(normalizedMessage);
+
+    if (!contextKey) {
+      return state;
+    }
+
+    const existing = state.messagesByContext[contextKey] || [];
+    if (existing.some((item) => item.id === normalizedMessage.id)) {
+      return state;
+    }
+
+    return {
+      messagesByContext: {
+        ...state.messagesByContext,
+        [contextKey]: [...existing, normalizedMessage],
+      },
+    };
+  }),
+  updateMessage: (messageId, data) => set((state) => {
+    const nextBuckets = Object.fromEntries(
+      Object.entries(state.messagesByContext).map(([contextKey, messages]) => [
+        contextKey,
+        messages.map((message) => {
+          if (message.id !== messageId || message.type === "system_call") {
+            return message;
+          }
+
+          return normalizeMessage({
+            ...(message as Message),
+            ...data,
+          });
+        }),
+      ]),
+    );
+
+    return { messagesByContext: nextBuckets };
   }),
   setMembers: (members) => set({ members }),
   setConversations: (conversations) => set({ conversations }),
@@ -55,6 +135,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   updateVoiceOccupants: (channelId, occupants) => set((state) => ({
     voiceOccupants: { ...state.voiceOccupants, [channelId]: occupants }
   })),
+  updateOccupantStatus: (channelId, userId, data) => set((state) => {
+    const occupants = state.voiceOccupants[channelId] || [];
+    const updated = occupants.map(o => o.userId === userId ? { ...o, ...data } : o);
+    return {
+      voiceOccupants: { ...state.voiceOccupants, [channelId]: updated }
+    };
+  }),
   setTyping: (channelId, username) => set((state) => {
     const next = { ...state.typingUsers };
     if (username) next[channelId] = username;
@@ -70,6 +157,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
     return { conversations: [conv, ...state.conversations] };
   }),
+  startDM: async (targetUserId) => {
+    try {
+      const currentUserId = useUserStore.getState().user?.id;
+      if (!targetUserId || targetUserId === currentUserId) {
+        return null;
+      }
+      const res = await api.post("/dm/conversations", { targetUserId });
+      const data = res.data as DMConversation;
+      if (data && data.id) {
+        get().upsertConversation(data);
+        return data;
+      }
+      return null;
+    } catch (err) {
+      console.error("[ChatStore] startDM failed:", err);
+      return null;
+    }
+  },
 
   fetchInitialData: async (communityId) => {
     const [commsRes, channelsRes, membersRes] = await Promise.all([
@@ -77,10 +182,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       api.get(`/communities/${communityId}/channels`),
       api.get(`/communities/${communityId}/members`)
     ]);
-    set({ 
-      communities: (commsRes.data as Community[]) || [], 
-      channels: (channelsRes.data as Channel[]) || [], 
-      members: (membersRes.data as Member[]) || [] 
+    set({
+      communities: (commsRes.data as Community[]) || [],
+      channels: (channelsRes.data as Channel[]) || [],
+      members: (membersRes.data as Member[]) || [],
+      activeCommunityId: communityId
     });
   },
 
@@ -89,14 +195,66 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ conversations: (res.data as DMConversation[]) || [] });
   },
 
-  fetchMessages: async (channelId: string, search?: string) => {
-    const url = search ? `/channels/${channelId}/messages?q=${search}` : `/channels/${channelId}/messages`;
+  fetchMessages: async (channelId, options = {}) => {
+    const params = new URLSearchParams();
+    if (options.search?.trim()) params.set("q", options.search.trim());
+    if (options.before) params.set("before", options.before);
+
+    const url = params.size > 0
+      ? `/channels/${channelId}/messages?${params.toString()}`
+      : `/channels/${channelId}/messages`;
+
     const res = await api.get(url);
-    set({ messages: (res.data as ChatItem[]) || [] });
+    const contextKey = getChannelContextKey(channelId);
+    const fetched = normalizeChatItems((res.data as ChatItem[]) || []);
+
+    set((state) => ({
+      messagesByContext: {
+        ...state.messagesByContext,
+        [contextKey]: mergeMessagePages(state.messagesByContext[contextKey] || [], fetched, Boolean(options.append)),
+      },
+    }));
+
+    return fetched;
   },
 
-  fetchDMMessages: async (conversationId) => {
-    const res = await api.get(`/dm/conversations/${conversationId}/messages`);
-    set({ messages: (res.data as ChatItem[]) || [] });
+  fetchDMMessages: async (conversationId, options = {}) => {
+    const params = new URLSearchParams();
+    if (options.search?.trim()) params.set("q", options.search.trim());
+    if (options.before) params.set("before", options.before);
+
+    const url = params.size > 0
+      ? `/dm/conversations/${conversationId}/messages?${params.toString()}`
+      : `/dm/conversations/${conversationId}/messages`;
+
+    const res = await api.get(url);
+    const contextKey = getConversationContextKey(conversationId);
+    const fetched = normalizeChatItems((res.data as ChatItem[]) || []);
+
+    set((state) => ({
+      messagesByContext: {
+        ...state.messagesByContext,
+        [contextKey]: mergeMessagePages(state.messagesByContext[contextKey] || [], fetched, Boolean(options.append)),
+      },
+    }));
+
+    return fetched;
+  },
+
+  markConversationAsRead: async (conversationId) => {
+    const conv = get().conversations.find(c => c.id === conversationId);
+    if (!conv || (conv.unreadCount || 0) <= 0) return;
+
+    set((state) => ({
+      conversations: state.conversations.map(c =>
+        c.id === conversationId ? { ...c, unreadCount: 0 } : c
+      )
+    }));
+
+    try {
+      await api.post(`/dm/conversations/${conversationId}/read`);
+    } catch (err) {
+      console.error("[ChatStore] markAsRead failed:", err);
+    }
   }
 }));

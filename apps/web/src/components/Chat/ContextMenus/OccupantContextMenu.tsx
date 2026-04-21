@@ -1,6 +1,7 @@
 import React from 'react';
 import { VoiceOccupant } from '../../../types/chat';
 import { MessageSquare, Volume2, VolumeX, UserMinus } from 'lucide-react';
+import { useContextMenuPosition } from '../../../hooks/useContextMenuPosition';
 
 interface OccupantContextMenuProps {
   visible: boolean;
@@ -19,19 +20,12 @@ interface OccupantContextMenuProps {
 export const OccupantContextMenu: React.FC<OccupantContextMenuProps> = ({ 
   visible, x, y, occupant, participantVolume, onVolumeChange, onDirectMessage, onMute, isMuted, onKick, onClose
 }) => {
+  const menuStyles = useContextMenuPosition(x, y);
+
   if (!visible || !occupant) return null;
 
-  const getMenuStyles = (x: number, y: number) => {
-    const vThreshold = window.innerHeight / 2;
-    const hThreshold = window.innerWidth / 2;
-    const styles: React.CSSProperties = {};
-    if (y > vThreshold) styles.bottom = window.innerHeight - y; else styles.top = y;
-    if (x > hThreshold) styles.right = window.innerWidth - x; else styles.left = x;
-    return styles;
-  };
-
   return (
-    <div className="fixed z-[300] bg-sori-surface-panel border border-sori-border-subtle rounded-xl shadow-2xl p-2 min-w-[200px] animate-in zoom-in-95 shadow-black" style={getMenuStyles(x, y)}>
+    <div className="fixed z-[300] bg-sori-surface-panel border border-sori-border-subtle rounded-xl shadow-2xl p-2 min-w-[200px] animate-in zoom-in-95 shadow-black" style={menuStyles}>
       <div className="p-1 px-1.5 border-b border-sori-border-subtle mb-1">
         <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">{occupant.username}</p>
       </div>

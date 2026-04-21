@@ -41,6 +41,25 @@ export const useMediaSettings = ({ initialUser }: UseMediaSettingsProps) => {
   const lastSyncedRef = useRef({ micGain, outputVolume });
 
   useEffect(() => {
+    const nextNoiseSuppression = !!initialUser?.noiseSuppression;
+    const nextMicGain = initialUser?.micGain ?? 100;
+    const nextOutputVolume = initialUser?.outputVolume ?? 100;
+
+    setCurrentUser(initialUser);
+    setNoiseSuppression((prev) => (prev === nextNoiseSuppression ? prev : nextNoiseSuppression));
+    setMicGain((prev) => (prev === nextMicGain ? prev : nextMicGain));
+    setOutputVolume((prev) => (prev === nextOutputVolume ? prev : nextOutputVolume));
+    lastSyncedRef.current = { micGain: nextMicGain, outputVolume: nextOutputVolume };
+  }, [
+    initialUser?.id,
+    initialUser?.username,
+    initialUser?.avatarUrl,
+    initialUser?.noiseSuppression,
+    initialUser?.micGain,
+    initialUser?.outputVolume,
+  ]);
+
+  useEffect(() => {
     if (micGain === lastSyncedRef.current.micGain && outputVolume === lastSyncedRef.current.outputVolume) {
       return;
     }

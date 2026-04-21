@@ -20,9 +20,7 @@ export const useHardwareTest = (activeMicId?: string) => {
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       try {
         audioContextRef.current.close();
-      } catch (e) {
-        console.warn("[HardwareTest] Error closing AudioContext", e);
-      }
+      } catch {}
     }
     setIsTesting(false);
     setAudioLevel(0);

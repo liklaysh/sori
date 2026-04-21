@@ -22,9 +22,26 @@ import { setCookie, deleteCookie } from "hono/cookie";
 /**
  * Dynamically determine cookie options based on the request origin.
  */
+function isAllowedCookieOrigin(origin: string) {
+  if (!origin) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase();
+    return hostname === "localhost"
+      || hostname === "127.0.0.1"
+      || hostname === "sori.orb.local"
+      || hostname.endsWith(".sori.orb.local");
+  } catch {
+    return false;
+  }
+}
+
 function getCookieOptions(c: any, maxAge: number) {
   const origin = c.req.header("origin") || "";
-  const isCrossDomain = origin.includes("sori.orb.local") || (origin && !origin.includes("localhost:3000"));
+  const isCrossDomain = isAllowedCookieOrigin(origin) && !origin.includes("localhost:3000");
   
   return {
     path: "/",
@@ -107,7 +124,7 @@ auth.get("/me", authMiddleware, safe(async (c) => {
 }));
 
 auth.post("/logout", safe(async (c) => {
-  deleteCookie(c, "sori_auth");
+  deleteCookie(c, "sori_auth", getCookieOptions(c, 0));
   return c.json({ success: true });
 }));
 

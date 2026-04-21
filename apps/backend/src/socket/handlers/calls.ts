@@ -6,8 +6,48 @@ import { calls, directMessages, dmConversations, callLogs, users } from "../../d
 import { eq, or, and } from "drizzle-orm";
 import { redisPresence, redisCalls } from "../../utils/redis.js";
 import { logger } from "../../utils/logger.js";
+import { normalizeS3Url } from "../../utils/url.js";
 
 export function handleCalls(io: Server, socket: Socket, user: any) {
+  const getCallRuntime = async (callId: string) => {
+    const runtimeCall = await redisCalls.getCall(callId);
+    if (runtimeCall) {
+      return runtimeCall;
+    }
+
+    const dbCall = await db.query.calls.findFirst({
+      where: eq(calls.id, callId),
+    });
+
+    if (!dbCall || dbCall.type !== "direct" || !dbCall.callerId || !dbCall.calleeId) {
+      return null;
+    }
+
+    return {
+      callerId: dbCall.callerId,
+      calleeId: dbCall.calleeId,
+      status: dbCall.status,
+      startedAt: dbCall.startedAt?.getTime() || null,
+    };
+  };
+
+  const finalizeCallAndNotify = async (callId: string, status: string, metrics?: any) => {
+    const callData = await getCallRuntime(callId);
+    if (!callData) {
+      return;
+    }
+
+    await endCall(callId, status, metrics);
+
+    if (status === "missed") {
+      io.to(`user:${callData.calleeId}`).emit("call_missed", { callId });
+      io.to(`user:${callData.callerId}`).emit("call_timed_out", { callId });
+      return;
+    }
+
+    io.to(`user:${callData.callerId}`).emit("call_ended", { callId });
+    io.to(`user:${callData.calleeId}`).emit("call_ended", { callId });
+  };
   
   // Initiate a call
   socket.on("direct_call_initiate", async (data: { targetUserId: string }) => {
@@ -38,6 +78,21 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
         return socket.emit("direct_call_error", { message: "This user cannot be called" });
       }
 
+      const existingActiveCall = await db.query.calls.findFirst({
+        where: and(
+          eq(calls.type, "direct"),
+          eq(calls.isActive, true),
+          or(
+            and(eq(calls.callerId, user.id), eq(calls.calleeId, targetUserId)),
+            and(eq(calls.callerId, targetUserId), eq(calls.calleeId, user.id)),
+          ),
+        ),
+      });
+
+      if (existingActiveCall) {
+        return socket.emit("direct_call_error", { message: "Call already in progress" });
+      }
+
       const callId = nanoid();
       
       // Create call record
@@ -54,7 +109,8 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
       await redisCalls.setCall(callId, {
         callerId: user.id,
         calleeId: targetUserId,
-        status: "ringing"
+        status: "ringing",
+        startedAt: Date.now(),
       });
 
       // Notify recipient via their dedicated user room
@@ -63,20 +119,18 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
         caller: {
           id: user.id,
           username: user.username,
-          avatarUrl: latestUser?.avatarUrl || null
+          avatarUrl: normalizeS3Url(latestUser?.avatarUrl) || latestUser?.avatarUrl || null
         }
       });
 
       // Notify sender
       socket.emit("outgoing_call_started", { callId, targetUserId });
 
-      // Set 30s timeout (Local handles the timer, but Redis stores the fact it's ringing)
+      // Set 30s timeout
       setTimeout(async () => {
-        const call = await redisCalls.getCall(callId);
+        const call = await getCallRuntime(callId);
         if (call && call.status === "ringing") {
-          await endCall(callId, "missed");
-          io.to(`user:${targetUserId}`).emit("call_missed", { callId });
-          io.to(`user:${user.id}`).emit("call_timed_out", { callId });
+          await finalizeCallAndNotify(callId, "missed");
         }
       }, 30000);
 
@@ -91,9 +145,15 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
   socket.on("direct_call_accept", async (data: { callId: string }) => {
     try {
       const { callId } = data;
-      const callData = await redisCalls.getCall(callId);
+      const callData = await getCallRuntime(callId);
 
       if (!callData) return socket.emit("direct_call_error", { message: "Call not found or expired" });
+      if (callData.calleeId !== user.id) {
+        return socket.emit("direct_call_error", { message: "Only the recipient can accept this call" });
+      }
+      if (callData.status !== "ringing") {
+        return socket.emit("direct_call_error", { message: "Call is no longer ringing" });
+      }
 
       // Update DB
       await db.update(calls)
@@ -118,9 +178,10 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
   socket.on("direct_call_reject", async (data: { callId: string }) => {
     try {
       const { callId } = data;
-      const callData = await redisCalls.getCall(callId);
+      const callData = await getCallRuntime(callId);
       if (!callData) return;
-      
+      if (callData.callerId !== user.id && callData.calleeId !== user.id) return;
+
       await endCall(callId, "rejected");
       io.to(`user:${callData.callerId}`).emit("call_rejected", { callId });
     } catch (err) {
@@ -132,21 +193,64 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
   socket.on("direct_call_end", async (data: { callId: string, metrics?: any }) => {
     try {
       const { callId, metrics } = data;
-      const callData = await redisCalls.getCall(callId);
+      const callData = await getCallRuntime(callId);
       if (!callData) return;
-
-      await endCall(callId, "ended", metrics);
-      io.to(`user:${callData.callerId}`).emit("call_ended", { callId });
-      io.to(`user:${callData.calleeId}`).emit("call_ended", { callId });
+      if (callData.callerId !== user.id && callData.calleeId !== user.id) return;
+      await finalizeCallAndNotify(callId, "ended", metrics);
     } catch (err) {
       logger.error("[Calls] End Error:", { error: err });
     }
+  });
+
+  socket.on("disconnect", () => {
+    setTimeout(async () => {
+      try {
+        const isStillOnline = await redisPresence.isUserOnline(user.id);
+        if (isStillOnline) {
+          return;
+        }
+
+        const activeCalls = await redisCalls.getAllCalls();
+        const affectedCalls = Object.entries(activeCalls).filter(([, details]) => {
+          return details?.callerId === user.id || details?.calleeId === user.id;
+        });
+
+        for (const [callId, details] of affectedCalls) {
+          if (details?.status === "ringing") {
+            await finalizeCallAndNotify(callId, "missed");
+          } else if (details?.status === "active") {
+            await finalizeCallAndNotify(callId, "ended");
+          }
+        }
+      } catch (err) {
+        logger.error("[Calls] Disconnect cleanup error:", { error: err });
+      }
+    }, 15000);
   });
 
   async function endCall(callId: string, status: string, metrics?: any) {
     try {
       logger.debug(`[Calls] >>> Starting endCall for ID: ${callId}, status: ${status}`);
       const endedAt = new Date();
+      const existingCall = await db.query.calls.findFirst({
+        where: eq(calls.id, callId)
+      });
+
+      if (!existingCall) {
+        await redisCalls.removeCall(callId);
+        return;
+      }
+
+      if (existingCall.type !== "direct") {
+        await redisCalls.removeCall(callId);
+        return;
+      }
+
+      if (!existingCall.isActive && existingCall.endedAt) {
+        await redisCalls.removeCall(callId);
+        return;
+      }
+
       // Update DB record for the call itself
       await db.update(calls)
         .set({ 

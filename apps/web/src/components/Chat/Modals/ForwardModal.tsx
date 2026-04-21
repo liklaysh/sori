@@ -72,7 +72,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                       </div>
                       <span className="font-bold text-sm text-white">{ch.name}</span>
                     </div>
-                    <Send className="h-4 w-4 text-sori-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Send className="h-4 w-4 text-sori-accent-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -99,7 +99,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
                       </div>
                       <span className="font-bold text-sm text-white truncate">{targetUser.username}</span>
                     </div>
-                    <Send className="h-4 w-4 text-sori-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Send className="h-4 w-4 text-sori-accent-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                   </CommandItem>
                 );
               })}

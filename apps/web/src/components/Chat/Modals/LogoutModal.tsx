@@ -22,7 +22,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({ isOpen, onClose, handl
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent className="max-w-sm text-center">
         <AlertDialogHeader className="items-center">
-          <div className="w-12 h-12 bg-sori-surface-danger-subtle text-sori-error rounded-xl flex items-center justify-center mb-2">
+          <div className="w-12 h-12 bg-sori-surface-danger-subtle text-sori-accent-danger rounded-xl flex items-center justify-center mb-2">
             <LogOut className="h-8 w-8" />
           </div>
           <AlertDialogTitle className="text-xl font-headline font-extrabold text-sori-text-strong">Sign Out</AlertDialogTitle>

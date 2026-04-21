@@ -112,7 +112,7 @@ const Login: React.FC = () => {
               type="submit"
               disabled={loading}
             >
-              {loading ? "Establishing Link..." : "Initialize Profile"}
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
         </div>

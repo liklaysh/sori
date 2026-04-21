@@ -7,6 +7,9 @@ import { nanoid } from "nanoid";
 import { safe } from "../utils/safe.js";
 import { logger } from "../utils/logger.js";
 import { getGlobalIo } from "../globals.js";
+import { createChannelMessageSchema } from "../validation/schemas.js";
+import { extractAttachment, serializeMessage } from "../utils/messageContract.js";
+import { getLinkPreviews } from "../utils/linkPreview.js";
 
 const router = new Hono();
 
@@ -57,11 +60,11 @@ router.get("/:channelId/messages", safe(async (c) => {
           with: { user: true }
         }
       },
-      orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+      orderBy: (messages, { desc }) => [desc(messages.createdAt)],
       limit: limit
     });
 
-    return c.json(result);
+    return c.json(result.reverse().map((message) => serializeMessage(message)));
   } catch (err: any) {
     logger.error("❌ Fetch messages error", { error: err as Error });
     return c.json({ error: "Internal Server Error", details: err.message }, 500);
@@ -72,20 +75,33 @@ router.post("/:channelId/messages", safe(async (c) => {
   try {
     const channelId = c.req.param("channelId");
     const user = ((c as any).get("user") || (c as any).get("jwtPayload") || {}) as any;
-    const { content, parentId, type = "text" } = await c.req.json();
+    const requestId = c.get("requestId");
+    const body = await c.req.json();
+    const parsed = createChannelMessageSchema.safeParse(body);
 
-    if (!content && type !== "file") {
-      return c.json({ error: "Message content is required" }, 400);
+    if (!parsed.success) {
+      return c.json({ error: "Invalid message payload", details: parsed.error.format() }, 400);
     }
+
+    const attachment = extractAttachment(parsed.data);
+    const parentId = parsed.data.parentId || null;
+    const content = parsed.data.content?.trim() || "";
+    const effectiveType = attachment ? "file" : "text";
+    const linkPreviews = content ? await getLinkPreviews(content) : [];
 
     const id = nanoid();
     const [newMessage] = await db.insert(messages).values({
       id,
       channelId,
       authorId: user.id,
-      content: content || "",
+      content,
       parentId,
-      type,
+      type: effectiveType,
+      fileUrl: attachment?.fileUrl,
+      fileName: attachment?.fileName,
+      fileSize: attachment?.fileSize,
+      fileType: attachment?.fileType,
+      linkMetadata: linkPreviews.length > 0 ? JSON.stringify(linkPreviews) : null,
     }).returning();
 
     const messageWithAuthor = await db.query.messages.findFirst({
@@ -98,10 +114,16 @@ router.post("/:channelId/messages", safe(async (c) => {
 
     const io = getGlobalIo();
     if (io && typeof channelId === 'string') {
-      io.to(channelId).emit("new_message", messageWithAuthor);
+      io.to(channelId).emit("new_message", {
+        ...serializeMessage(messageWithAuthor),
+        requestId,
+      });
     }
 
-    return c.json(messageWithAuthor);
+    return c.json({
+      ...serializeMessage(messageWithAuthor),
+      requestId,
+    });
   } catch (err: any) {
     logger.error("❌ Post message error", { error: err as Error });
     return c.json({ error: "Internal Server Error" }, 500);

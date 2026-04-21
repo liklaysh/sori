@@ -6,6 +6,7 @@ const defaultBaseUrl = isProd ? `${window.location.protocol}//${window.location.
 
 export const API_URL = cleanUrl(import.meta.env.VITE_API_URL || defaultBaseUrl);
 export const WS_URL = cleanUrl(import.meta.env.VITE_WS_URL || API_URL);
+export const MAX_UPLOAD_SIZE_MB = Number(import.meta.env.VITE_MAX_UPLOAD_SIZE_MB || "25");
 
 // Add other global constants here
 export const APP_NAME = "Sori";
@@ -14,4 +15,3 @@ export const APP_NAME = "Sori";
 const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 const livekitHost = import.meta.env.VITE_LIVEKIT_URL || `${protocol}//${window.location.hostname}:7880`;
 export const LIVEKIT_URL = cleanUrl(livekitHost);
-console.log("📡 [Config] LIVEKIT_URL:", LIVEKIT_URL);

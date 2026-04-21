@@ -1,5 +1,4 @@
-import React, { RefObject, useState } from "react";
-import EmojiPicker from 'emoji-picker-react';
+import React, { RefObject, Suspense, lazy, useEffect, useRef, useState } from "react";
 import { MentionPopup } from "./MentionPopup";
 import { Message } from "../../types/chat";
 import { useChatStore } from "../../store/useChatStore";
@@ -20,6 +19,8 @@ import {
 } from "lucide-react";
 import { useLinkPreviews } from "../../hooks/useLinkPreviews";
 import { EmbedCard } from "./EmbedCard";
+
+const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
 interface PendingAttachment {
   file: File;
@@ -55,6 +56,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   replyTo, setReplyTo, pendingAttachments, onRemoveAttachment, handleFileUpload, 
   fileInputRef, socket
 }) => {
+  const trayShellClass = "mx-auto w-full max-w-[76rem]";
   const { user } = useUserStore();
   const { members, channels, conversations } = useChatStore();
   const { activeModule, activeChannelId, activeConversationId } = useUIStore();
@@ -62,6 +64,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [mentionState, setMentionState] = useState<{ visible: boolean, filter: string, cursorPosition: number }>({ visible: false, filter: "", cursorPosition: 0 });
+  const typingStopTimeoutRef = useRef<number | null>(null);
+  const lastTypingEmitAtRef = useRef(0);
   
   const { previews, loading, removePreview, clearPreviews } = useLinkPreviews(inputValue);
 
@@ -93,11 +97,34 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       setMentionState(prev => ({ ...prev, visible: false }));
     }
 
-    socket?.emit("typing", { 
-      channelId: activeModule === 'dm' ? activeConversationId : activeChannelId, 
-      isTyping: val.length > 0 
-    });
+    const channelId = activeModule === 'dm' ? activeConversationId : activeChannelId;
+    if (!channelId || !socket) {
+      return;
+    }
+
+    if (typingStopTimeoutRef.current) {
+      window.clearTimeout(typingStopTimeoutRef.current);
+    }
+
+    const now = Date.now();
+    if (val.length > 0 && now - lastTypingEmitAtRef.current >= 300) {
+      socket.emit("typing", { channelId, isTyping: true });
+      lastTypingEmitAtRef.current = now;
+    }
+
+    typingStopTimeoutRef.current = window.setTimeout(() => {
+      socket.emit("typing", { channelId, isTyping: false });
+      typingStopTimeoutRef.current = null;
+    }, 1200);
   };
+
+  useEffect(() => {
+    return () => {
+      if (typingStopTimeoutRef.current) {
+        window.clearTimeout(typingStopTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,11 +138,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <footer className="px-4 md:px-6 pb-6 pt-0 bg-sori-chat relative shrink-0">
+    <footer className="px-2 md:px-3 pb-2 pt-0 bg-sori-surface-main relative shrink-0">
       {(replyTo || editingMessage) && (
-        <div className="mx-1 mb-2 p-3 bg-sori-surface-panel border-l-4 border-sori-primary rounded-tr-xl flex items-center justify-between animate-in slide-in-from-bottom-2">
+        <div className={cn(trayShellClass, "mb-2 p-3 bg-sori-surface-panel border-l-4 border-sori-accent-primary rounded-tr-2xl rounded-br-2xl flex items-center justify-between animate-in slide-in-from-bottom-2")}>
           <div className="min-w-0">
-            <p className="text-[9px] font-black uppercase text-sori-primary mb-0.5">{editingMessage ? "Editing" : `Replying to ${replyTo?.username || replyTo?.author?.username}`}</p>
+            <p className="text-[9px] font-black uppercase text-sori-accent-primary mb-0.5">{editingMessage ? "Editing" : `Replying to ${replyTo?.username || replyTo?.author?.username}`}</p>
             <p className="text-xs text-sori-text-muted truncate font-medium">{editingMessage?.content || replyTo?.content}</p>
           </div>
           <button onClick={() => { setReplyTo(null); setEditingMessage(null); if(editingMessage) setInputValue(""); }} className="w-8 h-8 rounded-full hover:bg-sori-surface-hover flex items-center justify-center text-sori-text-muted hover:text-sori-text-strong transition-all">
@@ -126,22 +153,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
 
       {Object.keys(previews).length > 0 && (
-        <div className="mx-1 mb-4 p-3 bg-sori-surface-main rounded-[1.5rem] border border-sori-border-medium animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className={cn(trayShellClass, "mb-4 p-4 bg-sori-surface-main rounded-2xl border border-sori-border-medium animate-in fade-in slide-in-from-bottom-2 duration-300")}>
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 px-1">
-              <Globe className="h-3 w-3 text-sori-primary" />
+              <Globe className="h-3 w-3 text-sori-accent-primary" />
               <span className="text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-muted">Detected Protocols</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {Object.entries(previews).map(([url, data]) => data && (
                 <div key={url} className="relative group/tray">
                   <EmbedCard data={data} compact />
-                  <button type="button" onClick={() => removePreview(url)} className="absolute -top-2 -right-2 w-7 h-7 rounded-xl bg-sori-error-subtle text-sori-error border border-sori-border-danger transition-all flex items-center justify-center hover:bg-sori-error hover:text-white shadow-xl hover:rotate-90 z-30">
+                  <button type="button" onClick={() => removePreview(url)} className="absolute -top-2 -right-2 w-7 h-7 rounded-xl bg-sori-accent-danger-subtle text-sori-accent-danger border border-sori-border-danger transition-all flex items-center justify-center hover:bg-sori-accent-danger hover:text-white shadow-xl hover:rotate-90 z-30">
                     <X className="h-4 w-4" />
                   </button>
                   {loading[url] && (
                     <div className="absolute inset-0 bg-sori-surface-base rounded-2xl flex items-center justify-center">
-                      <Loader2 className="h-5 w-5 text-sori-primary animate-spin" />
+                      <Loader2 className="h-5 w-5 text-sori-accent-primary animate-spin" />
                     </div>
                   )}
                 </div>
@@ -151,7 +178,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
       {pendingAttachments.length > 0 && (
-        <div className="mx-1 mb-4 p-3 bg-sori-surface-main rounded-[1.5rem] border border-sori-border-medium animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className={cn(trayShellClass, "mb-4 p-4 bg-sori-surface-main rounded-2xl border border-sori-border-medium animate-in fade-in slide-in-from-bottom-2 duration-300")}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {pendingAttachments.map((attachment) => {
               const isImage = attachment.file.type.startsWith('image/');
@@ -205,24 +232,27 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="bg-sori-surface-panel rounded-[2rem] px-5 py-3 flex items-center gap-4 border border-sori-border-medium focus-within:border-sori-border-accent shadow-2xl transition-all relative">
+      <form onSubmit={handleSubmit} className={cn(
+        trayShellClass,
+        "bg-sori-surface-panel rounded-2xl px-4 py-2.5 flex items-center gap-3.5 border border-sori-border-subtle focus-within:border-sori-accent-primary/20 shadow-2xl transition-all relative"
+      )}>
         <div className="shrink-0 flex items-center">
           <div className="relative flex items-center">
-            <button type="button" onClick={() => setShowPlusMenu(!showPlusMenu)} className={cn("text-sori-text-muted hover:text-sori-primary transition-all duration-300", showPlusMenu ? 'rotate-45 text-sori-primary' : '')}>
+            <button type="button" onClick={() => setShowPlusMenu(!showPlusMenu)} className={cn("text-sori-text-muted hover:text-sori-accent-primary transition-all duration-300", showPlusMenu ? 'rotate-45 text-sori-accent-primary' : '')}>
               <Paperclip className="h-6 w-6" />
             </button>
             {showPlusMenu && (
-              <div className="absolute bottom-16 left-0 bg-sori-surface-panel border border-sori-border-medium rounded-2xl p-2 shadow-2xl min-w-[200px] z-[500] animate-in slide-in-from-bottom-2 fade-in duration-200 border-l-4 border-sori-primary">
-                <div onClick={() => { fileInputRef.current?.click(); setShowPlusMenu(false); }} className="flex items-center gap-3 px-3 py-3 hover:bg-sori-primary-subtle rounded-xl cursor-pointer transition-all group">
-                  <Upload className="h-4 w-4 text-sori-text-muted group-hover:text-sori-primary transition-colors" />
-                  <span className="text-xs font-bold text-white group-hover:text-sori-primary">Send Protocol (File)</span>
+              <div className="absolute bottom-11 left-0 bg-sori-surface-panel border border-sori-border-medium rounded-2xl p-2 shadow-2xl min-w-[200px] z-[500] animate-in slide-in-from-bottom-2 fade-in duration-200 border-l-4 border-sori-accent-primary">
+                <div onClick={() => { fileInputRef.current?.click(); setShowPlusMenu(false); }} className="flex items-center gap-3 px-3 py-3 hover:bg-sori-accent-primary-subtle rounded-xl cursor-pointer transition-all group">
+                  <Upload className="h-4 w-4 text-sori-text-muted group-hover:text-sori-accent-primary transition-colors" />
+                  <span className="text-xs font-bold text-white group-hover:text-sori-accent-primary">Send File</span>
                 </div>
               </div>
             )}
           </div>
         </div>
         
-        <input type="file" className="hidden" ref={fileInputRef} multiple onChange={(e) => { if (e.target.files) { Array.from(e.target.files).forEach(file => handleFileUpload(file)); e.target.value = ''; } }} />
+        <input type="file" className="hidden" ref={fileInputRef} onChange={(e) => { if (e.target.files?.[0]) { handleFileUpload(e.target.files[0]); e.target.value = ''; } }} />
         
         <input 
           className="flex-1 bg-transparent border-none text-sm text-white outline-none placeholder:text-sori-text-dim min-w-0 font-medium" 
@@ -233,19 +263,21 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         />
 
         <div className="flex items-center gap-3 shrink-0">
-          <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={cn("text-sori-text-muted hover:text-sori-primary transition-all", showEmojiPicker ? 'text-sori-primary scale-110' : '')}>
+          <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={cn("text-sori-text-muted hover:text-sori-accent-primary transition-all", showEmojiPicker ? 'text-sori-accent-primary scale-110' : '')}>
             <Smile className="h-6 w-6" />
           </button>
-          <button type="submit" disabled={(!inputValue.trim() && pendingAttachments.length === 0) || pendingAttachments.some(a => a.isUploading)} className="text-sori-primary hover:scale-110 transition-all active:scale-95 disabled:bg-sori-surface-selected disabled:text-sori-text-muted disabled:scale-100 flex items-center justify-center p-2 rounded-xl hover:bg-sori-primary-subtle">
+          <button type="submit" disabled={(!inputValue.trim() && pendingAttachments.length === 0) || pendingAttachments.some(a => a.isUploading)} className="text-sori-accent-primary hover:scale-110 transition-all active:scale-95 disabled:bg-sori-surface-selected disabled:text-sori-text-muted disabled:scale-100 flex items-center justify-center p-2 rounded-xl hover:bg-sori-accent-primary-subtle">
             {editingMessage ? <CheckCircle className="h-6 w-6" /> : <Send className="h-6 w-6" />}
           </button>
         </div>
 
         {showEmojiPicker && (
-          <div className="fixed bottom-24 right-4 md:right-8 z-[1000] shadow-2xl animate-in zoom-in-95 origin-bottom-right">
-            <div className="absolute inset-0 -z-10 bg-sori-surface-panel rounded-[1.5rem] shadow-2xl border border-sori-border-medium"></div>
-            <EmojiPicker onEmojiClick={(emojiData) => { setInputValue(inputValue + emojiData.emoji); setShowEmojiPicker(false); }} theme={"dark" as any} width={320} height={400} aria-label="Emoji Picker" />
-          </div>
+          <Suspense fallback={null}>
+            <div className="fixed bottom-24 right-4 md:right-8 z-[1000] shadow-2xl animate-in zoom-in-95 origin-bottom-right">
+              <div className="absolute inset-0 -z-10 bg-sori-surface-panel rounded-[1.5rem] shadow-2xl border border-sori-border-medium"></div>
+              <EmojiPicker onEmojiClick={(emojiData) => { setInputValue(inputValue + emojiData.emoji); setShowEmojiPicker(false); }} theme={"dark" as any} width={320} height={400} aria-label="Emoji Picker" />
+            </div>
+          </Suspense>
         )}
 
         {mentionState.visible && (
@@ -255,4 +287,3 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     </footer>
   );
 };
-

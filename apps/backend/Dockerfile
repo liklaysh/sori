@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ COPY packages ./packages
 RUN npm run build -w @sori/backend
 
 # Stage 2: Runtime
-FROM node:20-alpine
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 

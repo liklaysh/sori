@@ -74,7 +74,7 @@ export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackR
   const avatarUrl = getAvatarUrl(metadata.avatar);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-sori-chat group overflow-hidden">
+    <div className="relative w-full h-full flex items-center justify-center bg-sori-surface-main group overflow-hidden">
       {/* Video Track */}
       {isVideoEnabled && isTrackReference(trackRef) ? (
         <VideoTrack 
@@ -83,9 +83,9 @@ export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackR
         />
       ) : (
         /* Beautiful Avatar Placeholder */
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-sori-chat">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-sori-surface-main">
           <div className={cn(
-            "w-24 h-24 rounded-full flex items-center justify-center text-4xl font-black text-sori-text-strong bg-sori-primary-gradient shadow-2xl transition-all duration-300 relative overflow-hidden",
+            "w-24 h-24 rounded-full flex items-center justify-center text-4xl font-black text-sori-text-strong bg-sori-accent-primary-gradient shadow-2xl transition-all duration-300 relative overflow-hidden",
             isSpeaking ? 'speaking-pulse scale-110' : 'border border-sori-border-subtle'
           )}>
            {avatarUrl ? (
@@ -102,7 +102,7 @@ export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackR
 
       {/* Overlay: Name Tag & Stream Status */}
       <div className="absolute bottom-3 left-3 flex flex-col items-start gap-1 transition-all group-hover:translate-x-1 drop-shadow-2xl">
-        <div className="flex items-center gap-2 bg-sori-sidebar px-3 py-1.5 rounded-xl border border-sori-border-subtle shadow-lg">
+        <div className="flex items-center gap-2 bg-sori-surface-panel px-3 py-1.5 rounded-xl border border-sori-border-subtle shadow-lg">
           {isSpeaking && (
             <span className="w-2 h-2 rounded-full bg-sori-accent-success animate-pulse"></span>
           )}
@@ -116,14 +116,13 @@ export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackR
 
         {/* Live Stream Tech Info: For All Screen Shares */}
         {isScreenShare && (
-          <div className="bg-sori-sidebar border border-sori-border-accent rounded-lg px-2 py-0.5 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-1 duration-300 shadow-xl">
+          <div className="bg-sori-surface-panel border border-sori-border-accent rounded-lg px-2 py-0.5 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-1 duration-300 shadow-xl">
              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sori-accent-primary"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-sori-accent-primary"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sori-accent-danger"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-sori-accent-danger"></span>
              </span>
-             <span className="text-[9px] font-black text-sori-accent-primary tracking-[0.1em] uppercase">
-               LIVE: 1080p, 30FPS
-             </span>
+             <span className="text-[9px] font-black text-sori-accent-danger tracking-[0.1em] uppercase">LIVE</span>
+             <span className="text-[9px] font-black text-sori-accent-primary tracking-[0.1em] uppercase">1080P, 30FPS</span>
           </div>
        )}
       </div>

@@ -13,11 +13,11 @@ export const EmbedCard: React.FC<EmbedCardProps> = ({ data, compact }) => {
   if (data.isPrivate) {
     return (
       <div className="max-w-sm rounded-2xl p-4 bg-sori-surface-panel border-2 border-dashed border-sori-border-danger flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-sori-surface-danger-subtle flex items-center justify-center text-sori-error shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-sori-surface-danger-subtle flex items-center justify-center text-sori-accent-danger shrink-0">
           <ShieldAlert className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-sori-error mb-0.5">Security Guard</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-sori-accent-danger mb-0.5">Security Guard</p>
           <p className="text-xs font-bold text-sori-text-muted line-clamp-1">Internal Protocol Blocked</p>
         </div>
       </div>

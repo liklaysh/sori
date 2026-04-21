@@ -23,6 +23,7 @@ declare module "hono" {
 import { communities, categories, channels, users } from "./db/schema.js";
 import { eq } from "drizzle-orm";
 import { ensureBucket } from "./utils/s3.js";
+import { cleanupCallTelemetry } from "./utils/callMaintenance.js";
 
 // Routes
 import authRoutes from "./routes/auth.js";
@@ -36,13 +37,30 @@ import adminRoutes from "./routes/admin.js";
 import timeRoutes from "./routes/time.js";
 import utilsRoutes from "./routes/utils.js";
 import healthRoutes from "./routes/health.js";
+import clientRoutes from "./routes/client.js";
 import { authLimiter, uploadLimiter, generalLimiter } from "./middleware/rateLimiter.js";
 
 // Sockets
 import { initSocket } from "./socket.js";
-import { redisPresence } from "./utils/redis.js";
+import { redis } from "./utils/redis.js";
 
 const app = new Hono();
+
+function isAllowedCorsOrigin(origin: string): boolean {
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase();
+    const allowed = new Set(config.cors.allowedOrigins);
+
+    return allowed.has(origin)
+      || hostname === "localhost"
+      || hostname === "127.0.0.1"
+      || hostname === "sori.orb.local"
+      || hostname.endsWith(".sori.orb.local");
+  } catch {
+    return false;
+  }
+}
 
 // Global Fallbacks
 process.on("unhandledRejection", (reason, promise) => {
@@ -118,6 +136,7 @@ app.use("*", async (c, next) => {
 app.onError((err, c) => {
   const requestId = c.get("requestId");
   const user = c.get("jwtPayload");
+  const status = typeof (err as any)?.status === "number" ? (err as any).status : 500;
 
   logger.error({
     message: `Hono Error: ${err.message}`,
@@ -125,7 +144,14 @@ app.onError((err, c) => {
     userId: user?.id,
     path: c.req.path,
     method: c.req.method
-  }, { error: err });
+	  }, { error: err });
+
+  if (status < 500) {
+    return c.json({
+      error: err.message || "Request failed",
+      requestId,
+    }, status as any);
+  }
 
   // Webhook Alert for critical/unexpected errors
   if (config.security.isProduction && config.alerts?.webhookUrl) {
@@ -151,16 +177,26 @@ app.onError((err, c) => {
 
 app.use("*", cors({
   origin: (origin) => {
-    if (!origin) return "*"; // Handle non-browser requests
-    const allowed = config.cors.allowedOrigins;
-    if (allowed.includes(origin) || origin.endsWith("sori.orb.local") || origin.includes("localhost")) {
+    const fallbackOrigin = config.cors.allowedOrigins[0] || "https://sori-web.sori.orb.local";
+    if (!origin) {
+      return fallbackOrigin;
+    }
+
+    if (isAllowedCorsOrigin(origin)) {
       return origin;
     }
-    return allowed[0] || "https://sori-web.sori.orb.local";
+
+    return fallbackOrigin;
   },
   credentials: true,
   allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  allowHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "X-Request-ID",
+    "x-request-id",
+  ],
 }));
 
 // Health check
@@ -184,6 +220,8 @@ app.route("/users", userRoutes);
 app.route("/admin", adminRoutes);
 app.route("/time", timeRoutes);
 app.route("/utils", utilsRoutes);
+app.route("/client", clientRoutes);
+app.route("/", clientRoutes);
 
 const port = config.port;
 
@@ -199,7 +237,10 @@ async function startServer() {
 
   // 2. Valkey Check
   try {
-    const pong = await redisPresence.clearPresence(); // clearPresence uses redis.del
+    const pong = await redis.ping();
+    if (pong !== "PONG") {
+      throw new Error(`Unexpected Valkey response: ${pong}`);
+    }
     logger.info("📡 [Lifecycle] Valkey connected");
   } catch (err) {
     logger.error("❌ [Lifecycle] Valkey connection failed", { error: err as Error });
@@ -236,6 +277,16 @@ async function startServer() {
 
   // Run Seeding
   seed().catch(err => logger.error("🌱 Seeding error", { error: err }));
+
+  cleanupCallTelemetry().catch((err) => {
+    logger.warn("[Lifecycle] Initial call telemetry cleanup failed", { error: err as Error });
+  });
+
+  setInterval(() => {
+    cleanupCallTelemetry().catch((err) => {
+      logger.warn("[Lifecycle] Scheduled call telemetry cleanup failed", { error: err as Error });
+    });
+  }, 30 * 60 * 1000);
 }
 
 startServer();

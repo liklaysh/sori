@@ -1,97 +1,311 @@
-# 🌌 SORI (Sanctuary) — Neon Nocturne Core
+# SORI — System Reference
 
-**SORI** is a high-fidelity, production-grade communication platform designed with a **Neon Nocturne** aesthetic. It integrates real-time chat, high-performance voice connectivity, and a robust administrative suite within a unified monorepo architecture.
+SORI is a single-server communication platform focused on persistent chat, voice channels, direct messages, direct calls, media uploads, and an embedded admin panel. The current deployment model is intentionally simple: one install, one server, one default community, Caddy-only routing, and Docker/OrbStack-friendly local runtime on macOS.
 
----
+This file describes the system as it exists in the repository today.
 
-## 🛠 Technology Stack
+## Product Model
 
-### 🟦 Core Infrastructure
-- **Monorepo Architecture**: Managed via `npm workspaces` for seamless dependency sharing between apps/packages.
-- **Runtime Environment**: Node.js (v20+) with `tsx` for backend execution and `Vite` for frontend orchestration.
-- **Media Engine**: **LiveKit** orchestrated through Docker/OrbStack for ultra-low latency voice/video.
-- **Object Storage**: **MinIO** (S3-compatible) for secured file persistence and profile assets.
-- **Caching & Presence**: **Valkey** (Redis-alternative) for real-time presence sync and link metadata caching.
+- Install mode: single-server, single-community
+- Default community: `default-community`
+- Primary domains:
+  - `sori-web.sori.orb.local`
+  - `sori-backend.sori.orb.local`
+  - `sori-livekit.sori.orb.local`
+  - `sori-media.sori.orb.local`
+- TLS: self-signed wildcard certificate
+- Routing model: Caddy-only
+- Current auth model: cookie-based auth via `sori_auth`
 
-### 🟧 Backend (`@sori/backend`)
-- **Framework**: **Hono** — ultra-fast web framework with built-in JWT middleware and type-safe routing.
-- **Database**: **PostgreSQL** (via `postgres.js`) optimized with **Drizzle ORM** for type-safe relational data management.
-- **Identity**: `nanoid` for secure, non-sequential identity generation.
-- **Utilities**: `bcryptjs` for credential hashing, `zod` for request validation, and `open-graph-scraper` for rich link previews.
-- **Socket Engine**: `Socket.io` with Redis adapter for horizontal scaling and real-time event propagation.
+The system is not currently designed around granular role/ACL enforcement or multi-community tenancy. That is intentionally deferred. The architecture should remain install-friendly and predictable for a small private community.
 
-### 🟪 Frontend (`@sori/web`)
-- **Library**: **React 18** with **Vite** for optimized HMR and build performance.
-- **State Management**: **Zustand** for lightweight, persistent global state.
-- **Styling**: **Vanilla CSS / CSS Modules** + **Tailwind CSS** for layout utilities.
-- **UI Components**: Custom internal library `@sori/ui` built for the Neon Nocturne aesthetic (no transparency, high contrast).
-- **Media Layer**: `@livekit/components-react` and `livekit-client` for complex voice interaction logic.
-- **Icons & Polish**: `lucide-react` for iconography and `sonner` for toast notifications.
+## Monorepo Layout
 
----
+- Backend: [`apps/backend`](/Users/liklaysh/Documents/dev/voice/sori/apps/backend)
+- Web app: [`apps/web`](/Users/liklaysh/Documents/dev/voice/sori/apps/web)
+- Shared UI package: [`packages/ui`](/Users/liklaysh/Documents/dev/voice/sori/packages/ui)
+- Gateway Caddy config: [`infrastructure/caddy/Caddyfile`](/Users/liklaysh/Documents/dev/voice/sori/infrastructure/caddy/Caddyfile)
+- Web runtime Caddy config: [`apps/web/Caddyfile`](/Users/liklaysh/Documents/dev/voice/sori/apps/web/Caddyfile)
+- Compose stack: [`docker-compose.yml`](/Users/liklaysh/Documents/dev/voice/sori/docker-compose.yml)
+- Caddy migration validator: [`scripts/validate-caddy-migration.sh`](/Users/liklaysh/Documents/dev/voice/sori/scripts/validate-caddy-migration.sh)
 
-## 🏗 System Architecture & Recent Refactoring
+## Runtime Stack
 
-### 🔄 Data Integrity (PostgreSQL Migration)
-The system has been fully migrated from legacy SQLite to **PostgreSQL**.
-- **Relation Mapping**: Drizzle ORM provides a single source of truth for the schema in `apps/backend/src/db/schema.ts`.
-- **Performance**: Leveraging PostgreSQL's robust indexing and connection pooling for high-concurrency chat environments.
+### Backend
 
-### 🛡️ Data Resilience (Backup System)
-A decentralized backup service has been integrated into the Admin Panel:
-- **Automation**: `postgres-backup-local` service generates snapshots every 12 hours.
-- **Registry & Download**: Admins can view the registry and download `.sql.gz` snapshots directly from the Web-UI for cold storage.
-- **Safety**: 72-hour rolling retention policy for automated snapshots.
+- Runtime: Node.js 20
+- Framework: Hono
+- Database: PostgreSQL
+- ORM: Drizzle
+- Realtime: Socket.IO
+- Cache/presence/runtime state: Valkey
+- Media engine: LiveKit
+- Object storage: MinIO (S3-compatible)
 
-### 🎨 Unified Identity Sync (Avatar Refactor)
-Implemented a system-wide **Avatar Resolution Protocol**:
-- **Utility**: `getAvatarUrl` standardizes the pathing for local MinIO uploads vs external CDN images.
-- **Consistency**: Real-time avatar updates are now synchronized instantly across the Sidebar, Member Lists, and Voice Grids.
+### Frontend
 
-### 📊 Telemetry & Monitoring
-- **MOS Calculations**: Real-time Mean Opinion Score tracking for every voice session.
-- **Purification**: Automated 72-hour cleanup of operational logs to maintain optimal DB performance.
+- React 18
+- Vite
+- Zustand
+- Tailwind + shared `@sori/ui`
+- Sonner for notifications
+- LiveKit React components for voice/call UI
 
----
+### Infrastructure
 
-## 📋 Features
+- Gateway: Caddy
+- Web runtime: Caddy
+- Local orchestration: Docker Compose / OrbStack
 
-### 💬 Communication
-- **Persistent Channels**: Categorized text and voice channels with role-based access.
-- **Rich Presence**: Real-time "Who's Talking" visualization via socket heartbeats.
-- **Direct Messaging**: Secured 1-on-1 conversations with online/offline status indicators.
+## Current Architecture
 
-### 🎙️ Global Calling
-- **Noise Suppression**: Integration of `RNNoise` (WASM) for studio-quality audio in noisy environments.
-- **Floating Overlays**: Non-blocking call interface that persists during navigation.
+### Community and Chat Model
 
-### 👑 Administrative Mission Control
-- **Identity Registry**: Infinite-scroll management of all citizens with credential rotation capabilities.
-- **System Health**: Live dashboard monitoring of Backend, PostgreSQL, LiveKit, and MinIO latency.
-- **Audit Ledger**: Comprehensive tracking of administrative actions for system accountability.
+- The application boots into a single install context centered on `default-community`
+- Messages are stored and consumed through context-based buckets, not a legacy flat message list
+- Web chat state is organized around `messagesByContext`
+- DM read flow uses `POST /dm/conversations/:id/read`
+- Public user payloads are sanitized before frontend consumption
 
----
+### Media / Attachments Model
 
-## 💻 Development Workflow
+- The message/media contract has been normalized around `attachment`
+- The old flat media contract must not be reintroduced
+- Upload size is synchronized through:
+  - backend: `MAX_UPLOAD_SIZE_MB`
+  - frontend: `VITE_MAX_UPLOAD_SIZE_MB`
+- Upload handling has been hardened to stream data rather than reading full files into memory
 
-### Requirements
-- **OrbStack** (recommended for macOS) or Docker Desktop.
-- **Node.js v20+**.
-- **PostgreSQL**, **Valkey**, **MinIO**, and **LiveKit** running locally.
+### Voice and Calling Model
 
-### Commands
+- Voice channels and direct calls both use LiveKit, but they are different product flows
+- Voice channel UX is persistent and community-scoped
+- Direct call UX is overlay-first and can be expanded into a full call workspace
+- Voice occupant state includes:
+  - speaking status
+  - streaming status
+  - mute status
+  - deafen status
+- Voice/disconnect cleanup is handled both client-side and server-side to reduce stale occupants and zombie sessions
+
+### Admin Model
+
+- The admin panel is part of the same web app
+- It includes:
+  - dashboard
+  - users
+  - channels
+  - storage
+  - backups
+  - telemetry
+  - audit
+- `Server Logs` was intentionally removed from the UI
+- `Interaction Streams` was intentionally removed from audit because telemetry covers operational call visibility better
+
+## Routing and Deployment
+
+### Caddy-Only Deployment
+
+The system intentionally uses a Caddy-only scheme.
+
+- Gateway Caddy handles public host routing and TLS termination
+- Web runtime also runs on Caddy
+- No additional nginx layer should be reintroduced
+
+### Public Host Routing
+
+- `sori-web.*` -> web runtime
+- `sori-backend.*` -> backend
+- `sori-livekit.*` -> LiveKit
+- `sori-media.*` -> MinIO/media
+
+### Discovery Layer for Future Native Clients
+
+The repository now contains a discovery/bootstrap contract for future Windows/macOS/Android clients.
+
+Endpoints:
+- `GET /client/bootstrap`
+- `GET /.well-known/sori/client.json`
+
+Implemented in:
+- [`apps/backend/src/routes/client.ts`](/Users/liklaysh/Documents/dev/voice/sori/apps/backend/src/routes/client.ts)
+
+Exposed through:
+- backend host
+- web host
+- gateway-level well-known routing
+
+The payload currently includes:
+- install mode
+- default community id
+- web/api/ws/livekit/media endpoints
+- auth paths
+- socket path and transport hints
+- upload limit
+- basic feature flags
+
+This lets a future native client accept one server URL, fetch bootstrap metadata, and derive the correct API/socket/media/livekit endpoints without hardcoding them.
+
+## Configuration
+
+### Important Environment Variables
+
+- `JWT_SECRET`
+- `DATABASE_URL`
+- `VALKEY_URL`
+- `S3_ENDPOINT`
+- `S3_PUBLIC_URL`
+- `S3_ACCESS_KEY`
+- `S3_SECRET_KEY`
+- `S3_BUCKET`
+- `LIVEKIT_URL`
+- `LIVEKIT_API_KEY`
+- `LIVEKIT_API_SECRET`
+- `ALLOWED_ORIGINS`
+- `MAX_UPLOAD_SIZE_MB`
+- `VITE_MAX_UPLOAD_SIZE_MB`
+- `PUBLIC_WEB_URL`
+- `PUBLIC_API_URL`
+- `PUBLIC_WS_URL`
+- `PUBLIC_LIVEKIT_URL`
+- `PUBLIC_MEDIA_URL`
+- `PUBLIC_DEFAULT_COMMUNITY_ID`
+
+Critical backend config is now treated as required. The system should not silently fall back to weak defaults for secrets or external endpoints.
+
+## Backups
+
+Backups are currently handled by the dedicated `postgres-backup` service in Docker Compose.
+
+Policy:
+- cadence: once every 24 hours
+- retention: always keep only 3 copies
+- when a 4th backup is created, the oldest one is deleted
+
+Implementation notes:
+- weekly/monthly backup tails are disabled
+- backup artifacts are surfaced in Admin -> Backups
+- UI supports list + download
+- restore is intentionally not performed from the web UI
+
+Related files:
+- [`docker-compose.yml`](/Users/liklaysh/Documents/dev/voice/sori/docker-compose.yml)
+- [`infrastructure/backup/hooks`](/Users/liklaysh/Documents/dev/voice/sori/infrastructure/backup/hooks)
+- [`apps/backend/src/routes/admin/storage.ts`](/Users/liklaysh/Documents/dev/voice/sori/apps/backend/src/routes/admin/storage.ts)
+
+## Observability and Operational Behavior
+
+### Telemetry
+
+- Call telemetry is available through the admin panel
+- Stale call cleanup is performed outside of the telemetry GET endpoint
+- Telemetry views should be read-oriented, not self-healing by side effect
+
+### Health and Validation
+
+- Backend exposes health endpoints
+- Gateway/Caddy migration is validated through:
+  - [`scripts/validate-caddy-migration.sh`](/Users/liklaysh/Documents/dev/voice/sori/scripts/validate-caddy-migration.sh)
+
+### Smoke Test
+
+The repo now includes a runtime smoke gate:
+- [`apps/backend/src/tests/smoke.runtime.test.ts`](/Users/liklaysh/Documents/dev/voice/sori/apps/backend/src/tests/smoke.runtime.test.ts)
+
+Current smoke coverage includes:
+- admin login
+- critical admin endpoints
+- user provisioning
+- regular login
+- user search
+- upload
+- channel message send
+- DM send/read
+- voice token issuance
+- voice join + disconnect cleanup
+- direct call initiate/accept/token/end
+- discovery endpoint checks from backend and web entrypoints
+
+Root test command:
+- `npm test`
+
+## Frontend State and UI Notes
+
+### Chat Runtime
+
+- `ChatArea` is still a central coordinator, but several heavy paths have already been split out
+- Voice/livekit shell is lazy-loaded
+- Admin tabs are lazy-loaded
+- Several modal and overlay paths are lazy-loaded
+
+### Current UX Decisions
+
+- Direct call starts as overlay-first
+- Expanding a direct call moves the user into the full call workspace
+- Voice channel and direct call UI are intentionally visually aligned where possible
+- Search placeholders and noisy empty-state artifacts have been reduced
+- Notifications use a single global toaster host
+
+### Design Tokens
+
+- `chat-bubble-me` is now part of the design system and used for self-message bubbles
+- Bubble styling avoids transparent glass effects and keeps the denser SORI surface language
+
+## Hardening Already Landed
+
+The following work has already been integrated into the repository:
+
+- Caddy-only gateway/runtime migration
+- removal of weak backend config fallbacks
+- stricter CORS behavior
+- stable cookie/logout behavior
+- link preview SSRF hardening
+- streaming uploads instead of full in-memory reads
+- cleanup of stale call telemetry paths
+- reduced realtime noise in chat/presence refresh
+- direct-call lifecycle hardening
+- removal of legacy frontend dead hooks
+- bundle splitting and lazy loading for major frontend surfaces
+
+## Current Constraints
+
+These are deliberate and should be preserved unless the product direction changes:
+
+- single-server install
+- single default community
+- no extra nginx/gateway layer
+- Caddy-only deployment
+- current attachment contract
+- current context-based message storage
+- install-friendly direction for future `install.sh` / `update.sh`
+
+## Recommended Release Checks
+
+Before shipping a meaningful runtime change, verify at least:
+
 ```bash
-# Install dependencies
-npm install
-
-# Start development environment
-npm run dev:backend  # Start Hono API
-npm run dev:web      # Start Vite Frontend
-
-# Database management
-npm run db:push -w @sori/backend    # Push schema changes to DB
-npm run db:studio -w @sori/backend  # Open Drizzle Studio
+npm run build -w @sori/backend
+npm run build -w @sori/web
+npm run deploy:backend
+npm run deploy:web
+npm test
+bash scripts/validate-caddy-migration.sh
 ```
 
----
-*Sanctuary: Neon Nocturne Aesthetic • Production-Ready Infrastructure • Verified by Antigravity*
+Then manually smoke:
+- login
+- channel chat
+- DM
+- voice join/leave
+- direct call
+- upload
+- admin telemetry
+- admin backups
+
+## Summary
+
+SORI today is a single-community, Caddy-routed, Docker-friendly communication stack with chat, DMs, direct calls, voice channels, uploads, admin tooling, backup visibility, and a newly introduced discovery/bootstrap contract for future native clients.
+
+The most important architectural rule going forward is this:
+
+One server URL should be enough for a future client to discover how to talk to the whole system.

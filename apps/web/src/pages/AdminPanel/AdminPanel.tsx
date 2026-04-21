@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { Suspense, lazy, useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import { 
@@ -7,31 +7,34 @@ import {
   Hash, 
   Settings, 
   Database, 
-  Terminal, 
   History, 
   Save, 
   LogOut, 
   Menu, 
-  X,
-  ShieldAlert,
   ShieldCheck,
   Activity
 } from "lucide-react";
 
-import DashboardTab from "./tabs/DashboardTab";
-import UsersTab from "./tabs/UsersTab";
-import ChannelsTab from "./tabs/ChannelsTab";
-import SettingsTab from "./tabs/SettingsTab";
-import ServerLogTab from "./tabs/ServerLogTab";
-import AuditLogTab from "./tabs/AuditLogTab";
-import BackupsTab from "./tabs/BackupsTab";
-import StorageTab from "./tabs/StorageTab";
-import TelemetryTab from "./tabs/TelemetryTab";
-
-import { API_URL } from "../../config";
 import { useUserStore } from "../../store/useUserStore";
 
-type AdminTab = "dashboard" | "users" | "channels" | "settings" | "logs" | "audit" | "backups" | "storage" | "telemetry";
+const DashboardTab = lazy(() => import("./tabs/DashboardTab"));
+const UsersTab = lazy(() => import("./tabs/UsersTab"));
+const ChannelsTab = lazy(() => import("./tabs/ChannelsTab"));
+const SettingsTab = lazy(() => import("./tabs/SettingsTab"));
+const AuditLogTab = lazy(() => import("./tabs/AuditLogTab"));
+const BackupsTab = lazy(() => import("./tabs/BackupsTab"));
+const StorageTab = lazy(() => import("./tabs/StorageTab"));
+const TelemetryTab = lazy(() => import("./tabs/TelemetryTab"));
+
+type AdminTab = "dashboard" | "users" | "channels" | "settings" | "audit" | "backups" | "storage" | "telemetry";
+
+const AdminTabLoader = () => (
+  <div className="min-h-[22rem] flex items-center justify-center">
+    <div className="animate-pulse text-[11px] font-black uppercase tracking-[0.24em] text-sori-text-muted">
+      Synchronizing Module
+    </div>
+  </div>
+);
 
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
@@ -50,7 +53,6 @@ export default function AdminPanel() {
     { id: "channels", label: "Channels", icon: <Hash className="h-5 w-5" /> },
     { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, section: "System" },
     { id: "storage", label: "Media Storage", icon: <Database className="h-5 w-5" /> },
-    { id: "logs", label: "Server Log", icon: <Terminal className="h-5 w-5" /> },
     { id: "audit", label: "Audit Log", icon: <History className="h-5 w-5" /> },
     { id: "telemetry", label: "Telemetry", icon: <Activity className="h-5 w-5" />, section: "Analytics" },
     { id: "backups", label: "Backups", icon: <Save className="h-5 w-5" /> },
@@ -136,15 +138,16 @@ export default function AdminPanel() {
 
         <main className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="w-full max-w-6xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {activeTab === "dashboard" && <DashboardTab />}
-            {activeTab === "users" && <UsersTab />}
-            {activeTab === "channels" && <ChannelsTab />}
-            {activeTab === "settings" && <SettingsTab />}
-            {activeTab === "logs" && <ServerLogTab />}
-            {activeTab === "audit" && <AuditLogTab />}
-            {activeTab === "telemetry" && <TelemetryTab />}
-            {activeTab === "backups" && <BackupsTab />}
-            {activeTab === "storage" && <StorageTab />}
+            <Suspense fallback={<AdminTabLoader />}>
+              {activeTab === "dashboard" && <DashboardTab />}
+              {activeTab === "users" && <UsersTab />}
+              {activeTab === "channels" && <ChannelsTab />}
+              {activeTab === "settings" && <SettingsTab />}
+              {activeTab === "audit" && <AuditLogTab />}
+              {activeTab === "telemetry" && <TelemetryTab />}
+              {activeTab === "backups" && <BackupsTab />}
+              {activeTab === "storage" && <StorageTab />}
+            </Suspense>
           </div>
         </main>
       </div>
@@ -168,4 +171,3 @@ const TabItem = ({ icon, label, active, onClick }: { icon: React.ReactNode, labe
     <span className="text-sm font-bold">{label}</span>
   </button>
 );
-

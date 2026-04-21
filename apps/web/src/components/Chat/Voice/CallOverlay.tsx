@@ -67,10 +67,6 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
         isConnected && "border-sori-accent-primary"
       )}>
         
-        {/* Background effects */}
-        {isIncoming && <div className="absolute inset-0 bg-sori-surface-base animate-pulse pointer-events-none" />}
-        {isConnected && <div className="absolute -top-10 -right-10 w-32 h-32 bg-sori-surface-base  rounded-full" />}
-
         <div className="flex items-center w-full gap-4 relative z-10">
           <div className="relative shrink-0">
             <div className={cn(
@@ -97,7 +93,7 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
                      "w-4 h-4 rounded-full transition-all duration-300 shadow-lg",
                      isPartnerSpeaking 
                       ? "bg-sori-accent-primary scale-125 animate-[pulse_1s_cubic-bezier(0.4,0,0.6,1)_infinite]" 
-                      : "bg-sori-success animate-pulse"
+                      : "bg-sori-accent-success"
                    )} />
                 )}
               </div>
@@ -134,7 +130,7 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
               <Button 
                 variant="ghost" 
                 onClick={onReject}
-                className="flex-1 h-12 rounded-2xl hover:bg-sori-surface-hover hover:text-sori-error transition-all font-black uppercase text-[9px] tracking-widest gap-2 text-sori-text-muted"
+                className="flex-1 h-12 rounded-2xl hover:bg-sori-surface-hover hover:text-sori-accent-danger transition-all font-black uppercase text-[9px] tracking-widest gap-2 text-sori-text-muted"
               >
                 <PhoneOff className="h-3.5 w-3.5" />
                 Ignore
@@ -153,7 +149,7 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
             <Button 
               onClick={isConnected ? onCancel : onCancel}
               variant="ghost"
-              className="w-full h-12 rounded-2xl hover:bg-sori-surface-hover hover:text-sori-error transition-all font-black uppercase text-[9px] tracking-widest gap-2 text-sori-text-muted group"
+              className="w-full h-12 rounded-2xl hover:bg-sori-surface-hover hover:text-sori-accent-danger transition-all font-black uppercase text-[9px] tracking-widest gap-2 text-sori-text-muted group"
             >
               <X className="h-4 w-4 group-hover:rotate-90 transition-transform" />
               {isOutgoing ? "Abort Call" : "Hang Up"}
@@ -164,4 +160,3 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
     </div>
   );
 };
-

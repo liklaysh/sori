@@ -20,7 +20,7 @@ import {
   DialogClose, 
   Button 
 } from "@sori/ui";
-import { API_URL } from "../../../config";
+import { MAX_UPLOAD_SIZE_MB } from "../../../config";
 import api from "../../../lib/api";
 import { getAvatarUrl } from "../../../utils/avatar";
 
@@ -39,8 +39,8 @@ export const ProfileTab: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error("File is too large! Maximum 50MB.");
+    if (file.size > MAX_UPLOAD_SIZE_MB * 1024 * 1024) {
+      toast.error(`File is too large! Maximum ${MAX_UPLOAD_SIZE_MB}MB.`);
       return;
     }
 
@@ -53,8 +53,8 @@ export const ProfileTab: React.FC = () => {
       const uploadRes = await api.post("/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      const uploadData = uploadRes.data as { fileUrl: string };
-      const newAvatarUrl = uploadData.fileUrl;
+      const uploadData = uploadRes.data as { attachment: { fileUrl: string } };
+      const newAvatarUrl = uploadData.attachment.fileUrl;
       
       // Step 2: Update user profile with new URL
       const updateRes = await api.patch("/users/me", { avatarUrl: newAvatarUrl });

@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { useServerTime } from "../../hooks/useServerTime";
 import { EmbedCard } from "./EmbedCard";
 import { LinkMetadata } from "../../types/chat";
-import { API_URL } from "../../config";
+import { getAvatarUrl } from "../../utils/avatar";
+import { getMessageAttachment } from "../../utils/chatMessages";
 
 interface MessageItemProps {
   msg: Message;
@@ -25,9 +26,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
 
   const isMe = msg.authorId === user.id;
   const username = msg.username || msg.author?.username || "Unknown";
+  const attachment = getMessageAttachment(msg);
 
-  const isImage = msg.fileType?.startsWith('image/');
-  const isVideo = msg.fileType?.startsWith('video/');
+  const isImage = attachment?.fileType?.startsWith('image/');
+  const isVideo = attachment?.fileType?.startsWith('video/');
 
   const parseLinkMetadata = (raw: string | null | undefined): LinkMetadata[] => {
     if (!raw) return [];
@@ -65,8 +67,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (msg.fileUrl) {
-      navigator.clipboard.writeText(msg.fileUrl);
+    if (attachment?.fileUrl) {
+      navigator.clipboard.writeText(attachment.fileUrl);
       toast.success("Link copied to clipboard");
     }
   };
@@ -97,7 +99,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
 
   return (
     <div 
-      id={msg.id}
+      id={`msg-${msg.id}`}
       onContextMenu={onContextMenu}
       className={`flex flex-col gap-1 group animate-in slide-in-from-bottom-1 duration-300 ${isMe ? "items-end" : "items-start"}`}
     >
@@ -112,9 +114,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
 
       <div className={`flex gap-3 ${isMe ? "flex-row-reverse" : ""}`}>
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px] transition-transform group-hover:scale-105 shadow-inner shrink-0 ${isMe ? "bg-sori-surface-accent-subtle text-sori-accent-primary border border-sori-border-accent" : "bg-sori-surface-panel text-sori-text-dim border border-sori-border-subtle"} overflow-hidden`}>
-          {msg.author?.avatarUrl ? (
+          {getAvatarUrl(msg.author?.avatarUrl) ? (
             <img 
-               src={msg.author.avatarUrl.startsWith('http') ? msg.author.avatarUrl : `${API_URL}/uploads/${msg.author.avatarUrl}`} 
+               src={getAvatarUrl(msg.author?.avatarUrl)!}
                className="w-full h-full object-cover" 
             />
           ) : (
@@ -139,12 +141,12 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
           <div className={`flex flex-col gap-2 ${isMe ? 'items-end' : 'items-start'} max-w-[calc(100vw-120px)] md:max-w-md lg:max-w-lg xl:max-w-xl`}>
             {msg.type === 'call_missed' ? (
               <div className="flex items-center gap-3 py-3 px-5 bg-sori-surface-danger-subtle border border-sori-border-danger-dim rounded-2xl animate-in fade-in zoom-in-95 duration-500 my-1">
-                <div className="w-10 h-10 rounded-xl bg-sori-surface-danger-subtle flex items-center justify-center text-sori-error shadow-inner">
+                <div className="w-10 h-10 rounded-xl bg-sori-surface-danger-subtle flex items-center justify-center text-sori-accent-danger shadow-inner">
                   <PhoneMissed className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-sori-text-strong text-xs font-black tracking-tight uppercase">Missed Call</p>
-                  <p className="text-[10px] text-sori-error font-bold">{formatMessageTime(msg.createdAt)}</p>
+                  <p className="text-[10px] text-sori-accent-danger font-bold">{formatMessageTime(msg.createdAt)}</p>
                 </div>
               </div>
             ) : msg.type === 'call_ended' ? (
@@ -167,13 +169,16 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                   <p className="text-[10px] text-sori-text-muted font-bold">{formatMessageTime(msg.createdAt)}</p>
                 </div>
               </div>
-            ) : msg.content && (
+            ) : (msg.content && (msg.type !== 'file' || msg.content.trim() !== "")) && (
               <div className="relative group/content w-full">
-                <div className={`
-                  px-3.5 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words w-full
-                  ${msg.isDeleted ? "bg-sori-surface-base text-sori-text-muted italic border border-sori-border-subtle" : 
-                    isMe ? "bg-sori-accent-primary text-black rounded-tr-none shadow-lg" : "bg-sori-surface-panel text-sori-text-primary rounded-tl-none border border-sori-border-subtle"}
-                `}>
+                <div className={cn(
+                  "px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words w-full transition-all duration-200",
+                  msg.isDeleted 
+                    ? "bg-sori-surface-base text-sori-text-dim italic border border-sori-border-subtle shadow-none" 
+                    : isMe 
+                      ? "bg-sori-chat-bubble-me text-sori-text-strong rounded-tr-none shadow-none border border-sori-chat-bubble-me-border" 
+                      : "bg-sori-surface-panel text-sori-text-primary rounded-tl-none border-none shadow-[inset_0_0_0_1px_var(--sori-border-subtle)]"
+                )}>
                   {renderContentWithLinks(msg.content)}
                 </div>
               </div>
@@ -187,24 +192,24 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
               </div>
             )}
 
-            {msg.fileUrl && !msg.isDeleted && (
-              <div className={`max-w-md rounded-2xl overflow-hidden border border-sori-border-subtle bg-sori-surface-base group/file relative`}>
+            {attachment && !msg.isDeleted && (
+              <div className="max-w-md rounded-2xl overflow-hidden border border-sori-border-subtle bg-sori-surface-elevated group/file relative shadow-lg">
                 {isImage ? (
                   <div className="cursor-pointer" onClick={() => setShowLightbox(true)}>
-                    <img src={msg.fileUrl || undefined} alt={msg.fileName || 'Attachment'} className="max-h-80 w-auto object-contain hover:brightness-110 transition-all" loading="lazy" />
+                    <img src={attachment.fileUrl} alt={attachment.fileName || 'Attachment'} className="max-h-80 w-auto object-contain hover:brightness-110 transition-all" loading="lazy" />
                   </div>
                 ) : isVideo ? (
-                  <video src={msg.fileUrl || undefined} controls className="max-h-80 w-auto" />
+                  <video src={attachment.fileUrl} controls className="max-h-80 w-auto" />
                 ) : (
                   <div className="p-4 flex items-center gap-4 min-w-[240px]">
                       <FileText className="h-6 w-6" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-sori-text-strong truncate">{msg.fileName}</p>
-                      <p className="text-[10px] text-sori-text-muted font-black uppercase tracking-widest">{formatFileSize(msg.fileSize)}</p>
+                      <p className="text-xs font-bold text-sori-text-strong truncate">{attachment.fileName}</p>
+                      <p className="text-[10px] text-sori-text-muted font-black uppercase tracking-widest">{formatFileSize(attachment.fileSize)}</p>
                     </div>
                     <a 
-                      href={msg.fileUrl} 
-                      download={msg.fileName} 
+                      href={attachment.fileUrl} 
+                      download={attachment.fileName} 
                       className="w-10 h-10 rounded-xl bg-sori-surface-accent-subtle text-sori-accent-primary flex items-center justify-center hover:bg-sori-accent-primary hover:text-black transition-all shadow-sm"
                       title="Download"
                     >
@@ -240,10 +245,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                   e.stopPropagation();
                   onForward?.({
                     content: msg.content || "",
-                    fileUrl: msg.fileUrl || undefined,
-                    fileName: msg.fileName || undefined,
-                    fileSize: msg.fileSize || undefined,
-                    fileType: msg.fileType || undefined
+                    attachment: attachment || undefined,
                   });
                 }}
                 className="w-12 h-12 rounded-2xl bg-sori-surface-panel text-white flex items-center justify-center hover:bg-sori-accent-primary hover:text-black transition-all shadow-lg border border-sori-border-subtle"
@@ -259,8 +261,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                 <Copy className="h-6 w-6" />
              </button>
              <a 
-                href={msg.fileUrl!} 
-                download={msg.fileName}
+                href={attachment?.fileUrl} 
+                download={attachment?.fileName}
                 onClick={e => e.stopPropagation()}
                 className="w-12 h-12 rounded-2xl bg-sori-surface-panel text-white flex items-center justify-center hover:bg-sori-accent-primary hover:text-black transition-all shadow-lg border border-sori-border-subtle"
                 title="Save"
@@ -275,7 +277,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
              </button>
           </div>
           <img 
-            src={msg.fileUrl || undefined} 
+            src={attachment?.fileUrl || undefined} 
             className="max-w-full max-h-full object-contain shadow-2xl animate-in zoom-in-95 duration-300" 
             alt="Fullscreen preview" 
           />

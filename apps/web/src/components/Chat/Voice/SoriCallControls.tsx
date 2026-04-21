@@ -13,7 +13,8 @@ import {
   StopCircle, 
   PhoneOff, 
   ChevronDown,
-  Volume2
+  Volume2,
+  Waves
 } from "lucide-react";
 import { NoiseSuppressionPopup } from "../Modals/NoiseSuppressionPopup";
 import { VideoPresets } from "livekit-client";
@@ -32,7 +33,7 @@ const CameraDeviceSelector = () => {
             "px-3 py-2 text-[11px] rounded-xl cursor-pointer transition-all flex items-center justify-between",
             activeDeviceId === device.deviceId 
               ? 'bg-muted text-primary font-bold' 
-              : 'text-on-surface-variant hover:bg-sori-sidebar hover:text-white'
+              : 'text-on-surface-variant hover:bg-sori-surface-panel hover:text-white'
           )}
         >
           <span className="truncate flex-1 font-bold">{device.label || 'Camera'}</span>
@@ -41,24 +42,6 @@ const CameraDeviceSelector = () => {
     </>
   );
 };
-
-// Simple Waves icon since it's used in noise suppression
-const Waves = ({ iconClassName }: { iconClassName?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={iconClassName}
-  >
-    <path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-    <path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-    <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-  </svg>
-);
 
 interface SoriCallControlsProps {
   onHangUp: () => void;
@@ -101,16 +84,16 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
 
   return (
     <div className={cn(
-      "h-24 flex items-center justify-center gap-3 bg-sori-server border-t border-muted shrink-0 px-8 w-full z-50",
+      "h-24 flex items-center justify-center gap-3 bg-sori-surface-base border-t border-muted shrink-0 px-8 w-full z-50",
       className
     )}>
       {/* Mic & Audio Menu (Unified) */}
-      <div className="flex items-center gap-0.5 bg-sori-sidebar rounded-2xl p-1 border border-muted relative">
+      <div className="flex items-center gap-0.5 bg-sori-surface-panel rounded-2xl p-1 border border-muted relative">
         <button 
           onClick={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
           className={cn(
             "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
-            !isMicrophoneEnabled ? 'bg-sori-error text-white' : 'text-on-surface-variant hover:bg-sori-sidebar'
+            !isMicrophoneEnabled ? 'bg-sori-accent-danger text-white' : 'text-on-surface-variant hover:bg-sori-surface-panel'
           )}
         >
           {isMicrophoneEnabled ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
@@ -137,7 +120,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
                         onClick={() => setActiveMic(device.deviceId)}
                         className={cn(
                           "px-3 py-2 text-[11px] rounded-xl cursor-pointer transition-all flex items-center justify-between",
-                          activeMicId === device.deviceId ? 'bg-muted text-primary font-bold' : 'text-on-surface-variant hover:bg-sori-sidebar hover:text-white'
+                          activeMicId === device.deviceId ? 'bg-muted text-primary font-bold' : 'text-on-surface-variant hover:bg-sori-surface-panel hover:text-white'
                         )}
                       >
                         <span className="truncate flex-1">{device.label || 'Microphone'}</span>
@@ -160,7 +143,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
                 </div>
               </div>
 
-              <div className="h-px bg-sori-sidebar" />
+              <div className="h-px bg-sori-surface-panel" />
 
               {/* OUTPUT SECTION */}
               <div className="space-y-3">
@@ -173,7 +156,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
                         onClick={() => setActiveOutput(device.deviceId)}
                         className={cn(
                           "px-3 py-2 text-[11px] rounded-xl cursor-pointer transition-all flex items-center justify-between",
-                          activeOutputId === device.deviceId ? 'bg-muted text-secondary font-bold' : 'text-on-surface-variant hover:bg-sori-sidebar hover:text-white'
+                          activeOutputId === device.deviceId ? 'bg-muted text-secondary font-bold' : 'text-on-surface-variant hover:bg-sori-surface-panel hover:text-white'
                         )}
                       >
                         <span className="truncate flex-1">{device.label || 'Speaker'}</span>
@@ -201,12 +184,12 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
       </div>
 
       {/* Camera Menu */}
-      <div className="flex items-center gap-0.5 bg-sori-sidebar rounded-2xl p-1 border border-muted relative">
+      <div className="flex items-center gap-0.5 bg-sori-surface-panel rounded-2xl p-1 border border-muted relative">
         <button 
           onClick={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
           className={cn(
             "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
-            isCameraEnabled ? 'bg-primary text-white shadow-lg shadow-primary' : 'text-on-surface-variant hover:bg-sori-sidebar'
+            isCameraEnabled ? 'bg-primary text-white shadow-lg shadow-primary' : 'text-on-surface-variant hover:bg-sori-surface-panel'
           )}
         >
           {isCameraEnabled ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
@@ -256,7 +239,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
           "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
           isScreenShareEnabled 
             ? 'bg-secondary text-black shadow-lg' 
-            : 'bg-sori-sidebar text-on-surface-variant hover:bg-sori-server'
+            : 'bg-sori-surface-panel text-on-surface-variant hover:bg-sori-surface-base'
         )}
         title="Present Screen"
       >
@@ -270,22 +253,21 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
             "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
             noiseSuppression 
               ? 'bg-muted text-primary border border-primary' 
-              : 'bg-sori-sidebar text-on-surface-variant hover:bg-sori-server border border-transparent'
+              : 'bg-sori-surface-panel text-on-surface-variant hover:bg-sori-surface-base border border-transparent'
           )}
           title="Noise Suppression"
         >
-          <Waves iconClassName="h-7 w-7" />
+          <Waves className="h-7 w-7" />
         </button>
       </NoiseSuppressionPopup>
 
       {/* Hang Up */}
       <button 
         onClick={onHangUp}
-        className="w-14 h-14 bg-sori-error text-white rounded-2xl flex items-center justify-center shadow-lg hover:brightness-110 active:scale-95 transition-all duration-300"
+        className="w-14 h-14 bg-sori-accent-danger text-white rounded-2xl flex items-center justify-center shadow-lg hover:brightness-110 active:scale-95 transition-all duration-300"
       >
         <PhoneOff className="h-7 w-7" />
       </button>
     </div>
   );
 };
-

@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+
+EVENT="${1:-}"
+BACKUP_ROOT="${BACKUP_DIR:-/backups}"
+BACKUP_SUFFIX="${BACKUP_SUFFIX:-.sql.gz}"
+KEEP_DAILY_COUNT="${KEEP_DAILY_COUNT:-3}"
+
+if [ "$EVENT" != "post-backup" ]; then
+  exit 0
+fi
+
+cleanup_dir() {
+  dir="$1"
+  if [ ! -d "$dir" ]; then
+    return 0
+  fi
+
+  find "$dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+}
+
+cleanup_dir "${BACKUP_ROOT}/last"
+cleanup_dir "${BACKUP_ROOT}/weekly"
+cleanup_dir "${BACKUP_ROOT}/monthly"
+
+if [ -d "${BACKUP_ROOT}/daily" ]; then
+  find "${BACKUP_ROOT}/daily" -maxdepth 1 -name '*-latest*' -exec rm -f {} +
+  find "${BACKUP_ROOT}/daily" -maxdepth 1 -type f -name "*${BACKUP_SUFFIX}" | sort -r | awk "NR>${KEEP_DAILY_COUNT}" | while read -r old_file; do
+    [ -n "${old_file}" ] && rm -f "${old_file}"
+  done
+fi

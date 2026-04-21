@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 
 // Stores
 import { useUserStore } from "../store/useUserStore";
 import { useChatStore } from "../store/useChatStore";
 import { useUIStore } from "../store/useUIStore";
+import { Member } from "../types/chat";
 
 // Hooks & Libs
 import { useChatSocket } from "../hooks/useChatSocket";
 import { useMediaSettings } from "../hooks/useMediaSettings";
+import { useCall } from "../hooks/useCall";
 
 // Components
 import { ServerSidebar } from "../components/Chat/ServerSidebar";
@@ -15,18 +17,27 @@ import { ChannelSidebar } from "../components/Chat/ChannelSidebar";
 import { DMSidebar } from "../components/Chat/DMSidebar";
 import { ChatArea } from "../components/Chat/ChatArea";
 import { MemberSidebar } from "../components/Chat/MemberSidebar";
-import { SettingsModal } from "../components/Settings/SettingsModal";
-import { Toaster } from "@sori/ui";
+import { MemberContextMenu } from "../components/Chat/ContextMenus/MemberContextMenu";
 
-// Modals
-import { LogoutModal } from "../components/Chat/Modals/LogoutModal";
-import { FindFriendModal } from "../components/Chat/Modals/FindFriendModal";
+const SettingsModal = lazy(() =>
+  import("../components/Settings/SettingsModal").then((module) => ({ default: module.SettingsModal })),
+);
+const CallOverlay = lazy(() =>
+  import("../components/Chat/Voice/CallOverlay").then((module) => ({ default: module.CallOverlay })),
+);
+const LogoutModal = lazy(() =>
+  import("../components/Chat/Modals/LogoutModal").then((module) => ({ default: module.LogoutModal })),
+);
+const FindFriendModal = lazy(() =>
+  import("../components/Chat/Modals/FindFriendModal").then((module) => ({ default: module.FindFriendModal })),
+);
 
 const Chat: React.FC = () => {
   const { user, isAuthenticated, logout } = useUserStore();
+  
   const { 
     fetchInitialData, fetchConversations,
-    conversations
+    conversations, startDM, members
   } = useChatStore();
   
   const { 
@@ -34,19 +45,81 @@ const Chat: React.FC = () => {
     isSettingsOpen, setSettingsOpen,
     isChannelSidebarOpen, setChannelSidebarOpen,
     isMemberSidebarOpen, setMemberSidebarOpen,
-    isVoiceChatOpen, setIsVoiceChatOpen
+    isVoiceChatOpen, setIsVoiceChatOpen,
+    memberContextMenu, setMemberContextMenu,
+    setActiveConversationId, activeConversationId
   } = useUIStore();
 
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isFindFriendOpen, setIsFindFriendOpen] = useState(false);
+  const initializedDirectCallRef = useRef<string | null>(null);
 
   // Initialize Socket (URL and auth handled internally)
   const { socket, onlineUsersSet } = useChatSocket();
   
-  console.log("[DIAGNOSTIC] Chat.tsx - onlineUsersSet:", Array.from(onlineUsersSet));
 
   // Media Settings
   const media = useMediaSettings({ initialUser: user! });
+
+  // Call Orchestration (Source of Truth)
+  const call = useCall({ socket });
+  const isDirectCallOverlayVisible = !call.connectedChannelId && !!call.partner && call.status !== "idle";
+
+  // Global Context Menu Closer
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      if (memberContextMenu?.visible) {
+        setMemberContextMenu(null);
+      }
+    };
+    window.addEventListener("click", handleGlobalClick);
+    return () => window.removeEventListener("click", handleGlobalClick);
+  }, [memberContextMenu, setMemberContextMenu]);
+
+  const selectedMember = memberContextMenu?.member
+    ? members.find((member) => member.id === memberContextMenu.member.id) || memberContextMenu.member
+    : null;
+
+  const handleMemberClick = (member: Member, x: number, y: number) => {
+    setMemberContextMenu({ x, y, visible: true, member });
+  };
+
+  const handleContextMenuStartDM = async (userId: string) => {
+    if (userId === user?.id) {
+      return;
+    }
+    const conv = await startDM(userId);
+    if (conv) {
+      setActiveModule("dm");
+      setActiveConversationId(conv.id);
+    }
+    setMemberContextMenu(null);
+  };
+
+  const handleContextMenuStartCall = (member: Member) => {
+    call.initiateCall({
+      id: member.id,
+      username: member.username,
+      avatarUrl: member.avatarUrl
+    });
+    setMemberContextMenu(null);
+  };
+
+  useEffect(() => {
+    const isDirectCallSession = Boolean(
+      call.callId && call.partner && !call.connectedChannelId && call.status !== "idle",
+    );
+
+    if (!isDirectCallSession) {
+      initializedDirectCallRef.current = null;
+      return;
+    }
+
+    if (initializedDirectCallRef.current !== call.callId) {
+      initializedDirectCallRef.current = call.callId;
+      setIsVoiceChatOpen(false);
+    }
+  }, [call.callId, call.connectedChannelId, call.partner, call.status, setIsVoiceChatOpen]);
 
   // Initial Data Load
   useEffect(() => {
@@ -79,6 +152,12 @@ const Chat: React.FC = () => {
               <ChannelSidebar 
                 socket={socket}
                 setIsVoiceChatOpen={setIsVoiceChatOpen}
+                livekitToken={call.livekitToken}
+                connectedChannelId={call.connectedChannelId}
+                status={call.status}
+                getChannelToken={call.getChannelToken}
+                resetCall={call.resetCall}
+                setIsDisconnecting={call.setIsDisconnecting}
                 {...media}
               />
             ) : (
@@ -87,6 +166,11 @@ const Chat: React.FC = () => {
                 socket={socket}
                 onlineUsersSet={onlineUsersSet}
                 onOpenFindFriend={() => setIsFindFriendOpen(true)}
+                livekitToken={call.livekitToken}
+                connectedChannelId={call.connectedChannelId}
+                partner={call.partner}
+                endCall={call.endCall}
+                setIsDisconnecting={call.setIsDisconnecting}
                 {...media}
               />
             )}
@@ -98,27 +182,65 @@ const Chat: React.FC = () => {
           isVoiceChatOpen={isVoiceChatOpen}
           setIsVoiceChatOpen={setIsVoiceChatOpen}
           onlineUsersSet={onlineUsersSet}
+          initiateCall={call.initiateCall}
+          endCall={call.endCall}
+          getChannelToken={call.getChannelToken}
+          resetCall={call.resetCall}
+          setIsDisconnecting={call.setIsDisconnecting}
+          isDisconnecting={call.isDisconnecting}
+          status={call.status}
+          partner={call.partner}
+          callId={call.callId}
+          livekitToken={call.livekitToken}
+          connectedChannelId={call.connectedChannelId}
           {...media}
         />
 
         {activeModule === "community" && !isVoiceChatOpen && (
           <div className={`fixed inset-0 z-40 xl:relative xl:inset-auto xl:z-auto ${isMemberSidebarOpen ? "flex xl:flex" : "hidden xl:hidden"}`}>
             <div className="absolute inset-0 bg-sori-surface-overlay xl:hidden" onClick={() => setMemberSidebarOpen(false)} />
-            <MemberSidebar onlineUsersSet={onlineUsersSet} />
+            <MemberSidebar onlineUsersSet={onlineUsersSet} onMemberClick={handleMemberClick} />
           </div>
         )}
       </div>
 
-      <LogoutModal isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} handleLogout={logout} />
-      <FindFriendModal isOpen={isFindFriendOpen} onClose={() => setIsFindFriendOpen(false)} onlineUsersSet={onlineUsersSet} />
-      
-      <SettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setSettingsOpen(false)} 
-        {...media}
+      <MemberContextMenu 
+        visible={!!memberContextMenu?.visible}
+        x={memberContextMenu?.x || 0}
+        y={memberContextMenu?.y || 0}
+        member={selectedMember}
+        onlineUsersSet={onlineUsersSet}
+        currentUser={user}
+        handleStartDM={handleContextMenuStartDM}
+        handleStartCall={handleContextMenuStartCall}
       />
-      
-      <Toaster />
+
+      {(isLogoutModalOpen || isFindFriendOpen || isSettingsOpen || isDirectCallOverlayVisible) && (
+        <Suspense fallback={null}>
+          <LogoutModal isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} handleLogout={logout} />
+          <FindFriendModal isOpen={isFindFriendOpen} onClose={() => setIsFindFriendOpen(false)} onlineUsersSet={onlineUsersSet} />
+          
+          <SettingsModal 
+            isOpen={isSettingsOpen} 
+            onClose={() => setSettingsOpen(false)} 
+            {...media}
+          />
+          
+          {isDirectCallOverlayVisible && (
+            <CallOverlay 
+              status={call.status}
+              partner={call.partner}
+              onAccept={call.acceptCall}
+              onReject={call.rejectCall}
+              onCancel={call.endCall}
+              startTime={call.startTime}
+              isMaximized={isVoiceChatOpen}
+              onToggleMaximize={() => setIsVoiceChatOpen(true)}
+              isPartnerSpeaking={call.isPartnerSpeaking}
+            />
+          )}
+        </Suspense>
+      )}
     </div>
   );
 };

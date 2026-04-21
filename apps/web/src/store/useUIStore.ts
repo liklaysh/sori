@@ -18,6 +18,8 @@ interface UIState {
   isVoiceChatOpen: boolean;
   isMuted: boolean;
   isDeafened: boolean;
+  isCreateChannelModalOpen: boolean;
+  createChannelCategoryId: string | null;
   
   // Actions
   toggleCategory: (categoryId: string) => void;
@@ -31,6 +33,11 @@ interface UIState {
   setIsVoiceChatOpen: (open: boolean) => void;
   setIsMuted: (muted: boolean) => void;
   setIsDeafened: (deafened: boolean) => void;
+  setCreateChannelModalOpen: (open: boolean, categoryId?: string | null) => void;
+  
+  // Context Menus
+  memberContextMenu: { x: number, y: number, visible: boolean, member: any } | null;
+  setMemberContextMenu: (menu: { x: number, y: number, visible: boolean, member: any } | null) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -48,6 +55,8 @@ export const useUIStore = create<UIState>()(
       isVoiceChatOpen: false,
       isMuted: false,
       isDeafened: false,
+      isCreateChannelModalOpen: false,
+      createChannelCategoryId: null,
 
       toggleCategory: (categoryId) => set((state) => {
         const next = new Set(state.collapsedCategories);
@@ -59,16 +68,18 @@ export const useUIStore = create<UIState>()(
       setSidebarWidth: (width) => set({ sidebarWidth: width }),
       setSettingsOpen: (open) => set({ isSettingsOpen: open }),
       setActiveModule: (activeModule) => set({ activeModule }),
-      setActiveChannelId: (activeChannelId) => {
-        console.log("🛠️ [UIStore] setActiveChannelId:", activeChannelId);
-        set({ activeChannelId });
-      },
+      setActiveChannelId: (activeChannelId) => set({ activeChannelId }),
       setActiveConversationId: (activeConversationId) => set({ activeConversationId }),
       setChannelSidebarOpen: (isChannelSidebarOpen) => set({ isChannelSidebarOpen }),
       setMemberSidebarOpen: (isMemberSidebarOpen) => set({ isMemberSidebarOpen }),
       setIsVoiceChatOpen: (isVoiceChatOpen) => set({ isVoiceChatOpen }),
       setIsMuted: (isMuted) => set({ isMuted }),
       setIsDeafened: (isDeafened) => set({ isDeafened }),
+      setCreateChannelModalOpen: (isCreateChannelModalOpen, createChannelCategoryId = null) => 
+        set({ isCreateChannelModalOpen, createChannelCategoryId }),
+
+      memberContextMenu: null,
+      setMemberContextMenu: (memberContextMenu) => set({ memberContextMenu }),
     }),
     {
       name: "sori-ui-storage",

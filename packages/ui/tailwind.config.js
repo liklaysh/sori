@@ -85,23 +85,15 @@ export default {
         },
 
         // Subtle Helpers
-        "sori-primary-subtle": "var(--sori-primary-subtle)",
-        "sori-secondary-subtle": "var(--sori-secondary-subtle)",
-        "sori-error-subtle": "var(--sori-error-subtle)",
-        "sori-success-subtle": "var(--sori-success-subtle)",
-        "sori-warning-subtle": "var(--sori-warning-subtle)",
+        "sori-accent-primary-subtle": "var(--sori-accent-primary-subtle)",
+        "sori-accent-soft": "var(--sori-accent-soft)",
+        "sori-accent-secondary-subtle": "var(--sori-accent-secondary-subtle)",
+        "sori-accent-danger-subtle": "var(--sori-accent-danger-subtle)",
+        "sori-accent-success-subtle": "var(--sori-accent-success-subtle)",
+        "sori-accent-warning-subtle": "var(--sori-accent-warning-subtle)",
+        "sori-chat-bubble-me": "var(--sori-chat-bubble-me)",
+        "sori-chat-bubble-me-border": "var(--sori-chat-bubble-me-border)",
 
-        // Legacy/Direct mappings for transition (mapped to semantic tokens)
-        "sori-primary": "var(--sori-accent-primary)",
-        "sori-secondary": "var(--sori-accent-secondary)",
-        "sori-error": "var(--sori-accent-danger)",
-        "sori-success": "var(--sori-accent-success)",
-        "sori-warning": "var(--sori-accent-warning)",
-        "sori-chat": "var(--sori-surface-main)",
-        "sori-sidebar": "var(--sori-surface-panel)",
-        "sori-server": "var(--sori-surface-base)",
-        "sori-right": "var(--sori-surface-panel)",
-        "sori-voice": "var(--sori-surface-elevated)",
       },
       borderRadius: {
         lg: "var(--radius)",

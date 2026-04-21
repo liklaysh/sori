@@ -1,22 +1,21 @@
-import React, { RefObject, useState, useRef, useEffect } from "react";
-import { LiveKitRoom, LayoutContextProvider, RoomAudioRenderer } from "@livekit/components-react";
-import { SoriVoiceRoom } from "./Voice/SoriVoiceRoom";
-import { StreamingTracker } from "./Voice/StreamingTracker";
-import { ParticipantsVolumeManager } from "./Voice/ParticipantsVolumeManager";
-import { SpeakingTracker } from "./Voice/SpeakingTracker";
+import React, { Suspense, lazy, RefObject, useState, useRef, useEffect } from "react";
 import { ChatHeader } from "./ChatHeader";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 import { DMEmptyState, CommunityEmptyState } from "./ChatEmptyStates";
 import { useChatAttachments } from "../../hooks/useChatAttachments";
+import { ChatItem } from "../../types/chat";
 import { useChatStore } from "../../store/useChatStore";
 import { useUserStore } from "../../store/useUserStore";
+import { useVoiceStore } from "../../store/useVoiceStore";
 import { useUIStore } from "../../store/useUIStore";
-import { useCall } from "../../hooks/useCall";
 import { cn } from "@sori/ui";
 import { UploadCloud, ShieldAlert } from "lucide-react";
-import { API_URL, LIVEKIT_URL } from "../../config";
 import api from "../../lib/api";
+import { getChannelContextKey, getConversationContextKey } from "../../utils/chatMessages";
+
+const EMPTY_CHAT_ITEMS: ChatItem[] = [];
+const LiveKitSession = lazy(() => import("./Voice/LiveKitSession"));
 
 interface ChatAreaProps {
   socket: any;
@@ -24,6 +23,19 @@ interface ChatAreaProps {
   setIsVoiceChatOpen: (open: boolean) => void;
   onlineUsersSet?: Set<string>;
   
+  // Call Orchestration (from Chat.tsx)
+  initiateCall: (user: any) => void;
+  endCall: (metrics?: any) => void;
+  status: string;
+  livekitToken: string | null;
+  connectedChannelId: string | null;
+  resetCall: () => void;
+  getChannelToken: (channelId: string) => Promise<string>;
+  setIsDisconnecting: (val: boolean) => void;
+  isDisconnecting: boolean;
+  partner: { id: string, username: string, avatarUrl?: string } | null;
+  callId: string | null;
+
   // Media settings (from useMediaSettings)
   noiseSuppression: boolean;
   toggleNoiseSuppression: () => void;
@@ -41,19 +53,33 @@ interface ChatAreaProps {
 
 export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   const { user } = useUserStore();
-  const { messages, channels, conversations, fetchMessages, fetchDMMessages } = useChatStore();
   const { 
     activeModule, activeChannelId, activeConversationId, 
     setChannelSidebarOpen, setMemberSidebarOpen 
   } = useUIStore();
+  const { channels, conversations, fetchMessages, fetchDMMessages } = useChatStore();
+  const contextKey = activeModule === "community"
+    ? (activeChannelId ? getChannelContextKey(activeChannelId) : null)
+    : (activeConversationId ? getConversationContextKey(activeConversationId) : null);
+  const messagesBucket = useChatStore((state) => (
+    contextKey ? state.messagesByContext[contextKey] : undefined
+  ));
+  const messages = messagesBucket ?? EMPTY_CHAT_ITEMS;
 
   const { 
-    livekitToken, connectedChannelId, status, 
-    initiateCall, endCall, getChannelToken, resetCall 
-  } = useCall({ socket: props.socket, currentUser: user! });
+    initiateCall, endCall, getChannelToken, resetCall,
+    setIsDisconnecting, isDisconnecting,
+    livekitToken, connectedChannelId, status, partner, callId,
+    setActiveOutput, setMicGain, setOutputVolume
+  } = props;
 
   const currentChannel = channels.find(c => c.id === activeChannelId) || null;
   const activeConversation = conversations.find(c => c.id === activeConversationId) || null;
+  const isVoiceChannelContext = activeModule === "community" && currentChannel?.type === "voice";
+  const isDirectCallSession = Boolean(livekitToken && callId && partner && !connectedChannelId);
+  const isCurrentVoiceChannelSession = Boolean(
+    livekitToken && connectedChannelId && activeChannelId && connectedChannelId === activeChannelId,
+  );
 
   const attachments = useChatAttachments();
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -62,6 +88,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   const [replyTo, setReplyTo] = useState<any>(null);
   const [editingMessage, setEditingMessage] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [lastError, setLastError] = useState<string | null>(null);
 
@@ -72,27 +99,59 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
     );
   }, [searchQuery, messages]);
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery]);
+
   const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
     }
   };
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      const timer = setTimeout(() => scrollToBottom("auto"), 50);
-      return () => clearTimeout(timer);
+  const handleLoadMore = async () => {
+    const before = messages[0]?.createdAt;
+    if (!before) return;
+
+    const beforeIso = new Date(before).toISOString();
+
+    if (activeModule === "community" && activeChannelId) {
+      await fetchMessages(activeChannelId, {
+        search: debouncedSearchQuery,
+        before: beforeIso,
+        append: true,
+      });
+    } else if (activeModule === "dm" && activeConversationId) {
+      await fetchDMMessages(activeConversationId, {
+        search: debouncedSearchQuery,
+        before: beforeIso,
+        append: true,
+      });
     }
-  }, [messages.length, activeChannelId, activeConversationId, activeModule]);
+  };
+
+  // Mark DM as read when it becomes active
+  useEffect(() => {
+    if (activeModule === "dm" && activeConversationId) {
+      const conv = conversations.find(c => c.id === activeConversationId);
+      if (conv && (conv.unreadCount || 0) > 0) {
+        useChatStore.getState().markConversationAsRead(activeConversationId);
+      }
+    }
+  }, [activeModule, activeConversationId, conversations]);
 
   // Load History
   useEffect(() => {
     if (activeModule === "community" && activeChannelId) {
-      fetchMessages(activeChannelId!, searchQuery);
+      fetchMessages(activeChannelId, { search: debouncedSearchQuery });
     } else if (activeModule === "dm" && activeConversationId) {
-      fetchDMMessages(activeConversationId!);
+      fetchDMMessages(activeConversationId, { search: debouncedSearchQuery });
     }
-  }, [activeModule, activeChannelId, activeConversationId, fetchMessages, fetchDMMessages, searchQuery]);
+  }, [activeModule, activeChannelId, activeConversationId, fetchMessages, fetchDMMessages, debouncedSearchQuery]);
 
   // Join channel room for sockets
   useEffect(() => {
@@ -106,11 +165,20 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
     if (!inputValue.trim() && !manualAttachments?.length) return;
 
     try {
-      const payload = {
+      const firstAttachment = manualAttachments?.[0]?.result;
+      const payload: any = {
         content: inputValue,
-        attachments: manualAttachments,
-        replyToId: replyTo?.id
+        parentId: replyTo?.id
       };
+
+      if (firstAttachment) {
+        payload.attachment = {
+          fileUrl: firstAttachment.fileUrl,
+          fileName: firstAttachment.fileName,
+          fileSize: firstAttachment.fileSize,
+          fileType: firstAttachment.fileType,
+        };
+      }
 
       let res: any;
       if (activeModule === "community" && activeChannelId) {
@@ -141,6 +209,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
 
     try {
       setLastError(null);
+      setIsDisconnecting(false);
       await getChannelToken(activeChannelId);
       props.socket?.emit("join_voice_channel", activeChannelId);
       props.setIsVoiceChatOpen(true);
@@ -152,21 +221,36 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   // Sync Voice Token if user is already an occupant
   useEffect(() => {
     const isVoice = activeModule === "community" && currentChannel?.type === "voice";
+    
+    if (isDisconnecting) {
+      return;
+    }
+
     // Only auto-join if we have media access
     if (isVoice && activeChannelId && !livekitToken && window.isSecureContext && navigator.mediaDevices) {
       const occupants = useChatStore.getState().voiceOccupants[activeChannelId] || [];
       const isMeOccupant = occupants.some(o => o.userId === user?.id);
       
       if (isMeOccupant) {
-        console.log("📡 Auto-connecting to voice channel", activeChannelId);
         getChannelToken(activeChannelId).catch(() => {});
       }
     }
-  }, [activeChannelId, activeModule, currentChannel?.type, livekitToken, user?.id, getChannelToken]);
+  }, [activeChannelId, activeModule, currentChannel?.type, livekitToken, user?.id, getChannelToken, isDisconnecting]);
+
+  // Safe Guard Reset: Only when switching to a DIFFERENT channel
+  const lastChannelRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (activeChannelId && activeChannelId !== lastChannelRef.current) {
+      setIsDisconnecting(false);
+      lastChannelRef.current = activeChannelId;
+    }
+  }, [activeChannelId, setIsDisconnecting]);
 
   const renderMainChatLayout = () => {
-    const isVoice = activeModule === "community" && currentChannel?.type === "voice";
-
+    const isVoice = isVoiceChannelContext;
+    const isExpandedDirectCallSession = Boolean(isDirectCallSession && props.isVoiceChatOpen);
+    const showFullVoiceUI = isVoice || isExpandedDirectCallSession;
+    
     if (activeModule === "dm" && !activeConversationId) {
       return <DMEmptyState onShowSidebar={() => setChannelSidebarOpen(true)} />;
     }
@@ -176,7 +260,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
 
     return (
       <div className="flex-1 flex flex-col min-w-0 bg-sori-surface-main overflow-hidden">
-        {!isVoice && (
+        {!showFullVoiceUI && (
           <ChatHeader 
             activeModule={activeModule} 
             currentChannel={currentChannel} 
@@ -226,45 +310,79 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
             </div>
           )}
 
-          {isVoice ? (
-            livekitToken && (connectedChannelId === activeChannelId || status === 'connected') && window.isSecureContext ? (
-              <LiveKitRoom 
-                video={false} audio={true} token={livekitToken} serverUrl={LIVEKIT_URL} connect={true}
+          {(isDirectCallSession || isCurrentVoiceChannelSession) && window.isSecureContext ? (
+            <Suspense fallback={<div className="flex-1 bg-sori-surface-main" />}>
+              <LiveKitSession
+                socket={props.socket}
+                livekitToken={livekitToken!}
+                connectedChannelId={connectedChannelId}
+                activeChannelId={activeChannelId}
+                callId={callId}
+                partner={partner}
+                status={status}
+                showFullVoiceUI={showFullVoiceUI}
+                activeModule={activeModule}
+                currentChannelName={currentChannel?.name}
+                isInternalChatOpen={isInternalChatOpen}
+                setIsInternalChatOpen={setIsInternalChatOpen}
+                messages={messages}
+                inputValue={inputValue}
+                setInputValue={setInputValue}
+                onSendMessage={handleSendMessage}
+                onLoadMore={handleLoadMore}
+                searchQuery={searchQuery}
+                scrollRef={scrollRef}
+                showScrollButton={showScrollButton}
+                scrollToBottom={scrollToBottom}
+                user={user!}
+                outputVolume={props.outputVolume}
+                micGain={props.micGain}
+                noiseSuppression={props.noiseSuppression}
+                toggleNoiseSuppression={props.toggleNoiseSuppression}
+                micDevices={props.micDevices}
+                activeMicId={props.activeMicId}
+                setActiveMic={props.setActiveMic}
+                outputDevices={props.outputDevices}
+                activeOutputId={props.activeOutputId}
+                setActiveOutput={props.setActiveOutput}
+                setMicGain={props.setMicGain}
+                setOutputVolume={props.setOutputVolume}
                 onConnected={() => {
-                  console.log("✅ [LiveKitRoom] onConnected event");
                   setLastError(null);
+                  setIsDisconnecting(false);
                 }}
-                onError={(err) => {
-                  console.error("❌ [LiveKitRoom] Error:", err);
-                  setLastError(err.message);
-                }}
-                onDisconnected={() => { 
-                  console.log("🔌 [LiveKitRoom] onDisconnected event");
-                  props.socket?.emit("leave_voice_channel", connectedChannelId); 
+                onDisconnected={() => {
                   props.setIsVoiceChatOpen(false);
-                }} 
-                className="flex-1 flex"
-              >
-                <LayoutContextProvider>
-                  <SoriVoiceRoom 
-                    onLeave={() => { 
-                      props.socket?.emit("leave_voice_channel", connectedChannelId); 
-                      props.setIsVoiceChatOpen(false); 
-                      resetCall();
-                    }} 
-                    messages={messages} inputValue={inputValue} onInputChange={(e) => setInputValue(e.target.value)}
-                    onSendMessage={handleSendMessage} user={user!} outputVolume={props.outputVolume} micGain={props.micGain}
-                    participantVolumes={{}} noiseSuppression={props.noiseSuppression} toggleNoiseSuppression={props.toggleNoiseSuppression}
-                    isChatOpen={isInternalChatOpen} setIsChatOpen={setIsInternalChatOpen} channelName={currentChannel?.name || "Voice Channel"}
-                    startTime={null} onOpenFindFriend={() => {}} 
-                    micDevices={props.micDevices} activeMicId={props.activeMicId} setActiveMic={props.setActiveMic}
-                    outputDevices={props.outputDevices} activeOutputId={props.activeOutputId} setActiveOutput={props.setActiveOutput}
-                    setMicGain={props.setMicGain} setOutputVolume={props.setOutputVolume}
-                  />
-                  <RoomAudioRenderer volume={props.outputVolume / 100} />
-                </LayoutContextProvider>
-              </LiveKitRoom>
-            ) : (
+                  if (callId && partner && !connectedChannelId) {
+                    setIsDisconnecting(false);
+                    endCall();
+                    return;
+                  }
+                  if (connectedChannelId) {
+                    props.socket?.emit("leave_voice_channel", connectedChannelId);
+                    resetCall();
+                    setIsDisconnecting(true);
+                  }
+                }}
+                onLeave={() => {
+                  props.setIsVoiceChatOpen(false);
+                  if (callId && partner && !connectedChannelId) {
+                    endCall();
+                    return;
+                  }
+                  props.socket?.emit("leave_voice_channel", connectedChannelId);
+                  resetCall();
+                  setIsDisconnecting(true);
+                }}
+                onPeerGone={() => {
+                  setIsDisconnecting(true);
+                  props.setIsVoiceChatOpen(false);
+                  endCall();
+                }}
+              />
+            </Suspense>
+          ) : (
+            isVoice ? (
               <div className="flex-1 flex flex-col items-center justify-center space-y-6">
                 <h2 className="text-2xl font-bold text-sori-text-strong">Voice Channel: {currentChannel?.name}</h2>
                 
@@ -290,19 +408,19 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
                   <button onClick={handleJoinVoice} className="bg-sori-accent-primary text-black px-10 py-4 rounded-2xl font-bold active:scale-95 transition-transform">Join Voice Channel</button>
                 )}
               </div>
+            ) : (
+              <MessageList 
+                messages={searchQuery ? messages.filter(m => "content" in m && m.content?.toLowerCase().includes(searchQuery.toLowerCase())) : messages}
+                onMessageContextMenu={() => {}} 
+                isLoadingMessages={false}
+                scrollRef={scrollRef} handleScroll={() => {}} showScrollButton={showScrollButton} scrollToBottom={scrollToBottom}
+                onLoadMore={handleLoadMore} onForward={() => {}}
+              />
             )
-          ) : (
-            <MessageList 
-              messages={searchQuery ? messages.filter(m => "content" in m && m.content?.toLowerCase().includes(searchQuery.toLowerCase())) : messages}
-              onMessageContextMenu={() => {}} 
-              isLoadingMessages={false}
-              scrollRef={scrollRef} handleScroll={() => {}} showScrollButton={showScrollButton} scrollToBottom={scrollToBottom}
-              onLoadMore={() => Promise.resolve()} onForward={() => {}}
-            />
           )}
         </div>
 
-        {!isVoice && (
+        {!showFullVoiceUI && (
           <ChatInput 
             inputValue={inputValue} setInputValue={setInputValue} onSendMessage={handleSendMessage} 
             editingMessage={editingMessage} setEditingMessage={setEditingMessage} 

@@ -23,10 +23,7 @@ export const NoiseSuppressionPopup: React.FC<NoiseSuppressionPopupProps> = ({
       <PopoverTrigger asChild>
         {children}
       </PopoverTrigger>
-      <PopoverContent className="w-80 bg-sori-chat border border-sori-border-subtle rounded-[2rem] p-6 shadow-2xl z-[2001] overflow-hidden">
-        {/* Background elements */}
-        <div className="absolute -top-12 -right-12 w-32 h-32 bg-sori-surface-panel rounded-full pointer-events-none" />
-        
+      <PopoverContent className="w-80 bg-sori-surface-main border border-sori-border-subtle rounded-[2rem] p-6 shadow-2xl z-[2001]">
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
             <div className={cn(

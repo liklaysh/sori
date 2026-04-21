@@ -1,0 +1,123 @@
+{
+	admin off
+}
+
+# Staged TLS migration:
+# - Right now Caddy reuses the existing wildcard certificate for zero-risk cutover.
+# - Later we can remove the per-site `tls` lines and let Caddy manage ACME automatically.
+
+{$SORI_WEB_HOST:sori-web.sori.orb.local} {
+	tls /etc/caddy/certs/sori-wildcard.crt /etc/caddy/certs/sori-wildcard.key
+	encode zstd gzip
+	@client_bootstrap path /.well-known/sori/client.json
+	route {
+		handle @client_bootstrap {
+			reverse_proxy sori-backend:3000 {
+				header_up Host {host}
+				header_up X-Real-IP {remote_host}
+				transport http {
+					dial_timeout 10s
+					response_header_timeout 30s
+					keepalive 2m
+				}
+			}
+		}
+
+		reverse_proxy sori-web:80 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+				keepalive 2m
+			}
+		}
+	}
+}
+
+{$SORI_API_HOST:sori-backend.sori.orb.local} {
+	tls /etc/caddy/certs/sori-wildcard.crt /etc/caddy/certs/sori-wildcard.key
+	encode zstd gzip
+	@client_bootstrap path /.well-known/sori/client.json
+	route {
+		handle @client_bootstrap {
+			reverse_proxy sori-backend:3000 {
+				header_up Host {host}
+				header_up X-Real-IP {remote_host}
+				transport http {
+					dial_timeout 10s
+					response_header_timeout 30s
+					keepalive 2m
+				}
+			}
+		}
+
+		reverse_proxy sori-backend:3000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+				keepalive 2m
+			}
+		}
+	}
+}
+
+{$SORI_LIVEKIT_HOST:sori-livekit.sori.orb.local} {
+	tls /etc/caddy/certs/sori-wildcard.crt /etc/caddy/certs/sori-wildcard.key
+	encode zstd gzip
+	@client_bootstrap path /.well-known/sori/client.json
+	route {
+		handle @client_bootstrap {
+			reverse_proxy sori-backend:3000 {
+				header_up Host {host}
+				header_up X-Real-IP {remote_host}
+				transport http {
+					dial_timeout 10s
+					response_header_timeout 30s
+					keepalive 2m
+				}
+			}
+		}
+
+		reverse_proxy sori-livekit:7880 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+				keepalive 2m
+			}
+		}
+	}
+}
+
+{$SORI_MEDIA_HOST:sori-media.sori.orb.local} {
+	tls /etc/caddy/certs/sori-wildcard.crt /etc/caddy/certs/sori-wildcard.key
+	encode zstd gzip
+	@client_bootstrap path /.well-known/sori/client.json
+	route {
+		handle @client_bootstrap {
+			reverse_proxy sori-backend:3000 {
+				header_up Host {host}
+				header_up X-Real-IP {remote_host}
+				transport http {
+					dial_timeout 10s
+					response_header_timeout 30s
+					keepalive 2m
+				}
+			}
+		}
+
+		reverse_proxy sori-media:9000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+				keepalive 2m
+			}
+		}
+	}
+}

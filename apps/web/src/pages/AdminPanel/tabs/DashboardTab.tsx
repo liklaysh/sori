@@ -103,9 +103,9 @@ export default function DashboardTab() {
         />
         <StatCard 
           icon={<Users className="h-5 w-5" />} 
-          label="Online" 
+          label="Users" 
           value={stats?.totalUsers ?? "---"} 
-          description="Active sessions"
+          description="Registered accounts"
         />
       </div>
 
@@ -191,5 +191,4 @@ const StatCard = ({ icon, label, value, description }: { icon: React.ReactNode, 
     <div className="absolute bottom-0 left-0 w-full h-0.5 bg-sori-accent-danger invisible group-hover:visible transition-all duration-500"></div>
   </div>
 );
-
 

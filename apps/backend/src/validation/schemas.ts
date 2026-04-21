@@ -14,44 +14,45 @@ export const loginSchema = z.object({
 export const createChannelSchema = z.object({
   name: z.string().min(1).max(32).regex(/^[a-z0-9-_]+$/, "Channel names can only contain lowercase letters, numbers, hyphens, and underscores"),
   type: z.enum(["text", "voice"]),
-  categoryId: z.string().uuid().optional().or(z.string().length(0)),
+  categoryId: z.string().min(1).max(50).regex(/^[A-Za-z0-9_-]+$/).optional().or(z.string().length(0)),
 });
 
 export const createCategorySchema = z.object({
   name: z.string().min(1).max(32),
 });
 
-export const sendMessageSchema = z.object({
-  channelId: z.string(),
-  content: z.string().optional(),
-  parentId: z.string().optional(),
-  attachment: z.object({
-    fileUrl: z.string(),
-    fileName: z.string(),
-    fileSize: z.number().optional(),
-    fileType: z.string().optional()
-  }).optional(),
-  attachments: z.array(z.object({
-    fileUrl: z.string(),
-    fileName: z.string(),
-    fileSize: z.number().optional(),
-    fileType: z.string().optional()
-  })).optional()
+export const attachmentSchema = z.object({
+  fileUrl: z.string().min(1),
+  fileName: z.string().min(1),
+  fileSize: z.number().int().nonnegative().optional(),
+  fileType: z.string().optional()
 });
 
-export const sendDirectMessageSchema = z.object({
-  conversationId: z.string(),
+const messagePayloadSchema = z.object({
   content: z.string().optional(),
-  attachment: z.object({
-    fileUrl: z.string(),
-    fileName: z.string(),
-    fileSize: z.number().optional(),
-    fileType: z.string().optional()
-  }).optional(),
-  attachments: z.array(z.object({
-    fileUrl: z.string(),
-    fileName: z.string(),
-    fileSize: z.number().optional(),
-    fileType: z.string().optional()
-  })).optional()
+  parentId: z.string().optional().nullable(),
+  attachment: attachmentSchema.optional().nullable(),
+  requestId: z.string().optional(),
+}).superRefine((data, ctx) => {
+  const hasContent = Boolean(data.content?.trim());
+  const hasAttachment = Boolean(data.attachment);
+
+  if (!hasContent && !hasAttachment) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Message content or attachment is required",
+      path: ["content"],
+    });
+  }
+});
+
+export const createChannelMessageSchema = messagePayloadSchema;
+export const createDirectMessageSchema = messagePayloadSchema;
+
+export const sendMessageSchema = messagePayloadSchema.extend({
+  channelId: z.string(),
+});
+
+export const sendDirectMessageSchema = messagePayloadSchema.extend({
+  conversationId: z.string(),
 });

@@ -34,19 +34,23 @@ storageAdmin.post("/audit_logs/cleanup", async (c) => {
 
 // --- Backups (PostgreSQL handled via postgres-backup service) ---
 storageAdmin.get("/backup", async (c) => {
-  const backupDir = "/app/backups";
+  const backupDir = "/app/backups/daily";
   try {
     if (!fs.existsSync(backupDir)) {
       return c.json({ count: 0, backups: [], status: "active", message: "Backup repository not initialized" });
     }
-    const files = fs.readdirSync(backupDir)
-      .filter(f => f.endsWith(".sql.gz") || f.endsWith(".sql") || f.endsWith(".tar"))
+
+    const files = fs.readdirSync(backupDir, { withFileTypes: true })
+      .filter((entry) => entry.isFile() || entry.isSymbolicLink())
+      .map((entry) => entry.name)
+      .filter((filename) => !filename.includes("latest"))
+      .filter((filename) => filename.endsWith(".sql.gz") || filename.endsWith(".sql") || filename.endsWith(".tar"))
       .map(f => {
         const stats = fs.statSync(path.join(backupDir, f));
         return {
           filename: f,
           size: stats.size,
-          createdAt: stats.birthtime,
+          createdAt: stats.mtime,
         };
       })
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -55,7 +59,7 @@ storageAdmin.get("/backup", async (c) => {
       count: files.length, 
       backups: files,
       status: "active",
-      retentionPolicy: "7 days"
+      retentionPolicy: "3 daily backups"
     });
   } catch (err) {
     logger.error("Failed to list backups", { error: err as Error });
@@ -65,7 +69,7 @@ storageAdmin.get("/backup", async (c) => {
 
 storageAdmin.get("/backup/download/:filename", async (c) => {
   const filename = c.req.param("filename");
-  const filePath = path.join("/app/backups", filename);
+  const filePath = path.join("/app/backups/daily", filename);
   
   if (!fs.existsSync(filePath)) {
     return c.json({ error: "Asset identified as missing" }, 404);

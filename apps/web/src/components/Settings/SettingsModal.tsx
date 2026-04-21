@@ -117,7 +117,7 @@ const TabItem = ({ icon, label, active, onClick }: { icon: "profile" | "equipmen
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer transition-all group",
-        active ? 'bg-sori-primary text-white shadow-xl' : 'text-sori-text-muted hover:bg-sori-surface-hover hover:text-white'
+        active ? 'bg-sori-accent-primary text-white shadow-xl' : 'text-sori-text-muted hover:bg-sori-surface-hover hover:text-white'
       )}
     >
       <Icon className={cn("h-5 w-5 transition-all", active ? 'text-white scale-110' : 'text-sori-text-muted group-hover:scale-110')} />

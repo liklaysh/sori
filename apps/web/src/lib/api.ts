@@ -1,6 +1,14 @@
 import axios from "axios";
 import { API_URL } from "../config";
 
+const createRequestId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `req_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+};
+
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true, // Crucial for httpOnly cookies
@@ -22,6 +30,16 @@ const processQueue = (error: any, token: string | null = null) => {
   });
   failedQueue = [];
 };
+
+api.interceptors.request.use((config) => {
+  config.headers = config.headers || {};
+
+  if (!config.headers["X-Request-ID"] && !config.headers["x-request-id"]) {
+    config.headers["X-Request-ID"] = createRequestId();
+  }
+
+  return config;
+});
 
 // Response Interceptor for Silent Refresh
 api.interceptors.response.use(

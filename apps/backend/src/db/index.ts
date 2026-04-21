@@ -11,5 +11,3 @@ const migrationClient = postgres(connectionString, { max: 1 });
 // For the application logic
 const queryClient = postgres(connectionString);
 export const db = drizzle(queryClient, { schema });
-
-console.log("🐘 [DB] PostgreSQL client initialized.");

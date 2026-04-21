@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, RefObject } from "react";
+import React, { useState, useRef, useCallback, RefObject, useEffect } from "react";
 import { Message, CallLog, ChatItem } from "../../types/chat";
 import { MessageItem } from "./MessageItem";
 import { SystemCallToast } from "./SystemCallToast";
@@ -6,6 +6,7 @@ import { Skeleton, cn } from "@sori/ui";
 import { format, differenceInMinutes } from "date-fns";
 import { Loader2, ArrowDown, MessageCircle } from "lucide-react";
 import { useUserStore } from "../../store/useUserStore";
+import { useUIStore } from "../../store/useUIStore";
 
 interface MessageListProps {
   messages: ChatItem[];
@@ -26,8 +27,88 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
   onForward
 }) => {
   const { user } = useUserStore();
+  const { activeModule, activeChannelId, activeConversationId } = useUIStore();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const lastScrollHeightRef = useRef<number>(0);
+
+  // Refs for smart scroll detection
+  const lastIdRef = useRef<string | null>(null);
+  const lastMessagesLengthRef = useRef(messages.length);
+  const lastFirstMessageIdRef = useRef<string | null>(null);
+  const lastLastMessageIdRef = useRef<string | null>(null);
+  const bottomAnchorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+
+    const currentId = activeModule === 'community' ? activeChannelId : activeConversationId;
+    if (!currentId) return;
+
+    const isSwitch = currentId !== lastIdRef.current;
+    
+    // Check if data just appeared (from 0 to >0)
+    const dataJustArrived = messages.length > 0 && lastMessagesLengthRef.current === 0;
+    
+    const firstMsgId = messages[0]?.id || null;
+    const lastMsgId = messages[messages.length - 1]?.id || null;
+
+    // SCENARIO DETECTION
+    // [RESET]: Switching conversations, initial page load, or full dataset replacement (jump)
+    const isReset = isSwitch || dataJustArrived || (
+      lastFirstMessageIdRef.current !== null && 
+      lastLastMessageIdRef.current !== null && 
+      firstMsgId !== lastFirstMessageIdRef.current && 
+      lastMsgId !== lastLastMessageIdRef.current
+    );
+
+    // [APPEND]: New messages added at the bottom (first message stayed same, last changed)
+    const isAppend = !isReset && 
+                     lastFirstMessageIdRef.current === firstMsgId && 
+                     lastLastMessageIdRef.current !== lastMsgId;
+
+    // [PREPEND]: Loading older history (last message stayed same, first changed)
+    // No action needed here, handled by manual scroll offset preservation in internalHandleScroll
+
+    if (isReset || (isAppend && (() => {
+      const threshold = 150;
+      return scrollRef.current!.scrollHeight - scrollRef.current!.scrollTop - scrollRef.current!.clientHeight < threshold;
+    })())) {
+      
+      const performScroll = () => {
+        if (!scrollRef.current) return;
+        
+        // 1. Initial attempt: Scroll to physical anchor
+        bottomAnchorRef.current?.scrollIntoView({ block: 'end', behavior: isReset ? 'auto' : 'smooth' });
+
+        // 2. Physical Verification after layout
+        requestAnimationFrame(() => {
+          if (!scrollRef.current) return;
+          const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+          const isAtBottom = (scrollTop + clientHeight) >= (scrollHeight - 10);
+          
+          if (!isAtBottom) {
+            // Corrective pass for layout shifts
+            scrollRef.current.scrollTo({ top: scrollHeight, behavior: isReset ? 'auto' : 'smooth' });
+          }
+        });
+      };
+
+      if (isReset) {
+        // Use double RAF for switch/reset to ensure all skeletons are gone
+        requestAnimationFrame(() => {
+          requestAnimationFrame(performScroll);
+        });
+      } else {
+        performScroll();
+      }
+    }
+
+    // Update tracked markers
+    lastIdRef.current = currentId;
+    lastMessagesLengthRef.current = messages.length;
+    lastFirstMessageIdRef.current = firstMsgId;
+    lastLastMessageIdRef.current = lastMsgId;
+  }, [messages, activeModule, activeChannelId, activeConversationId, scrollToBottom, scrollRef]);
 
   const internalHandleScroll = useCallback(async () => {
     handleScroll();
@@ -166,6 +247,8 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
         })()
       )}
       
+      <div ref={bottomAnchorRef} className="h-px -mt-px w-full pointer-events-none opacity-0" aria-hidden="true" />
+
       {showScrollButton && (
         <div className="sticky bottom-4 left-0 right-0 flex justify-center pointer-events-none z-50">
           <button 

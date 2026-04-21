@@ -49,7 +49,7 @@ export const VoiceVideoTab: React.FC<VoiceVideoTabProps> = ({
          {/* Input/Output Selectors */}
          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase text-sori-primary tracking-widest ml-1">Input Device</label>
+              <label className="text-[10px] font-black uppercase text-sori-accent-primary tracking-widest ml-1">Input Device</label>
               <Select value={activeMicId} onValueChange={setActiveMic}>
                 <SelectTrigger className="w-full bg-sori-surface-base border-sori-border-subtle font-bold text-sm">
                   <SelectValue placeholder="Select Microphone" />
@@ -64,7 +64,7 @@ export const VoiceVideoTab: React.FC<VoiceVideoTabProps> = ({
               </Select>
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase text-sori-secondary tracking-widest ml-1">Output Device</label>
+              <label className="text-[10px] font-black uppercase text-sori-accent-secondary tracking-widest ml-1">Output Device</label>
               <Select value={activeOutputId} onValueChange={setActiveOutput}>
                 <SelectTrigger className="w-full bg-sori-surface-base border-sori-border-subtle font-bold text-sm">
                   <SelectValue placeholder="Select Speaker" />
@@ -103,7 +103,7 @@ export const VoiceVideoTab: React.FC<VoiceVideoTabProps> = ({
              <div className="flex items-center gap-5">
                 <div className={cn(
                   "w-12 h-12 rounded-2xl flex items-center justify-center border border-sori-border-subtle",
-                  noiseSuppression ? 'bg-sori-surface-elevated text-sori-primary' : 'bg-sori-surface-base text-sori-text-muted'
+                  noiseSuppression ? 'bg-sori-surface-elevated text-sori-accent-primary' : 'bg-sori-surface-base text-sori-text-muted'
                 )}>
                    <Waves className="h-6 w-6" />
                 </div>
@@ -114,7 +114,7 @@ export const VoiceVideoTab: React.FC<VoiceVideoTabProps> = ({
              </div>
                <button 
                 onClick={toggleNoiseSuppression}
-                className={cn("w-14 h-8 rounded-full relative transition-all duration-500", noiseSuppression ? 'bg-sori-primary' : 'bg-sori-surface-hover')}
+                className={cn("w-14 h-8 rounded-full relative transition-all duration-500", noiseSuppression ? 'bg-sori-accent-primary' : 'bg-sori-surface-hover')}
               >
                  <div className={cn("absolute top-1 w-6 h-6 rounded-full bg-white transition-all duration-500", noiseSuppression ? 'left-7' : 'left-1')} />
               </button>
@@ -129,7 +129,7 @@ export const VoiceVideoTab: React.FC<VoiceVideoTabProps> = ({
                 </div>
                 <Button 
                   onClick={hardware.isTesting ? hardware.stopHardwareTest : hardware.startHardwareTest}
-                  className={cn("rounded-xl font-bold px-6", !hardware.isTesting && "bg-sori-primary text-white")}
+                  className={cn("rounded-xl font-bold px-6", !hardware.isTesting && "bg-sori-accent-primary text-white")}
                 >
                   {hardware.isTesting ? "Stop Test" : "Start Test"}
                 </Button>
@@ -150,7 +150,7 @@ export const VoiceVideoTab: React.FC<VoiceVideoTabProps> = ({
                     <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest ml-1">Mic Level</label>
                     <div className="h-full flex flex-col justify-center gap-6">
                        <div className="h-3 bg-sori-surface-base rounded-full overflow-hidden border border-sori-border-subtle">
-                          <div className="h-full bg-sori-primary transition-all duration-75" style={{ width: `${hardware.audioLevel}%` }} />
+                          <div className="h-full bg-sori-accent-primary transition-all duration-75" style={{ width: `${hardware.audioLevel}%` }} />
                        </div>
                        <p className="text-[10px] text-sori-text-muted italic">Check permissions if no activity is shown.</p>
                     </div>

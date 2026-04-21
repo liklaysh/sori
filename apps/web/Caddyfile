@@ -1,0 +1,14 @@
+:80 {
+	route {
+		handle /.well-known/sori/client.json {
+			reverse_proxy sori-backend:3000
+		}
+
+		handle {
+			root * /srv
+			encode zstd gzip
+			try_files {path} /index.html
+			file_server
+		}
+	}
+}

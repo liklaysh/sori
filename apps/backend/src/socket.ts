@@ -92,7 +92,39 @@ export function initSocket(server: any) {
     socket.join(`user:${user.id}`);
     
     // Store user info in socket data for easier filtering later if needed
-    socket.data.user = user;    // Add socket to user's set in Redis
+    socket.data.user = user;
+
+    socket.on("join_channel", (channelId: string) => {
+      logger.debug(`📡 [Socket] User ${user.username} joining channel: ${channelId}`);
+      if (isAdminPanel && channelId !== "admin_logs") return;
+      socket.join(channelId);
+    });
+
+    socket.on("typing", (dataValue: { channelId: string, isTyping: boolean }) => {
+      const { channelId, isTyping } = dataValue;
+      socket.to(channelId).emit("user_typing", {
+        userId: user.id,
+        username: user.username,
+        isTyping
+      });
+    });
+
+    socket.on("get_voice_state", async () => {
+      try {
+        const state = await redisVoice.getAllOccupants();
+        socket.emit("voice_occupants_state", state);
+      } catch (err) {
+        logger.error("[Socket] get_voice_state error:", { error: err });
+      }
+    });
+
+    // Register module listeners before async bootstrap so early emits after connect are not lost.
+    handlePresence(io, authSocket, user);
+    handleVoice(io, authSocket, user, isAdminPanel);
+    handleMessages(io, authSocket, user, isAdminPanel);
+    handleCalls(io, authSocket, user);
+
+    // Add socket to user's set in Redis
     const wasOffline = !(await redisPresence.isUserOnline(user.id));
     await redisPresence.addUserSocket(user.id, socket.id);
 
@@ -155,41 +187,7 @@ export function initSocket(server: any) {
     
     logger.debug(`[Socket] Sending initial_presence to ${user.username} (socket ${socket.id})`, { count: filteredOnlineIds.length });
     socket.emit("initial_presence", filteredOnlineIds);
-    
-    socket.on("get_voice_state", async () => {
-      try {
-        const state = await redisVoice.getAllOccupants();
-        socket.emit("voice_occupants_state", state);
-      } catch (err) {
-        logger.error("[Socket] get_voice_state error:", { error: err });
-      }
-    });
-    
-    // Tell the new user who is already online (this is still a bit expensive, but better with Redis)
-    // In a huge app, we'd only fetch presence for the user's friends/community members.
-    // For now, we'll keep it simple.
-    
-    socket.on("join_channel", (channelId: string) => {
-      logger.debug(`📡 [Socket] User ${user.username} joining channel: ${channelId}`);
-      if (isAdminPanel && channelId !== "admin_logs") return;
-      socket.join(channelId);
-    });
-
-    socket.on("typing", (dataValue: { channelId: string, isTyping: boolean }) => {
-      const { channelId, isTyping } = dataValue;
-      // Noisy logging suppressed in production
-      socket.to(channelId).emit("user_typing", {
-        userId: user.id,
-        username: user.username,
-        isTyping
-      });
-    });
-
-    // Delegate to module handlers
-    handlePresence(io, authSocket, user);
-    handleVoice(io, authSocket, user, isAdminPanel);
-    handleMessages(io, authSocket, user, isAdminPanel);
-    handleCalls(io, authSocket, user);
+    socket.emit("socket_ready", { userId: user.id });
     
     // Leak Detection & Listener Audit
     const monitoredEvents = ["join_channel", "typing", "get_voice_state", "disconnect"];

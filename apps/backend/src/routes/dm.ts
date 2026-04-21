@@ -1,12 +1,17 @@
 import { Hono } from "hono";
 import { db } from "../db/index.js";
 import { dmConversations, directMessages, users, callLogs } from "../db/schema.js";
-import { eq, or, and, desc, asc, lt, gte, sql, not } from "drizzle-orm";
+import { eq, or, and, desc, lt, like, sql, inArray, ne } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { authMiddleware } from "../middleware/auth.js";
 import { safe } from "../utils/safe.js";
 import { logger } from "../utils/logger.js";
 import { getGlobalIo } from "../globals.js";
+import { createDirectMessageSchema } from "../validation/schemas.js";
+import { markConversationRead } from "../utils/dmRead.js";
+import { extractAttachment, serializeMessage } from "../utils/messageContract.js";
+import { getLinkPreviews } from "../utils/linkPreview.js";
+import { sanitizeUser } from "../utils/publicUser.js";
 
 const app = new Hono();
 
@@ -32,35 +37,61 @@ app.get("/conversations", authMiddleware, safe(async (c) => {
   });
 
   // Filter out any conversations where internal role is adminpanel
-  const filteredConvs = convs.filter(conv => {
-    return conv.user1?.role !== 'adminpanel' && conv.user2?.role !== 'adminpanel';
+  const filteredConvs = convs.filter((conv) => {
+    return conv.user1Id !== conv.user2Id
+      && conv.user1?.role !== "adminpanel"
+      && conv.user2?.role !== "adminpanel";
   });
 
-  // Calculate unread counts
-  const results = await Promise.all(filteredConvs.map(async (conv) => {
-    // 1. Unread Messages
-    const [unreadMsgsResult] = await db.select({ count: sql<number>`count(*)` })
+  const conversationIds = filteredConvs.map((conv) => conv.id);
+  const unreadMessagesMap = new Map<string, number>();
+  const unreadCallLogsMap = new Map<string, number>();
+
+  if (conversationIds.length > 0) {
+    const unreadMessages = await db.select({
+      conversationId: directMessages.conversationId,
+      count: sql<number>`count(*)`,
+    })
       .from(directMessages)
       .where(and(
-        eq(directMessages.conversationId, conv.id),
+        inArray(directMessages.conversationId, conversationIds),
         eq(directMessages.isRead, false),
-        eq(directMessages.authorId, conv.user1Id === userId ? conv.user2Id : conv.user1Id)
-      ));
+        ne(directMessages.authorId, userId),
+      ))
+      .groupBy(directMessages.conversationId);
 
-    // 2. Unread Call Logs (where current user was the receiver/callee)
-    const [unreadCallsResult] = await db.select({ count: sql<number>`count(*)` })
+    unreadMessages.forEach((row) => {
+      unreadMessagesMap.set(row.conversationId, Number(row.count || 0));
+    });
+
+    const unreadCallLogs = await db.select({
+      conversationId: callLogs.conversationId,
+      count: sql<number>`count(*)`,
+    })
       .from(callLogs)
       .where(and(
-        eq(callLogs.conversationId, conv.id),
+        inArray(callLogs.conversationId, conversationIds),
         eq(callLogs.isRead, false),
-        eq(callLogs.calleeId, userId) // Only count if I was called
-      ));
-    
+        eq(callLogs.calleeId, userId),
+      ))
+      .groupBy(callLogs.conversationId);
+
+    unreadCallLogs.forEach((row) => {
+      if (row.conversationId) {
+        unreadCallLogsMap.set(row.conversationId, Number(row.count || 0));
+      }
+    });
+  }
+
+  const results = filteredConvs.map((conv) => {
     return {
       ...conv,
-      unreadCount: (unreadMsgsResult?.count || 0) + (unreadCallsResult?.count || 0)
+      user1: sanitizeUser(conv.user1),
+      user2: sanitizeUser(conv.user2),
+      messages: conv.messages.map((message) => serializeMessage(message)),
+      unreadCount: (unreadMessagesMap.get(conv.id) || 0) + (unreadCallLogsMap.get(conv.id) || 0)
     };
-  }));
+  });
 
   return c.json(results);
 }));
@@ -112,7 +143,11 @@ app.post("/conversations", authMiddleware, safe(async (c) => {
     });
   }
 
-  return c.json(conv);
+  return c.json(conv ? {
+    ...conv,
+    user1: sanitizeUser(conv.user1),
+    user2: sanitizeUser(conv.user2),
+  } : null);
 }));
 
 // Get messages for a conversation
@@ -122,18 +157,23 @@ app.get("/conversations/:id/messages", authMiddleware, safe(async (c) => {
   const userId = jwt.id;
   const before = c.req.query("before");
   const limit = Math.min(Number(c.req.query("limit")) || 50, 100);
+  const query = c.req.query("q");
 
   // Verify user is part of the conversation
   const conv = await db.query.dmConversations.findFirst({
     where: eq(dmConversations.id, convId as string)
   });
 
-  if (!conv || (conv.user1Id !== userId && conv.user2Id !== userId)) {
+  if (!conv || conv.user1Id === conv.user2Id || (conv.user1Id !== userId && conv.user2Id !== userId)) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
   let msgConditions = [eq(directMessages.conversationId, convId as string)];
   let logConditions = [eq(callLogs.conversationId, convId as string)];
+
+  if (query) {
+    msgConditions.push(like(directMessages.content, `%${query}%`));
+  }
 
   if (before) {
     const beforeDate = new Date(before);
@@ -149,14 +189,14 @@ app.get("/conversations/:id/messages", authMiddleware, safe(async (c) => {
     with: {
       author: true
     },
-    orderBy: [asc(directMessages.createdAt)],
+    orderBy: [desc(directMessages.createdAt)],
     limit: limit
   });
 
   // Fetch relevant call logs
-  const logs = await db.query.callLogs.findMany({
+  const logs = query ? [] : await db.query.callLogs.findMany({
     where: and(...logConditions),
-    orderBy: [asc(callLogs.createdAt)],
+    orderBy: [desc(callLogs.createdAt)],
     limit: limit
   });
 
@@ -167,15 +207,15 @@ app.get("/conversations/:id/messages", authMiddleware, safe(async (c) => {
   }));
 
   // Merge and sort
-  const combined = [...msgs, ...formattedLogs]
+  const combined = [...msgs.map((message) => serializeMessage(message)), ...formattedLogs]
     .sort((a: any, b: any) => {
       const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
       const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-      return timeA - timeB; // Chronological
+      return timeB - timeA;
     })
     .slice(0, limit);
 
-  return c.json(combined);
+  return c.json(combined.reverse());
 }));
 
 // Send a direct message
@@ -184,18 +224,25 @@ app.post("/conversations/:id/messages", authMiddleware, safe(async (c) => {
     const convId = c.req.param("id");
     const user = (c as any).get("user") || (c as any).get("jwtPayload") || {};
     const userId = user.id;
-    const { content, type = "text", fileUrl, fileName, fileSize, fileType } = await c.req.json();
+    const requestId = c.get("requestId");
+    const body = await c.req.json();
+    const parsed = createDirectMessageSchema.safeParse(body);
 
-    if (!content && type !== "file") {
-      return c.json({ error: "Message content is required" }, 400);
+    if (!parsed.success) {
+      return c.json({ error: "Invalid message payload", details: parsed.error.format() }, 400);
     }
+
+    const attachment = extractAttachment(parsed.data);
+    const content = parsed.data.content?.trim() || "";
+    const type = attachment ? "file" : "text";
+    const linkPreviews = content ? await getLinkPreviews(content) : [];
 
     // Verify membership
     const conv = await db.query.dmConversations.findFirst({
       where: eq(dmConversations.id, convId!)
     });
 
-    if (!conv || (conv.user1Id !== userId && conv.user2Id !== userId)) {
+    if (!conv || conv.user1Id === conv.user2Id || (conv.user1Id !== userId && conv.user2Id !== userId)) {
       return c.json({ error: "Unauthorized" }, 403);
     }
 
@@ -204,12 +251,13 @@ app.post("/conversations/:id/messages", authMiddleware, safe(async (c) => {
       id,
       conversationId: convId!,
       authorId: userId,
-      content: content || "",
+      content,
       type,
-      fileUrl,
-      fileName,
-      fileSize,
-      fileType
+      fileUrl: attachment?.fileUrl,
+      fileName: attachment?.fileName,
+      fileSize: attachment?.fileSize,
+      fileType: attachment?.fileType,
+      linkMetadata: linkPreviews.length > 0 ? JSON.stringify(linkPreviews) : null,
     }).returning();
 
     // Update conversation timestamp
@@ -223,15 +271,51 @@ app.post("/conversations/:id/messages", authMiddleware, safe(async (c) => {
     // Emit to both users in the conversation - Fixed global IO access
     const io = getGlobalIo();
     if (io) {
-      io.to(`user:${conv.user1Id}`).emit("new_direct_message", msgWithAuthor);
-      io.to(`user:${conv.user2Id}`).emit("new_direct_message", msgWithAuthor);
+      const payload = {
+        ...serializeMessage(msgWithAuthor),
+        conversationId: convId,
+        requestId,
+      };
+      io.to(`user:${conv.user1Id}`).emit("new_direct_message", payload);
+      io.to(`user:${conv.user2Id}`).emit("new_direct_message", payload);
     }
 
-    return c.json(msgWithAuthor);
+    return c.json({
+      ...serializeMessage(msgWithAuthor),
+      conversationId: convId,
+      requestId,
+    });
   } catch (err: any) {
     logger.error("❌ Post DM error", { error: err as Error });
     return c.json({ error: "Internal Server Error" }, 500);
   }
+}));
+
+app.post("/conversations/:id/read", authMiddleware, safe(async (c) => {
+  const conversationId = c.req.param("id");
+  const jwt = (c.get("jwtPayload") || {}) as any;
+  const requestId = c.get("requestId");
+  const io = getGlobalIo();
+
+  if (!conversationId) {
+    return c.json({ error: "Conversation id is required" }, 400);
+  }
+
+  const conversation = await db.query.dmConversations.findFirst({
+    where: eq(dmConversations.id, conversationId),
+  });
+
+  if (!conversation || conversation.user1Id === conversation.user2Id) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  const updatedConversation = await markConversationRead(conversationId, jwt.id, io);
+
+  if (!updatedConversation) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  return c.json({ success: true, requestId });
 }));
 
 export default app;

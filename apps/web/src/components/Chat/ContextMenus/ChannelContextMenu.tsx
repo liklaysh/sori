@@ -2,6 +2,7 @@ import React from 'react';
 import { Channel } from '../../../types/chat';
 import { Edit2, Trash2 } from 'lucide-react';
 import { cn } from "@sori/ui";
+import { useContextMenuPosition } from '../../../hooks/useContextMenuPosition';
 
 interface ChannelContextMenuProps {
   visible: boolean;
@@ -13,21 +14,14 @@ interface ChannelContextMenuProps {
 }
 
 export const ChannelContextMenu: React.FC<ChannelContextMenuProps> = ({ visible, x, y, channel, onRename, onDelete }) => {
-  if (!visible || !channel) return null;
+  const menuStyles = useContextMenuPosition(x, y);
 
-  const getMenuStyles = (x: number, y: number) => {
-    const vThreshold = window.innerHeight / 2;
-    const hThreshold = window.innerWidth / 2;
-    const styles: React.CSSProperties = {};
-    if (y > vThreshold) styles.bottom = window.innerHeight - y; else styles.top = y;
-    if (x > hThreshold) styles.right = window.innerWidth - x; else styles.left = x;
-    return styles;
-  };
+  if (!visible || !channel) return null;
 
   return (
     <div 
-      className="fixed z-[250] bg-sori-sidebar border border-sori-border-subtle rounded-2xl shadow-2xl py-2 min-w-[200px] animate-in fade-in zoom-in-95 shadow-black ring-1 ring-sori-border-medium" 
-      style={getMenuStyles(x, y)}
+      className="fixed z-[250] bg-sori-surface-panel border border-sori-border-subtle rounded-2xl shadow-2xl py-2 min-w-[200px] animate-in fade-in zoom-in-95 shadow-black ring-1 ring-sori-border-medium" 
+      style={menuStyles}
     >
       <div className="px-4 py-2 text-[9px] font-black uppercase tracking-widest text-sori-text-dim">
         Channel Options
@@ -41,9 +35,9 @@ export const ChannelContextMenu: React.FC<ChannelContextMenuProps> = ({ visible,
       </button>
       <button 
         onClick={onDelete} 
-        className="w-full px-4 py-2.5 hover:bg-sori-error-subtle hover:text-sori-error cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
+        className="w-full px-4 py-2.5 hover:bg-sori-accent-danger-subtle hover:text-sori-accent-danger cursor-pointer flex items-center gap-3 transition-all text-sm font-bold group"
       >
-        <Trash2 className="h-4 w-4 text-sori-text-muted group-hover:text-sori-error" />
+        <Trash2 className="h-4 w-4 text-sori-text-muted group-hover:text-sori-accent-danger" />
         Delete Channel
       </button>
     </div>

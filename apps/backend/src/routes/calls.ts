@@ -42,10 +42,19 @@ router.post("/token", authMiddleware, safe(async (c) => {
         startTime = activeCall.startedAt?.getTime() || Date.now();
       }
     } else if (callId) {
-       const callRecord = await db.query.calls.findFirst({
-         where: eq(calls.id, callId)
-       });
-       startTime = callRecord?.startedAt?.getTime() || Date.now();
+      const callRecord = await db.query.calls.findFirst({
+        where: eq(calls.id, callId)
+      });
+
+      if (!callRecord || callRecord.type !== "direct") {
+        return c.json({ error: "Call not found" }, 404);
+      }
+
+      if (callRecord.callerId !== payload.id && callRecord.calleeId !== payload.id) {
+        return c.json({ error: "Call access denied" }, 403);
+      }
+
+      startTime = callRecord.startedAt?.getTime() || Date.now();
     }
 
     const userRecord = await db.query.users.findFirst({

@@ -3,6 +3,8 @@ import { config } from "../config.js";
 import { logger } from "./logger.js";
 
 const REDIS_URL = config.redis.url;
+const DIRECT_CALL_PREFIX = "active_direct_call:";
+const DIRECT_CALL_TTL_SECONDS = 3600;
 
 export const redis = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
@@ -197,15 +199,43 @@ export const redisVoice = {
  */
 export const redisCalls = {
   setCall: async (callId: string, details: any) => {
-    // Store as JSON to keep it simple
-    await redis.hset("active_direct_calls", callId, JSON.stringify(details));
-    await redis.expire("active_direct_calls", 3600); // 1 hour safety expiry
+    await redis.set(`${DIRECT_CALL_PREFIX}${callId}`, JSON.stringify(details), "EX", DIRECT_CALL_TTL_SECONDS);
   },
   getCall: async (callId: string) => {
-    const data = await redis.hget("active_direct_calls", callId);
+    const data = await redis.get(`${DIRECT_CALL_PREFIX}${callId}`);
     return data ? JSON.parse(data) : null;
   },
+  getAllCalls: async () => {
+    const result: Record<string, any> = {};
+    let cursor = "0";
+
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, "MATCH", `${DIRECT_CALL_PREFIX}*`, "COUNT", 100);
+      cursor = nextCursor;
+
+      if (keys.length === 0) {
+        continue;
+      }
+
+      const values = await redis.mget(...keys);
+      keys.forEach((key, index) => {
+        const value = values[index];
+        if (typeof value === "string") {
+          result[key.replace(DIRECT_CALL_PREFIX, "")] = JSON.parse(value);
+        }
+      });
+    } while (cursor !== "0");
+
+    return result;
+  },
   removeCall: async (callId: string) => {
-    await redis.hdel("active_direct_calls", callId);
+    await redis.del(`${DIRECT_CALL_PREFIX}${callId}`);
+  },
+  refreshCall: async (callId: string) => {
+    const key = `${DIRECT_CALL_PREFIX}${callId}`;
+    const exists = await redis.exists(key);
+    if (exists) {
+      await redis.expire(key, DIRECT_CALL_TTL_SECONDS);
+    }
   }
 };

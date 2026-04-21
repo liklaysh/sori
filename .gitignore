@@ -25,6 +25,13 @@ yarn-debug.log*
 yarn-error.log*
 logs
 *.log
+.npm-cache/
+**/.npm-cache/
+**/.vite-temp/
+async-audit-report.json
+unfixed-imports.json
+tsc_output*.txt
+ui_tsc_output.txt
 
 # IDEs
 .vscode/

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@sori/ui";
 import { 
   useTracks,
@@ -33,12 +33,13 @@ import {
   MessageSquare
 } from "lucide-react";
 import { SoriParticipantTile } from "./SoriParticipantTile";
-import { toggleNoiseSuppression as toggleRNNoise } from "../../../utils/noise-processor";
 import { SoriCallControls } from "./SoriCallControls";
 import { SoriCallSidebar } from "./SoriCallSidebar";
 
 interface SoriVoiceRoomProps {
   onLeave: () => void;
+  socket: any;
+  channelId?: string | null;
   messages: ChatItem[];
   inputValue: string;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -67,6 +68,8 @@ interface SoriVoiceRoomProps {
 
 export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({ 
   onLeave, 
+  socket,
+  channelId,
   messages,
   inputValue,
   onInputChange,
@@ -89,8 +92,43 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
   const { getSyncedDate } = useServerTime();
   const [duration, setDuration] = useState("00:00");
   const { localParticipant } = useLocalParticipant();
-
   const [currentPage, setCurrentPage] = useState(0);
+
+  useEffect(() => {
+    // Mounting/Participant logging
+  }, [user?.id, localParticipant]);
+
+  // --- Speaking Sync Logic ---
+  const lastSpeakingState = useRef<boolean>(false);
+  const speakingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const isSpeaking = localParticipant.isSpeaking;
+    
+    // Only proceed if state changed
+    if (isSpeaking === lastSpeakingState.current) return;
+
+    // Throttle: we don't want to spam socket on every micro-packet
+    if (speakingTimeoutRef.current) return;
+
+    speakingTimeoutRef.current = setTimeout(() => {
+      // Final check of state before emit
+      const currentState = localParticipant.isSpeaking;
+      if (channelId && currentState !== lastSpeakingState.current) {
+        socket?.emit("user_speaking_update", { 
+          channelId, 
+          isSpeaking: currentState 
+        });
+        lastSpeakingState.current = currentState;
+      }
+      speakingTimeoutRef.current = null;
+    }, 200);
+
+    return () => {
+      if (speakingTimeoutRef.current) clearTimeout(speakingTimeoutRef.current);
+    };
+  }, [localParticipant.isSpeaking, socket, channelId, user?.id]);
+  // ---------------------------
   const [focusedTrack, setFocusedTrack] = useState<TrackReference | null>(null);
   const [hideSelfCamera, setHideSelfCamera] = useState(false);
 
@@ -154,11 +192,22 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
 
   // --- RNNoise Integration ---
   useEffect(() => {
+    let isCancelled = false;
+
     const applyNoiseSuppression = async () => {
       const audioPub = localParticipant.getTrackPublication(Track.Source.Microphone);
       if (audioPub && audioPub.audioTrack instanceof LocalAudioTrack) {
         try {
-          await toggleRNNoise(audioPub.audioTrack, noiseSuppression);
+          if (!noiseSuppression) {
+            await audioPub.audioTrack.stopProcessor();
+            return;
+          }
+
+          const { toggleNoiseSuppression } = await import("../../../utils/noise-processor");
+          if (isCancelled) {
+            return;
+          }
+          await toggleNoiseSuppression(audioPub.audioTrack, true);
         } catch (err) {
           console.error("[RNNoise] Failed to toggle:", err);
         }
@@ -166,6 +215,10 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
     };
 
     applyNoiseSuppression();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [noiseSuppression, localParticipant]);
 
   const ITEMS_PER_PAGE = 9;
@@ -198,7 +251,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
               key={`${track.participant.identity}-${track.source}`}
               onClick={() => isScreenShare && isTrackReference(track) && setFocusedTrack(track)}
               className={cn(
-                "relative aspect-video bg-sori-sidebar rounded-[2.5rem] overflow-hidden border border-sori-border-subtle shadow-2xl transition-all hover:border-sori-accent-primary group cursor-pointer",
+                "relative aspect-video bg-sori-surface-panel rounded-[2.5rem] overflow-hidden border border-sori-border-subtle shadow-2xl transition-all hover:border-sori-accent-primary group cursor-pointer",
                 isLastOfThree && "col-span-2 mx-auto w-full max-w-[calc(50%-1.5rem)]"
               )}
             >
@@ -222,7 +275,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
     <div className="flex-1 flex overflow-hidden relative h-full">
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header Unified */}
-        <div className="h-14 flex items-center justify-between px-8 bg-sori-surface-main border-b border-sori-border-subtle shrink-0 z-50">
+        <div className="h-14 flex items-center justify-between px-6 bg-sori-surface-main border-b border-sori-border-subtle shrink-0 z-50">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-sori-surface-hover flex items-center justify-center border border-sori-accent-primary shadow-sm">
               <Phone className="h-5 w-5 text-sori-accent-primary" />
@@ -240,7 +293,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
             {onMinimize && (
               <button 
                 onClick={onMinimize}
-                className="w-10 h-10 rounded-xl bg-sori-surface-hover border border-sori-border-subtle hover:bg-sori-sidebar text-sori-text-muted flex items-center justify-center transition-all"
+                className="w-10 h-10 rounded-xl bg-sori-surface-hover border border-sori-border-subtle hover:bg-sori-surface-panel text-sori-text-muted flex items-center justify-center transition-all"
                 title="Minimize Call"
               >
                 <Minimize2 className="h-5 w-5" />
@@ -249,7 +302,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
             {onOpenFindFriend && (
               <button 
                 onClick={onOpenFindFriend}
-                className="w-10 h-10 rounded-xl bg-sori-surface-hover border border-sori-border-subtle hover:bg-sori-sidebar text-sori-text-muted flex items-center justify-center transition-all"
+                className="w-10 h-10 rounded-xl bg-sori-surface-hover border border-sori-border-subtle hover:bg-sori-surface-panel text-sori-text-muted flex items-center justify-center transition-all"
                 title="Add to call"
               >
                 <UserPlus className="h-5 w-5" />
@@ -259,7 +312,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
               onClick={() => setIsChatOpen(!isChatOpen)}
               className={cn(
                 "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                isChatOpen ? "bg-sori-accent-primary text-black shadow-lg" : "bg-sori-surface-hover border border-sori-border-subtle text-sori-text-muted hover:bg-sori-sidebar hover:text-sori-text-strong"
+                isChatOpen ? "bg-sori-accent-primary text-black shadow-lg" : "bg-sori-surface-hover border border-sori-border-subtle text-sori-text-muted hover:bg-sori-surface-panel hover:text-sori-text-strong"
               )}
               title="Toggle Chat"
             >
@@ -274,7 +327,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
             /* FOCUSED VIEW */
             <div className="flex-1 w-full h-full flex flex-col relative overflow-hidden">
                <div className="flex-1 w-full h-full relative p-8 pb-0">
-                  <div className="w-full h-full rounded-[3rem] overflow-hidden border border-sori-border-subtle bg-sori-sidebar relative group shadow-2xl">
+                  <div className="w-full h-full rounded-[3rem] overflow-hidden border border-sori-border-subtle bg-sori-surface-panel relative group shadow-2xl">
                      <SoriParticipantTile trackRef={focusedTrack} />
                      <button 
                         onClick={() => setFocusedTrack(null)}
@@ -378,4 +431,3 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
     </div>
   );
 };
-

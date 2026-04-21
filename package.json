@@ -5,15 +5,17 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "packages/*",
-    "services/*"
+    "packages/*"
   ],
   "scripts": {
     "dev:backend": "npm run dev -w @sori/backend",
     "dev:web": "npm run dev -w @sori/web",
     "build": "npm run build --workspaces",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "post-refactor:fix": "node scripts/fix-imports.js && node scripts/audit-async.js",
+    "deploy:web": "/usr/local/bin/docker compose build --build-arg VITE_BUILD_ID=$(date +%y%m%d%H%M)$(git rev-parse --short HEAD 2>/dev/null | sed 's/^/-/ ') --build-arg VITE_BUILD_TIME=\"$(date)\" sori-web && /usr/local/bin/docker compose up -d sori-web",
+    "deploy:backend": "/usr/local/bin/docker compose build sori-backend && /usr/local/bin/docker compose up -d sori-backend",
+    "deploy:all": "/usr/local/bin/docker compose build --build-arg VITE_BUILD_ID=$(date +%y%m%d%H%M)$(git rev-parse --short HEAD 2>/dev/null | sed 's/^/-/ ') --build-arg VITE_BUILD_TIME=\"$(date)\" && /usr/local/bin/docker compose up -d",
+    "test": "npm run test:smoke",
+    "test:smoke": "npm run test:smoke -w @sori/backend",
     "prepare": "husky || true"
   },
   "devDependencies": {

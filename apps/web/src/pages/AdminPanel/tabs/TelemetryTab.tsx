@@ -22,7 +22,7 @@ interface CallParticipant {
 interface CallLog {
   id: string;
   type: 'channel' | 'direct';
-  status: 'active' | 'ended' | 'missed' | 'rejected';
+  status: 'active' | 'ended' | 'missed' | 'rejected' | 'ringing' | string;
   mos: string | null;
   avgBitrate: number | null;
   packetLoss: string | null;
@@ -72,6 +72,38 @@ export default function TelemetryTab() {
     return `${mins}m ${secs}s`;
   };
 
+  const getStatusTone = (status: string) => {
+    switch (status) {
+      case "active":
+        return "text-sori-accent-secondary";
+      case "ringing":
+        return "text-sori-accent-danger";
+      case "missed":
+      case "rejected":
+        return "text-sori-text-dim";
+      case "ended":
+      default:
+        return "text-sori-text-strong";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "active":
+        return "Live";
+      case "ringing":
+        return "Ringing";
+      case "missed":
+        return "Missed";
+      case "rejected":
+        return "Rejected";
+      case "ended":
+        return "Ended";
+      default:
+        return status;
+    }
+  };
+
   const getMOSColor = (mos: string | null) => {
     if (!mos) return "text-sori-text-muted";
     const val = parseFloat(mos);
@@ -97,9 +129,9 @@ export default function TelemetryTab() {
           <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">Real-time monitoring of WebRTC quality and session health.</p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <div className="px-4 py-2 rounded-xl bg-sori-error-subtle border border-sori-error flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-sori-error animate-pulse" />
-            <span className="text-[10px] font-black text-sori-error uppercase tracking-widest">Live Monitoring Active</span>
+          <div className="px-4 py-2 rounded-xl bg-sori-accent-danger-subtle border border-sori-accent-danger flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-sori-accent-danger animate-pulse" />
+            <span className="text-[10px] font-black text-sori-accent-danger uppercase tracking-widest">Live Monitoring Active</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Clock className="h-3 w-3 text-sori-text-dim" />
@@ -109,7 +141,7 @@ export default function TelemetryTab() {
       </div>
 
       {/* Automated Cleanup Notice */}
-      <div className="bg-sori-error-subtle border border-sori-accent-danger rounded-2xl p-4 flex items-center gap-3 shadow-inner">
+      <div className="bg-sori-accent-danger-subtle border border-sori-accent-danger rounded-2xl p-4 flex items-center gap-3 shadow-inner">
         <AlertCircle className="h-4 w-4 text-sori-accent-danger" />
         <p className="text-[10px] text-sori-text-dim font-bold uppercase tracking-wider">
           System Orchestration: Interaction streams older than 72 hours are automatically purged every 3 days to optimize database performance.
@@ -117,7 +149,7 @@ export default function TelemetryTab() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-sori-error-subtle border border-sori-accent-danger text-sori-accent-danger flex items-center gap-3">
+        <div className="p-4 rounded-xl bg-sori-accent-danger-subtle border border-sori-accent-danger text-sori-accent-danger flex items-center gap-3">
           <AlertCircle className="h-5 w-5" />
           <p className="text-xs font-bold">{error}</p>
         </div>
@@ -139,7 +171,7 @@ export default function TelemetryTab() {
                 <div className="flex items-center gap-4 min-w-[180px]">
                   <div className={cn(
                     "w-12 h-12 rounded-xl flex items-center justify-center shadow-inner shrink-0",
-                    call.status === 'active' ? "bg-sori-error-subtle text-sori-accent-danger" : "bg-sori-surface-active text-sori-text-muted"
+                    call.status === 'active' ? "bg-sori-accent-danger-subtle text-sori-accent-danger" : "bg-sori-surface-active text-sori-text-muted"
                   )}>
                     {call.type === 'direct' ? <Users className="h-6 w-6" /> : <Activity className="h-6 w-6" />}
                   </div>
@@ -190,16 +222,16 @@ export default function TelemetryTab() {
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">Bitrate</p>
                     <p className="text-sm font-bold text-sori-text-strong">
-                      {call.avgBitrate ? `${(call.avgBitrate / 1000).toFixed(1)} kbps` : (call.status === 'active' ? "SIGNALING..." : "—")}
+                      {call.avgBitrate ? `${(call.avgBitrate / 1000).toFixed(1)} kbps` : "—"}
                     </p>
                   </div>
                   <div className="flex flex-col">
                     <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest leading-none">Status</p>
-                    <p className={cn("text-sm font-bold", call.packetLoss && parseFloat(call.packetLoss) > 5 ? "text-sori-accent-danger" : "text-sori-text-strong")}>
-                        {call.packetLoss && parseFloat(call.packetLoss) > 5 ? 'Congested' : 'Stable'}
+                    <p className={cn("text-sm font-bold", getStatusTone(call.status))}>
+                      {getStatusLabel(call.status)}
                     </p>
+                  </div>
                 </div>
-               </div>
 
                 {/* Timing */}
                 <div className="min-w-[120px] lg:border-l lg:border-sori-border-subtle lg:pl-6 text-right">

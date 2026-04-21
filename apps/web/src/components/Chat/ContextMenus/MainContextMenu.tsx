@@ -1,5 +1,6 @@
 import React from 'react';
 import { FolderPlus, PlusCircle } from 'lucide-react';
+import { useContextMenuPosition } from '../../../hooks/useContextMenuPosition';
 
 interface MainContextMenuProps {
   visible: boolean;
@@ -10,19 +11,12 @@ interface MainContextMenuProps {
 }
 
 export const MainContextMenu: React.FC<MainContextMenuProps> = ({ visible, x, y, onCreateCategory, onCreateChannel }) => {
+  const menuStyles = useContextMenuPosition(x, y);
+
   if (!visible) return null;
 
-  const getMenuStyles = (x: number, y: number) => {
-    const vThreshold = window.innerHeight / 2;
-    const hThreshold = window.innerWidth / 2;
-    const styles: React.CSSProperties = {};
-    if (y > vThreshold) styles.bottom = window.innerHeight - y; else styles.top = y;
-    if (x > hThreshold) styles.right = window.innerWidth - x; else styles.left = x;
-    return styles;
-  };
-
   return (
-    <div className="fixed z-[200] bg-sori-surface-panel border border-sori-border-subtle rounded-xl shadow-2xl py-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200" style={getMenuStyles(x, y)}>
+    <div className="fixed z-[200] bg-sori-surface-panel border border-sori-border-subtle rounded-xl shadow-2xl py-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200" style={menuStyles}>
       <div 
         onClick={onCreateCategory} 
         className="px-4 py-2.5 hover:bg-sori-surface-hover hover:text-sori-accent-primary cursor-pointer flex items-center gap-3 transition-all text-xs font-black uppercase tracking-widest"

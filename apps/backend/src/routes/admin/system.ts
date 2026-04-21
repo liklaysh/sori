@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
 import { users, serverSettings, calls } from "../../db/schema.js";
-import { sql, count, ne, lt } from "drizzle-orm";
+import { sql, ne } from "drizzle-orm";
 import { logAudit } from "../../utils/audit.js";
 import { s3Client, BUCKET_NAME } from "../../utils/s3.js";
 import { HeadBucketCommand } from "@aws-sdk/client-s3";
@@ -16,7 +16,7 @@ system.get("/stats", async (c) => {
     .from(users)
     .where(ne(users.role, "deleted"));
 
-  const userCount = (dbUsers[0]?.count as number) || 0;
+  const userCount = Number(dbUsers[0]?.count || 0);
   
   return c.json({
     uptime: process.uptime(),
@@ -52,14 +52,6 @@ system.patch("/settings", async (c) => {
 
 // Call History
 system.get("/calls", async (c) => {
-  // Automatic Telemetry Cleanup: 72 Hour Threshold
-  const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
-  try {
-    await db.delete(calls).where(lt(calls.startedAt, seventyTwoHoursAgo));
-  } catch (e) {
-    console.error("Purification failed:", e);
-  }
-
   const callLogs = await db.query.calls.findMany({
     orderBy: (calls, { desc }) => [desc(calls.startedAt)],
     limit: 50,
@@ -75,10 +67,6 @@ system.get("/calls", async (c) => {
     }
   });
 
-  // Since I haven't added explicit relations for caller/callee yet (just raw IDs),
-  // I'll do a join or just return raw with info if I update schema relations.
-  // Actually, I'll just fetch users separately or add relations now.
-  
   return c.json(callLogs);
 });
 

@@ -38,11 +38,14 @@
   --sori-accent-warning: #edc242;
   
   /* Subtle Variants (Solid) */
-  --sori-primary-subtle: #32345c;
-  --sori-secondary-subtle: #2d4c47;
-  --sori-error-subtle: #472d2d;
-  --sori-success-subtle: #2d4733;
-  --sori-warning-subtle: #47412d;
+  --sori-accent-primary-subtle: #32345c;
+  --sori-accent-soft: #262a52;
+  --sori-accent-secondary-subtle: #2d4c47;
+  --sori-accent-danger-subtle: #472d2d;
+  --sori-accent-success-subtle: #2d4733;
+  --sori-accent-warning-subtle: #47412d;
+  --sori-chat-bubble-me: #353652;
+  --sori-chat-bubble-me-border: #3b3c5a;
 
   /* Shadcn-like mapping (using HSL derived from our HEX for compatibility) */
   --background: 210 9% 13%; 

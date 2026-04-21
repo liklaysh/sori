@@ -2,13 +2,15 @@ import React from "react";
 import { useChatStore } from "../../store/useChatStore";
 import { useUserStore } from "../../store/useUserStore";
 import { useUIStore } from "../../store/useUIStore";
-import { useCall } from "../../hooks/useCall";
 import { OccupantItem } from "./Voice/OccupantItem";
 import { Skeleton, cn, Popover, PopoverTrigger, PopoverContent, Slider } from "@sori/ui";
-import { ChevronDown, Plus, ChevronRight, Hash, Volume2, Mic, MicOff, Headphones, Sparkles, PhoneOff } from "lucide-react";
+import { ChevronDown, Plus, ChevronRight, Hash, Volume2, Mic, MicOff, Headphones, Waves, PhoneOff } from "lucide-react";
 import { NoiseSuppressionPopup } from "./Modals/NoiseSuppressionPopup";
 import { API_URL } from "../../config";
 import { getAvatarUrl } from "../../utils/avatar";
+import { CreateChannelModal } from "./Modals/CreateChannelModal";
+import api from "../../lib/api";
+import { toast } from "sonner";
 
 interface ChannelSidebarProps {
   socket: any;
@@ -27,33 +29,43 @@ interface ChannelSidebarProps {
   setActiveOutput: (id: string) => void;
   noiseSuppression: boolean;
   toggleNoiseSuppression: () => void;
+  
+  // Call Orchestration (from Chat.tsx)
+  livekitToken: string | null;
+  connectedChannelId: string | null;
+  status: string;
+  getChannelToken: (channelId: string) => Promise<string>;
+  resetCall: () => void;
+  setIsDisconnecting: (val: boolean) => void;
 }
 
-export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
-  socket, setIsVoiceChatOpen,
-  micGain, setMicGain, outputVolume, setOutputVolume,
-  micDevices, activeMicId, setActiveMic, outputDevices, activeOutputId, setActiveOutput,
-  noiseSuppression, toggleNoiseSuppression
-}) => {
+export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
+  const {
+    socket, setIsVoiceChatOpen,
+    micGain, setMicGain, outputVolume, setOutputVolume,
+    micDevices, activeMicId, setActiveMic, outputDevices, activeOutputId, setActiveOutput,
+    noiseSuppression, toggleNoiseSuppression,
+    livekitToken, connectedChannelId, status, 
+    getChannelToken, resetCall, setIsDisconnecting 
+  } = props;
+
   const { user } = useUserStore();
   const { channels, voiceOccupants } = useChatStore();
   const { 
     activeChannelId, setActiveChannelId, 
     collapsedCategories, toggleCategory,
     setChannelSidebarOpen,
-    isMuted, setIsMuted, isDeafened, setIsDeafened
+    isMuted, setIsMuted, isDeafened, setIsDeafened,
+    isCreateChannelModalOpen, setCreateChannelModalOpen, createChannelCategoryId
   } = useUIStore();
-
-  const { 
-    livekitToken, connectedChannelId, status, 
-    initiateCall, endCall, getChannelToken, resetCall 
-  } = useCall({ socket, currentUser: user! });
+  const { activeCommunityId, fetchInitialData } = useChatStore();
 
   const currentChannel = channels.find(c => c.id === activeChannelId) || null;
   const connectedChannel = channels.find(c => c.id === connectedChannelId) || null;
   
   const handleJoinVoiceChannel = async (channelId: string) => {
     try {
+      setIsDisconnecting(false);
       await getChannelToken(channelId);
       socket?.emit("join_voice_channel", channelId);
       setIsVoiceChatOpen(true);
@@ -66,21 +78,48 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
     socket?.emit("leave_voice_channel", connectedChannelId);
     setIsVoiceChatOpen(false);
     resetCall();
+    setIsDisconnecting(true);
   };
 
   // Categorize channels
-  const categories = Array.from(new Set(channels.map(c => c.categoryId))).map(id => ({
-    id,
-    name: channels.find(c => c.categoryId === id)?.categoryName || "Channels"
-  }));
+  const categories = Array.from(new Set(channels.map(c => c.categoryId))).map((id) => {
+    const categoryChannels = channels.filter((channel) => channel.categoryId === id);
+    const firstChannel = categoryChannels[0];
+    const fallbackName = firstChannel?.type === "voice" ? "VOICE CHANNELS" : "TEXT CHANNELS";
+
+    return {
+      id,
+      name: firstChannel?.categoryName || fallbackName,
+    };
+  });
+
+  const handleCreateChannel = async (data: { name: string; type: "text" | "voice"; categoryId: string }) => {
+    if (!activeCommunityId) {
+      toast.error("No active community context");
+      return;
+    }
+
+    try {
+      await api.post(`/communities/${activeCommunityId}/channels`, data);
+      toast.success(`Channel #${data.name} created!`);
+      
+      // Reactive update: refetch channels for this community
+      await fetchInitialData(activeCommunityId);
+      
+      setCreateChannelModalOpen(false);
+    } catch (err: any) {
+      console.error("Failed to create channel:", err);
+      toast.error(err.response?.data?.error || "Failed to create channel");
+    }
+  };
 
   const dynamicServerName = "Sori Sanctuary";
 
   if (!user) return null;
 
   return (
-    <aside className="h-full flex flex-col w-64 bg-sori-surface-main z-40 border-r border-sori-border-subtle">
-      <header className="h-14 px-4 flex items-center border-b border-sori-border-subtle shrink-0">
+    <aside className="h-full flex flex-col w-64 bg-sori-surface-panel z-40 border-r border-sori-border-subtle">
+      <header className="h-14 px-4 flex items-center border-b border-sori-border-subtle shrink-0 bg-sori-surface-panel">
         <h2 className="font-headline text-sori-text-strong font-bold text-base truncate">{dynamicServerName}</h2>
       </header>
       <div className="flex-1 overflow-y-auto py-4 space-y-2 no-scrollbar">
@@ -98,7 +137,13 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
                 )}
                 <span className="text-[11px] uppercase tracking-wider font-extrabold text-sori-text-muted hover:text-sori-text-strong transition-colors">{cat.name}</span>
               </div>
-              <button className="hidden group-hover:block hover:text-sori-text-strong transition-all p-0.5 rounded hover:bg-sori-surface-hover">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCreateChannelModalOpen(true, cat.id);
+                }}
+                className="hidden group-hover:block hover:text-sori-text-strong transition-all p-0.5 rounded hover:bg-sori-surface-hover"
+              >
                 <Plus className="h-3.5 w-3.5 text-sori-text-muted" />
               </button>
             </div>
@@ -111,18 +156,16 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
                     <div key={ch.id} className="mb-1">
                       <div 
                         onClick={() => {
-                          console.log("👆 [ChannelSidebar] Channel clicked:", ch.name, ch.id, ch.type);
                           setActiveChannelId(ch.id);
                           setChannelSidebarOpen(false);
                           if (ch.type === 'voice') {
-                            console.log("👆 [ChannelSidebar] Initiating joinVoiceChannel flow");
                             handleJoinVoiceChannel(ch.id);
                           }
                         }} 
                         className={cn(
                           "px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 transition-all group/ch",
                           isActive 
-                            ? "bg-sori-surface-hover text-sori-text-strong font-bold" 
+                            ? "bg-sori-surface-selected text-sori-accent-primary font-bold" 
                             : "text-sori-text-muted hover:bg-sori-surface-hover hover:text-sori-text-strong"
                         )}
                       >
@@ -135,13 +178,16 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
                       </div>
                       {ch.type === 'voice' && occupants.length > 0 && (
                         <div className="ml-6 mt-1 space-y-0.5">
-                          {occupants.map(occ => (
-                            <OccupantItem 
-                              key={occ.userId} 
-                              occupant={occ} 
-                              isSpeaking={false} 
-                            />
-                          ))}
+                          {occupants.map(occ => {
+                            const isSpeaking = occ.isSpeaking || false;
+                            return (
+                              <OccupantItem 
+                                key={occ.userId} 
+                                occupant={occ} 
+                                isSpeaking={isSpeaking} 
+                              />
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -155,7 +201,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
 
       <div className="mt-auto flex flex-col">
         {socket?.connected && connectedChannelId && (
-          <div className="bg-sori-surface-panel px-3 py-2 border-t border-sori-border-subtle flex items-center gap-3 animate-in slide-in-from-bottom relative">
+          <div className="bg-sori-surface-elevated px-3 py-2 border-t border-sori-border-subtle flex items-center gap-3 animate-in slide-in-from-bottom relative">
             <Volume2 className="h-4 w-4 text-sori-accent-secondary animate-pulse" />
             <div className="flex-1 min-w-0">
               <div className="text-[9px] font-black uppercase text-sori-accent-secondary leading-none">Voice Connected</div>
@@ -171,7 +217,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
                   )}
                   title="Noise Suppression"
                 >
-                  <Sparkles className="h-5 w-5" />
+                  <Waves className="h-5 w-5" />
                 </button>
               </NoiseSuppressionPopup>
             </div>
@@ -185,7 +231,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
             </button>
           </div>
         )}
-        <div className="m-2 p-2 bg-sori-surface-panel border border-sori-border-subtle rounded-2xl flex items-center justify-between gap-2 group/user">
+        <div className="m-2 p-2 bg-sori-surface-elevated border border-sori-border-subtle rounded-2xl flex items-center justify-between gap-2 group/user">
           <div className="flex items-center gap-2.5 min-w-0 flex-1 hover:bg-sori-surface-hover rounded-xl p-1 cursor-pointer transition-all">
             <div className="relative shrink-0">
               <div className="w-9 h-9 rounded-full bg-sori-surface-base flex items-center justify-center text-[11px] font-black text-sori-accent-primary border border-sori-border-subtle group-hover/user:scale-105 transition-transform overflow-hidden">
@@ -329,6 +375,16 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {isCreateChannelModalOpen && (
+        <CreateChannelModal
+          isOpen={isCreateChannelModalOpen}
+          onClose={() => setCreateChannelModalOpen(false)}
+          onCreate={handleCreateChannel}
+          initialCategoryId={createChannelCategoryId || undefined}
+        />
+      )}
     </aside>
   );
 };

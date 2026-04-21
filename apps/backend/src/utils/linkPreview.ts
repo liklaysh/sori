@@ -1,4 +1,6 @@
 import ogs from "open-graph-scraper";
+import dns from "node:dns/promises";
+import { isIP } from "node:net";
 import { redis } from "./redis.js";
 
 export interface LinkMetadata {
@@ -11,40 +13,187 @@ export interface LinkMetadata {
 }
 
 const CACHE_TTL = 3600; // 1 hour
+const PREVIEW_TIMEOUT_MS = 5000;
+const PREVIEW_MAX_BYTES = 1024 * 1024;
+const MAX_REDIRECTS = 3;
+
+function isPrivateIPv4(ip: string): boolean {
+  const parts = ip.split(".").map((part) => Number(part));
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+    return true;
+  }
+
+  const [a, b] = parts;
+  if (a === 0 || a === 10 || a === 127) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 0) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 198 && (b === 18 || b === 19)) return true;
+  if (a >= 224) return true;
+
+  return false;
+}
+
+function isPrivateIPv6(ip: string): boolean {
+  const normalized = ip.toLowerCase();
+  return normalized === "::"
+    || normalized === "::1"
+    || normalized.startsWith("fc")
+    || normalized.startsWith("fd")
+    || normalized.startsWith("fe8")
+    || normalized.startsWith("fe9")
+    || normalized.startsWith("fea")
+    || normalized.startsWith("feb");
+}
+
+function isPrivateAddress(address: string): boolean {
+  const version = isIP(address);
+  if (version === 4) return isPrivateIPv4(address);
+  if (version === 6) return isPrivateIPv6(address);
+  return true;
+}
+
+async function assertPublicHostname(hostname: string) {
+  const normalized = hostname.toLowerCase();
+  const blockedHostnames = new Set([
+    "localhost",
+    "localhost.localdomain",
+    "0.0.0.0",
+    "127.0.0.1",
+    "::1",
+  ]);
+
+  if (blockedHostnames.has(normalized) || normalized.endsWith(".local")) {
+    throw new Error("Private hostname is not allowed");
+  }
+
+  if (isIP(normalized)) {
+    if (isPrivateAddress(normalized)) {
+      throw new Error("Private IP is not allowed");
+    }
+    return;
+  }
+
+  const resolved = await dns.lookup(normalized, { all: true, verbatim: true });
+  if (!resolved.length) {
+    throw new Error("Host resolution failed");
+  }
+
+  if (resolved.some((entry) => isPrivateAddress(entry.address))) {
+    throw new Error("Hostname resolves to a private address");
+  }
+}
 
 /**
  * Basic SSRF protection: block local and private IP ranges
  */
-function isPrivateUrl(url: string): boolean {
+async function validatePreviewUrl(url: string): Promise<URL> {
+  let parsed: URL;
   try {
-    const parsed = new URL(url);
-    const hostname = parsed.hostname.toLowerCase();
-    
-    // Check for common local/private hostnames
-    const privateHosts = [
-      "localhost",
-      "127.0.0.1",
-      "::1",
-      "0.0.0.0",
-    ];
-    
-    if (privateHosts.includes(hostname)) return true;
-    
-    // Rough check for RFC1918 private ranges
-    // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
-    const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-    const match = hostname.match(ipv4Regex);
-    if (match) {
-      const b1 = parseInt(match[1]);
-      const b2 = parseInt(match[2]);
-      if (b1 === 10) return true;
-      if (b1 === 172 && (b2 >= 16 && b2 <= 31)) return true;
-      if (b1 === 192 && b2 === 168) return true;
+    parsed = new URL(url);
+  } catch {
+    throw new Error("Invalid URL");
+  }
+
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new Error("Only HTTP(S) URLs are allowed");
+  }
+
+  await assertPublicHostname(parsed.hostname);
+  return parsed;
+}
+
+async function readHtmlWithLimit(response: Response): Promise<string> {
+  const contentLength = Number(response.headers.get("content-length") || "0");
+  if (contentLength > PREVIEW_MAX_BYTES) {
+    throw new Error("Preview response is too large");
+  }
+
+  if (!response.body) {
+    return "";
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    total += value.byteLength;
+    if (total > PREVIEW_MAX_BYTES) {
+      throw new Error("Preview response exceeded size limit");
     }
 
-    return false;
-  } catch (e) {
-    return true; // If invalid URL, treat as unsafe
+    chunks.push(value);
+  }
+
+  const buffer = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    buffer.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return new TextDecoder("utf-8").decode(buffer);
+}
+
+async function fetchPreviewHtml(url: string): Promise<{ html: string; finalUrl: string }> {
+  let currentUrl = url;
+
+  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
+    const parsed = await validatePreviewUrl(currentUrl);
+    const response = await fetch(parsed.toString(), {
+      method: "GET",
+      redirect: "manual",
+      headers: {
+        Accept: "text/html,application/xhtml+xml",
+        "User-Agent": "SoriLinkPreview/1.0",
+      },
+      signal: AbortSignal.timeout(PREVIEW_TIMEOUT_MS),
+    });
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (!location) {
+        throw new Error("Redirect response without location");
+      }
+
+      currentUrl = new URL(location, parsed).toString();
+      continue;
+    }
+
+    if (response.status >= 400) {
+      throw new Error(`Preview request failed with status ${response.status}`);
+    }
+
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    if (contentType && !contentType.includes("text/html") && !contentType.includes("application/xhtml+xml")) {
+      throw new Error("Preview target is not an HTML page");
+    }
+
+    return {
+      html: await readHtmlWithLimit(response),
+      finalUrl: parsed.toString(),
+    };
+  }
+
+  throw new Error("Too many redirects");
+}
+
+function resolveMaybeRelativeUrl(value: unknown, baseUrl: string): string | undefined {
+  if (typeof value !== "string" || !value.trim()) {
+    return undefined;
+  }
+
+  try {
+    return new URL(value, baseUrl).toString();
+  } catch {
+    return undefined;
   }
 }
 
@@ -53,10 +202,6 @@ function isPrivateUrl(url: string): boolean {
  */
 export async function getSingleLinkPreview(url: string): Promise<LinkMetadata | null> {
   if (!url) return null;
-  
-  if (isPrivateUrl(url)) {
-    return { url, isPrivate: true, title: "Private Network Resource", description: "This link points to an internal resource and cannot be previewed." };
-  }
 
   // 1. Check Redis Cache
   const cacheKey = `link_preview:${url}`;
@@ -71,13 +216,17 @@ export async function getSingleLinkPreview(url: string): Promise<LinkMetadata | 
 
   // 2. Scrape Metadata
   try {
-    const { result } = await ogs({ url, timeout: 5000 });
+    const { html, finalUrl } = await fetchPreviewHtml(url);
+    const { result } = await ogs({ html });
+    const imageUrl = Array.isArray((result as any).ogImage)
+      ? resolveMaybeRelativeUrl((result as any).ogImage?.[0]?.url, finalUrl)
+      : resolveMaybeRelativeUrl((result as any).ogImage?.url, finalUrl);
     
     const metadata: LinkMetadata = {
-      url,
+      url: finalUrl,
       title: result.ogTitle || result.twitterTitle || (result as any).title,
       description: result.ogDescription || result.twitterDescription || (result as any).description,
-      image: (result as any).ogImage?.[0]?.url || (result as any).ogImage?.url || (result as any).twitterImage?.[0]?.url,
+      image: imageUrl || resolveMaybeRelativeUrl((result as any).twitterImage?.[0]?.url, finalUrl),
       siteName: result.ogSiteName || result.twitterSite || (result as any).siteName,
     };
 
@@ -88,10 +237,17 @@ export async function getSingleLinkPreview(url: string): Promise<LinkMetadata | 
 
     return metadata;
   } catch (err) {
+    const message = err instanceof Error ? err.message : "Preview Unavailable";
+    const isPrivate = message.toLowerCase().includes("private");
     console.error(`[LinkPreview] Failed scraping ${url}:`, err);
     // Cache a failed result briefly to avoid hammering dead links
-    await redis.set(cacheKey, JSON.stringify({ url, title: "Preview Unavailable" }), "EX", 300);
-    return { url, title: "Preview Unavailable" };
+    await redis.set(cacheKey, JSON.stringify({ url, title: isPrivate ? "Private Network Resource" : "Preview Unavailable", isPrivate }), "EX", 300);
+    return {
+      url,
+      title: isPrivate ? "Private Network Resource" : "Preview Unavailable",
+      description: isPrivate ? "This link points to an internal resource and cannot be previewed." : undefined,
+      isPrivate,
+    };
   }
 }
 

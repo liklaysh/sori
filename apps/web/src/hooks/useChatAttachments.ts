@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import api from "../lib/api";
 import { toast } from "sonner";
+import { MAX_UPLOAD_SIZE_MB } from "../config";
 
 export interface PendingAttachment {
   id: string;
@@ -24,10 +25,15 @@ export const useChatAttachments = () => {
   const handleFileUpload = async (file: File) => {
     if (!file) return;
 
-    const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+    const MAX_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      toast.error(`File ${file.name} too large! Max is 50MB.`);
+      toast.error(`File ${file.name} too large! Max is ${MAX_UPLOAD_SIZE_MB}MB.`);
       return;
+    }
+
+    if (pendingAttachments.length > 0) {
+      clearAttachments();
+      toast.info("Only one attachment is supported right now. Previous file was replaced.");
     }
 
     const attachmentId = Math.random().toString(36).substring(7);
@@ -64,7 +70,7 @@ export const useChatAttachments = () => {
           ...a, 
           isUploading: false, 
           progress: 100,
-          result: res.data as { fileUrl: string; fileName: string; fileSize: number; fileType: string; }
+          result: (res.data as { attachment: { fileUrl: string; fileName: string; fileSize: number; fileType: string; } }).attachment
         } : a)
       );
       
@@ -105,7 +111,7 @@ export const useChatAttachments = () => {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      Array.from(e.dataTransfer.files).forEach(file => handleFileUpload(file));
+      handleFileUpload(e.dataTransfer.files[0]);
     }
   };
 
