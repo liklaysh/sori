@@ -3,6 +3,15 @@
   Messaging. Voice. Infrastructure. All yours.
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/license-AGPL%20v3-blue.svg" />
+  <img src="https://img.shields.io/badge/status-active-success.svg" />
+  <img src="https://img.shields.io/badge/self--hosted-yes-important.svg" />
+  <img src="https://img.shields.io/badge/docker-ready-blue.svg" />
+  <img src="https://img.shields.io/badge/realtime-socket.io-orange.svg" />
+</p>
+
+
 🚀 SORI
 
 SORI is a self-hosted communication platform that brings chat, voice, calls, media, and administration into a single system — fully under your control.
