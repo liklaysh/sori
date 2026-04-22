@@ -152,3 +152,15 @@ Current focus:
 
 SORI is more than a messaging tool.
 It’s a complete communication platform you fully control.
+
+_____
+
+License
+
+This project is licensed under the **GNU AGPL v3**.
+
+You are free to use, modify, and deploy this software.  
+
+However, if you run a modified version as a service, you must make the source code available.
+
+See the [LICENSE](LICENSE) file for details.
