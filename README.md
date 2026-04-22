@@ -1,6 +1,12 @@
+<h1 align="center">Sori</h1>
+
 <p align="center">
   <b>Real-time communication platform you actually control.</b><br/>
   Messaging. Voice. Infrastructure. All yours.
+</p>
+
+<p align="center">
+  ⚡ Self-hosted • 🔒 Private • 🚀 Realtime
 </p>
 
 <p align="center">
@@ -11,8 +17,6 @@
   <img src="https://img.shields.io/badge/realtime-socket.io-orange.svg" />
 </p>
 
-
-🚀 SORI
 
 SORI is a self-hosted communication platform that brings chat, voice, calls, media, and administration into a single system — fully under your control.
 
