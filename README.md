@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/logo.png" width="120" alt="Sori Logo" />
+</p>
+
 <h1 align="center">Sori</h1>
 
 <p align="center">
