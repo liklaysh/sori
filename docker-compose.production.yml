@@ -1,0 +1,24 @@
+services:
+  sori-backend:
+    restart: unless-stopped
+
+  postgres:
+    restart: unless-stopped
+
+  postgres-backup:
+    restart: unless-stopped
+
+  sori-web:
+    restart: unless-stopped
+
+  sori-gateway:
+    restart: unless-stopped
+
+  valkey:
+    restart: unless-stopped
+
+  sori-media:
+    restart: unless-stopped
+
+  sori-livekit:
+    restart: unless-stopped

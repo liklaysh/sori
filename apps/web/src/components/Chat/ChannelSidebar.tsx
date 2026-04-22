@@ -62,6 +62,8 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
 
   const currentChannel = channels.find(c => c.id === activeChannelId) || null;
   const connectedChannel = channels.find(c => c.id === connectedChannelId) || null;
+  const shouldCollapseSidebarAfterSelection =
+    typeof window !== "undefined" && !window.matchMedia("(min-width: 768px)").matches;
   
   const handleJoinVoiceChannel = async (channelId: string) => {
     try {
@@ -118,11 +120,11 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
   if (!user) return null;
 
   return (
-    <aside className="h-full flex flex-col w-64 bg-sori-surface-panel z-40 border-r border-sori-border-subtle">
+    <aside className="h-full min-h-0 flex flex-col w-64 bg-sori-surface-panel z-40 border-r border-sori-border-subtle">
       <header className="h-14 px-4 flex items-center border-b border-sori-border-subtle shrink-0 bg-sori-surface-panel">
         <h2 className="font-headline text-sori-text-strong font-bold text-base truncate">{dynamicServerName}</h2>
       </header>
-      <div className="flex-1 overflow-y-auto py-4 space-y-2 no-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto py-4 space-y-2 no-scrollbar">
         {categories.map(cat => (
           <div key={cat.id} className="mb-4">
             <div 
@@ -157,7 +159,9 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                       <div 
                         onClick={() => {
                           setActiveChannelId(ch.id);
-                          setChannelSidebarOpen(false);
+                          if (shouldCollapseSidebarAfterSelection) {
+                            setChannelSidebarOpen(false);
+                          }
                           if (ch.type === 'voice') {
                             handleJoinVoiceChannel(ch.id);
                           }

@@ -3,12 +3,11 @@ import { cn } from "@sori/ui";
 import { 
   useTracks,
   useLocalParticipant,
-  useMediaDeviceSelect,
   TrackReference,
   isTrackReference,
 } from "@livekit/components-react";
 import { Track, LocalAudioTrack } from "livekit-client";
-import { Message, User, ChatItem } from "../../../types/chat";
+import { User, ChatItem } from "../../../types/chat";
 import { useServerTime } from "../../../hooks/useServerTime";
 import { API_URL } from "../../../config";
 import { 
@@ -93,10 +92,6 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
   const [duration, setDuration] = useState("00:00");
   const { localParticipant } = useLocalParticipant();
   const [currentPage, setCurrentPage] = useState(0);
-
-  useEffect(() => {
-    // Mounting/Participant logging
-  }, [user?.id, localParticipant]);
 
   // --- Speaking Sync Logic ---
   const lastSpeakingState = useRef<boolean>(false);

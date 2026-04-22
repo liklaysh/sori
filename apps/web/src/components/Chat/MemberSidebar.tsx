@@ -43,11 +43,11 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ onlineUsersSet, on
   );
 
   return (
-    <aside className="h-full w-64 bg-sori-surface-panel border-l border-sori-border-subtle z-40 flex flex-col shrink-0">
+    <aside className="h-full min-h-0 w-64 bg-sori-surface-panel border-l border-sori-border-subtle z-40 flex flex-col shrink-0">
       <div className="px-4 h-14 border-b border-sori-border-subtle flex items-center gap-2 flex-shrink-0">
         <span className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted">Members — {members.length}</span>
       </div>
-      <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-4 space-y-6">
         <section>
           <h3 className="px-2 text-[9px] uppercase font-black text-sori-text-dim mb-3 flex items-center gap-2 tracking-[0.2em] opacity-80">
             <div className="w-1.5 h-1.5 bg-sori-accent-secondary rounded-full shadow-[0_0_8px_rgba(109,245,225,0.4)]"></div> 

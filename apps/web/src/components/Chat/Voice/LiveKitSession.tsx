@@ -5,6 +5,7 @@ import {
   RoomAudioRenderer,
   useConnectionState,
   useRemoteParticipants,
+  useRoomContext,
 } from "@livekit/components-react";
 import { ConnectionState } from "livekit-client";
 import { LIVEKIT_URL } from "../../../config";
@@ -108,6 +109,31 @@ const VoiceSessionManager: React.FC<{
   return null;
 };
 
+const LiveKitMediaDeviceSync: React.FC<{
+  activeMicId?: string;
+  activeOutputId?: string;
+}> = ({ activeMicId, activeOutputId }) => {
+  const room = useRoomContext();
+
+  useEffect(() => {
+    if (!activeMicId) {
+      return;
+    }
+
+    room.switchActiveDevice("audioinput", activeMicId).catch(() => {});
+  }, [activeMicId, room]);
+
+  useEffect(() => {
+    if (!activeOutputId) {
+      return;
+    }
+
+    room.switchActiveDevice("audiooutput", activeOutputId).catch(() => {});
+  }, [activeOutputId, room]);
+
+  return null;
+};
+
 export default function LiveKitSession(props: LiveKitSessionProps) {
   const filteredMessages = props.searchQuery
     ? props.messages.filter((message) => "content" in message && message.content?.toLowerCase().includes(props.searchQuery.toLowerCase()))
@@ -130,6 +156,10 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
         connectedChannelId={props.connectedChannelId}
         status={props.status}
         onPeerGone={props.onPeerGone}
+      />
+      <LiveKitMediaDeviceSync
+        activeMicId={props.activeMicId}
+        activeOutputId={props.activeOutputId}
       />
       <StreamingTracker socket={props.socket} channelId={props.connectedChannelId ?? undefined} />
       <ParticipantsVolumeManager volumes={{}} />

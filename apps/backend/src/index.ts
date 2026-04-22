@@ -3,7 +3,6 @@ import { Hono } from "hono";
 import { logger as honoLogger } from "hono/logger";
 import { cors } from "hono/cors";
 import { serveStatic } from "@hono/node-server/serve-static";
-import bcrypt from "bcryptjs";
 import { config, validateConfig } from "./config.js";
 import { logger } from "./utils/logger.js";
 import { requestIdMiddleware } from "./middleware/requestId.js";
@@ -20,8 +19,7 @@ declare module "hono" {
     };
   }
 }
-import { communities, categories, channels, users } from "./db/schema.js";
-import { eq } from "drizzle-orm";
+import { ensureDefaultStructure } from "./bootstrap/defaultSetup.js";
 import { ensureBucket } from "./utils/s3.js";
 import { cleanupCallTelemetry } from "./utils/callMaintenance.js";
 
@@ -290,38 +288,6 @@ async function startServer() {
 }
 
 startServer();
-// --- Database Seeding ---
 async function seed() {
-  const defaultCommunityId = "default-community";
-  const existing = await db.query.communities.findFirst({ where: eq(communities.id, defaultCommunityId) });
-
-  if (!existing) {
-    logger.info("🌱 Seeding default structure...");
-    await db.insert(communities).values({ id: defaultCommunityId, name: "Sori Sanctuary" });
-    
-    const textCatId = "cat-text";
-    const voiceCatId = "cat-voice";
-    await db.insert(categories).values([
-      { id: textCatId, name: "Text Channels", communityId: defaultCommunityId, order: 0 },
-      { id: voiceCatId, name: "Voice Channels", communityId: defaultCommunityId, order: 1 }
-    ]);
-
-    await db.insert(channels).values([
-      { id: "main", name: "main", type: "text", communityId: defaultCommunityId, categoryId: textCatId, order: 0 },
-      { id: "main-voice", name: "main_voice", type: "voice", communityId: defaultCommunityId, categoryId: voiceCatId, order: 0 }
-    ]);
-
-    // Create Adminpanel user
-    const adminId = "admin-panel-user";
-    const passwordHash = await bcrypt.hash("adminpassword123", 10);
-    await db.insert(users).values({
-      id: adminId,
-      username: "sori-admin",
-      email: "admin@sori.io",
-      passwordHash,
-      role: "adminpanel"
-    }).onConflictDoNothing();
-
-    logger.info("✅ Seeding complete. Admin user: admin@sori.io / adminpassword123");
-  }
+  await ensureDefaultStructure();
 }

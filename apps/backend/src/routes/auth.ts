@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { sign } from "hono/jwt";
+import { sign, verify } from "hono/jwt";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import { db } from "../db/index.js";
@@ -17,38 +17,30 @@ auth.post("/register", safe(async (c) => {
   return c.json({ error: "Public registration is disabled. Please contact your system administrator for an account." }, 403);
 }));
 
-import { setCookie, deleteCookie } from "hono/cookie";
+import { setCookie, deleteCookie, getCookie } from "hono/cookie";
 
-/**
- * Dynamically determine cookie options based on the request origin.
- */
-function isAllowedCookieOrigin(origin: string) {
-  if (!origin) {
-    return false;
-  }
-
+function getOriginHost(origin: string) {
   try {
     const parsed = new URL(origin);
-    const hostname = parsed.hostname.toLowerCase();
-    return hostname === "localhost"
-      || hostname === "127.0.0.1"
-      || hostname === "sori.orb.local"
-      || hostname.endsWith(".sori.orb.local");
+    return parsed.origin;
   } catch {
-    return false;
+    return "";
   }
 }
 
 function getCookieOptions(c: any, maxAge: number) {
-  const origin = c.req.header("origin") || "";
-  const isCrossDomain = isAllowedCookieOrigin(origin) && !origin.includes("localhost:3000");
-  
+  const requestOrigin = getOriginHost(c.req.header("origin") || "");
+  const publicApiOrigin = getOriginHost(config.public.apiUrl);
+  const publicWebOrigin = getOriginHost(config.public.webUrl);
+  const isKnownOrigin = requestOrigin === publicApiOrigin || requestOrigin === publicWebOrigin;
+  const isCrossOrigin = isKnownOrigin && requestOrigin !== publicApiOrigin;
+  const isSecureOrigin = (isKnownOrigin && requestOrigin.startsWith("https://")) || publicApiOrigin.startsWith("https://");
+
   return {
     path: "/",
     httpOnly: true,
-    // SameSite: None requires Secure=true. For .orb.local (HTTPS) we must use None/Secure.
-    sameSite: isCrossDomain ? "None" as const : "Lax" as const,
-    secure: isCrossDomain || config.security.isProduction,
+    sameSite: isCrossOrigin ? "None" as const : "Lax" as const,
+    secure: isSecureOrigin || config.security.isProduction,
     maxAge,
   };
 }
@@ -104,10 +96,25 @@ auth.post("/login", safe(async (c) => {
   });
 }));
 
-auth.get("/me", authMiddleware, safe(async (c) => {
-  const payload = (c.get("jwtPayload") || {}) as any;
+auth.get("/me", safe(async (c) => {
+  const token = getCookie(c, "sori_auth");
+  if (!token) {
+    return c.json({ user: null });
+  }
+
+  let payload: any;
+  try {
+    payload = await verify(token, JWT_SECRET, "HS256");
+  } catch {
+    deleteCookie(c, "sori_auth", getCookieOptions(c, 0));
+    return c.json({ user: null });
+  }
+
   const user = await db.query.users.findFirst({ where: eq(users.id, payload.id) });
-  if (!user) return c.json({ error: "User not found" }, 404);
+  if (!user) {
+    deleteCookie(c, "sori_auth", getCookieOptions(c, 0));
+    return c.json({ user: null });
+  }
   
   return c.json({ 
     user: { 

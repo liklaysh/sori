@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../lib/api";
-import { useMediaDeviceSelect } from "@livekit/components-react";
 import { User } from "../types/chat";
 import { useUserStore } from "../store/useUserStore";
+import { useBrowserMediaDevices } from "./useBrowserMediaDevices";
 
 interface UseMediaSettingsProps {
   initialUser: User;
@@ -83,35 +83,23 @@ export const useMediaSettings = ({ initialUser }: UseMediaSettingsProps) => {
   }, [micGain, outputVolume, setUser]);
 
   // 3. Devices
-  const { devices: micDevices, activeDeviceId: activeMicId, setActiveMediaDevice: setActiveMic } = useMediaDeviceSelect({ kind: 'audioinput' });
-  const { devices: outputDevices, activeDeviceId: activeOutputId, setActiveMediaDevice: setActiveOutput } = useMediaDeviceSelect({ kind: 'audiooutput' });
+  const {
+    devices: micDevices,
+    activeDeviceId: activeMicId,
+    setActiveMediaDevice: setActiveMic,
+  } = useBrowserMediaDevices({
+    kind: "audioinput",
+    storageKey: "sori_active_mic",
+  });
 
-  // Note: We still use localStorage for purely local browser-only device preferences (activeMicId/activeOutputId)
-  useEffect(() => {
-    if (activeMicId) localStorage.setItem("sori_active_mic", activeMicId);
-  }, [activeMicId]);
-
-  useEffect(() => {
-    if (activeOutputId) localStorage.setItem("sori_active_output", activeOutputId);
-  }, [activeOutputId]);
-
-  useEffect(() => {
-    const savedMic = localStorage.getItem("sori_active_mic");
-    if (savedMic && micDevices.length > 0 && activeMicId !== savedMic) {
-      if (micDevices.some(d => d.deviceId === savedMic)) {
-        setActiveMic(savedMic);
-      }
-    }
-  }, [micDevices, activeMicId, setActiveMic]);
-
-  useEffect(() => {
-    const savedOutput = localStorage.getItem("sori_active_output");
-    if (savedOutput && outputDevices.length > 0 && activeOutputId !== savedOutput) {
-      if (outputDevices.some(d => d.deviceId === savedOutput)) {
-        setActiveOutput(savedOutput);
-      }
-    }
-  }, [outputDevices, activeOutputId, setActiveOutput]);
+  const {
+    devices: outputDevices,
+    activeDeviceId: activeOutputId,
+    setActiveMediaDevice: setActiveOutput,
+  } = useBrowserMediaDevices({
+    kind: "audiooutput",
+    storageKey: "sori_active_output",
+  });
 
   return {
     noiseSuppression,

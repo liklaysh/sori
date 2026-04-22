@@ -129,6 +129,47 @@ const Chat: React.FC = () => {
     }
   }, [isAuthenticated, fetchInitialData, fetchConversations]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const channelSidebarQuery = window.matchMedia("(min-width: 768px)");
+    const memberSidebarQuery = window.matchMedia("(min-width: 1280px)");
+
+    const syncResponsiveLayout = () => {
+      setChannelSidebarOpen(channelSidebarQuery.matches);
+      setMemberSidebarOpen(
+        memberSidebarQuery.matches && activeModule === "community" && !isVoiceChatOpen,
+      );
+    };
+
+    syncResponsiveLayout();
+
+    const addListener = (query: MediaQueryList, listener: () => void) => {
+      if (typeof query.addEventListener === "function") {
+        query.addEventListener("change", listener);
+        return () => query.removeEventListener("change", listener);
+      }
+
+      query.addListener(listener);
+      return () => query.removeListener(listener);
+    };
+
+    const removeChannelListener = addListener(channelSidebarQuery, syncResponsiveLayout);
+    const removeMemberListener = addListener(memberSidebarQuery, syncResponsiveLayout);
+
+    return () => {
+      removeChannelListener();
+      removeMemberListener();
+    };
+  }, [
+    activeModule,
+    isVoiceChatOpen,
+    setChannelSidebarOpen,
+    setMemberSidebarOpen,
+  ]);
+
   const totalUnreadDMs = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
 
   if (!user) return null;
@@ -144,7 +185,7 @@ const Chat: React.FC = () => {
       />
 
       <div className="flex flex-1 overflow-hidden relative">
-        <div className={`fixed inset-y-0 left-20 right-0 z-40 md:relative md:left-0 md:inset-auto md:z-auto md:flex ${isChannelSidebarOpen ? "flex" : "hidden"}`}>
+        <div className={`fixed inset-y-0 left-20 right-0 z-40 md:static md:z-auto ${isChannelSidebarOpen ? "flex" : "hidden"}`}>
           <div className="absolute inset-0 bg-sori-surface-overlay md:hidden" onClick={() => setChannelSidebarOpen(false)} />
           
           <div className="relative h-full flex-shrink-0 z-50">
@@ -197,7 +238,7 @@ const Chat: React.FC = () => {
         />
 
         {activeModule === "community" && !isVoiceChatOpen && (
-          <div className={`fixed inset-0 z-40 xl:relative xl:inset-auto xl:z-auto ${isMemberSidebarOpen ? "flex xl:flex" : "hidden xl:hidden"}`}>
+          <div className={`fixed inset-0 z-40 xl:static xl:z-auto ${isMemberSidebarOpen ? "flex" : "hidden"}`}>
             <div className="absolute inset-0 bg-sori-surface-overlay xl:hidden" onClick={() => setMemberSidebarOpen(false)} />
             <MemberSidebar onlineUsersSet={onlineUsersSet} onMemberClick={handleMemberClick} />
           </div>

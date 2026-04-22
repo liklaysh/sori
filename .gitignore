@@ -44,3 +44,4 @@ ui_tsc_output.txt
 infrastructure/data/
 backups/
 apps/backend/uploads/
+.install/

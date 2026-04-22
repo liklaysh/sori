@@ -9,11 +9,11 @@ This file describes the system as it exists in the repository today.
 - Install mode: single-server, single-community
 - Default community: `default-community`
 - Primary domains:
-  - `sori-web.sori.orb.local`
-  - `sori-backend.sori.orb.local`
-  - `sori-livekit.sori.orb.local`
-  - `sori-media.sori.orb.local`
-- TLS: self-signed wildcard certificate
+  - `https://example.com`
+  - `https://api.example.com`
+  - `https://livekit.example.com`
+  - `https://media.example.com`
+- TLS: automatic HTTPS via Caddy in public deployments
 - Routing model: Caddy-only
 - Current auth model: cookie-based auth via `sori_auth`
 
@@ -21,13 +21,16 @@ The system is not currently designed around granular role/ACL enforcement or mul
 
 ## Monorepo Layout
 
-- Backend: [`apps/backend`](/Users/liklaysh/Documents/dev/voice/sori/apps/backend)
-- Web app: [`apps/web`](/Users/liklaysh/Documents/dev/voice/sori/apps/web)
-- Shared UI package: [`packages/ui`](/Users/liklaysh/Documents/dev/voice/sori/packages/ui)
-- Gateway Caddy config: [`infrastructure/caddy/Caddyfile`](/Users/liklaysh/Documents/dev/voice/sori/infrastructure/caddy/Caddyfile)
-- Web runtime Caddy config: [`apps/web/Caddyfile`](/Users/liklaysh/Documents/dev/voice/sori/apps/web/Caddyfile)
-- Compose stack: [`docker-compose.yml`](/Users/liklaysh/Documents/dev/voice/sori/docker-compose.yml)
-- Caddy migration validator: [`scripts/validate-caddy-migration.sh`](/Users/liklaysh/Documents/dev/voice/sori/scripts/validate-caddy-migration.sh)
+- Backend: [`apps/backend`](apps/backend)
+- Web app: [`apps/web`](apps/web)
+- Shared UI package: [`packages/ui`](packages/ui)
+- Gateway Caddy config: [`infrastructure/caddy/Caddyfile`](infrastructure/caddy/Caddyfile)
+- Web runtime Caddy config: [`apps/web/Caddyfile`](apps/web/Caddyfile)
+- Compose stack: [`docker-compose.yml`](docker-compose.yml)
+- Production override: [`docker-compose.production.yml`](docker-compose.production.yml)
+- Caddy migration validator: [`scripts/validate-caddy-migration.sh`](scripts/validate-caddy-migration.sh)
+- Installer: [`install.sh`](install.sh)
+- Updater: [`update.sh`](update.sh)
 
 ## Runtime Stack
 
@@ -111,13 +114,54 @@ The system intentionally uses a Caddy-only scheme.
 - Gateway Caddy handles public host routing and TLS termination
 - Web runtime also runs on Caddy
 - No additional nginx layer should be reintroduced
+- Public Linux installs use Caddy automatic HTTPS instead of nginx + certbot
 
 ### Public Host Routing
 
-- `sori-web.*` -> web runtime
-- `sori-backend.*` -> backend
-- `sori-livekit.*` -> LiveKit
-- `sori-media.*` -> MinIO/media
+- local dev:
+  - `sori-web.*` -> web runtime
+  - `sori-backend.*` -> backend
+  - `sori-livekit.*` -> LiveKit
+  - `sori-media.*` -> MinIO/media
+- production install:
+  - root domain -> web runtime
+  - `api.<domain>` -> backend
+  - `livekit.<domain>` -> LiveKit
+  - `media.<domain>` -> MinIO/media
+
+### Install and Update System
+
+The repo now contains an install-oriented deployment flow for Ubuntu 22.04+ servers.
+
+Primary files:
+- [`install.sh`](install.sh)
+- [`update.sh`](update.sh)
+- [`docker-compose.production.yml`](docker-compose.production.yml)
+- [`infrastructure/caddy/Caddyfile.production`](infrastructure/caddy/Caddyfile.production)
+- [`infrastructure/livekit.production.yaml`](infrastructure/livekit.production.yaml)
+- [`.env.example`](.env.example)
+
+The install flow is intentionally:
+- single-command
+- env-driven
+- idempotent
+- release-friendly
+
+Installer responsibilities:
+- install Docker Engine + Compose plugin + Git
+- validate DNS for root/api/livekit/media hosts
+- generate strong runtime secrets
+- generate a hidden `adminpanel` account
+- write `.env`
+- run DB migrations and install bootstrap
+- start the stack
+- print a final operational summary
+
+Updater responsibilities:
+- fetch git refs/tags
+- update to a branch or release tag
+- rerun migrations/bootstrap
+- rebuild and restart the stack
 
 ### Discovery Layer for Future Native Clients
 
@@ -128,7 +172,7 @@ Endpoints:
 - `GET /.well-known/sori/client.json`
 
 Implemented in:
-- [`apps/backend/src/routes/client.ts`](/Users/liklaysh/Documents/dev/voice/sori/apps/backend/src/routes/client.ts)
+- [`apps/backend/src/routes/client.ts`](apps/backend/src/routes/client.ts)
 
 Exposed through:
 - backend host
@@ -145,6 +189,9 @@ The payload currently includes:
 - basic feature flags
 
 This lets a future native client accept one server URL, fetch bootstrap metadata, and derive the correct API/socket/media/livekit endpoints without hardcoding them.
+
+The contract is now additionally documented as a versioned spec:
+- [`docs/CLIENT_BOOTSTRAP_SPEC_V1.md`](docs/CLIENT_BOOTSTRAP_SPEC_V1.md)
 
 ## Configuration
 
@@ -170,8 +217,18 @@ This lets a future native client accept one server URL, fetch bootstrap metadata
 - `PUBLIC_LIVEKIT_URL`
 - `PUBLIC_MEDIA_URL`
 - `PUBLIC_DEFAULT_COMMUNITY_ID`
+- `INSTALL_DOMAIN`
+- `SORI_SERVER_NAME`
+- `SORI_GATEWAY_CADDYFILE`
+- `SORI_LIVEKIT_CONFIG`
+- `CADDY_ACME_EMAIL`
+- `ADMIN_PANEL_LOGIN`
+- `ADMIN_PANEL_PASSWORD`
+- `ADMIN_PANEL_EMAIL`
 
 Critical backend config is now treated as required. The system should not silently fall back to weak defaults for secrets or external endpoints.
+
+Production installs additionally bind internal infra ports through env so PostgreSQL, Valkey, and MinIO do not need to be exposed publicly.
 
 ## Backups
 
@@ -189,9 +246,9 @@ Implementation notes:
 - restore is intentionally not performed from the web UI
 
 Related files:
-- [`docker-compose.yml`](/Users/liklaysh/Documents/dev/voice/sori/docker-compose.yml)
-- [`infrastructure/backup/hooks`](/Users/liklaysh/Documents/dev/voice/sori/infrastructure/backup/hooks)
-- [`apps/backend/src/routes/admin/storage.ts`](/Users/liklaysh/Documents/dev/voice/sori/apps/backend/src/routes/admin/storage.ts)
+- [`docker-compose.yml`](docker-compose.yml)
+- [`infrastructure/backup/hooks`](infrastructure/backup/hooks)
+- [`apps/backend/src/routes/admin/storage.ts`](apps/backend/src/routes/admin/storage.ts)
 
 ## Observability and Operational Behavior
 
@@ -205,12 +262,12 @@ Related files:
 
 - Backend exposes health endpoints
 - Gateway/Caddy migration is validated through:
-  - [`scripts/validate-caddy-migration.sh`](/Users/liklaysh/Documents/dev/voice/sori/scripts/validate-caddy-migration.sh)
+  - [`scripts/validate-caddy-migration.sh`](scripts/validate-caddy-migration.sh)
 
 ### Smoke Test
 
 The repo now includes a runtime smoke gate:
-- [`apps/backend/src/tests/smoke.runtime.test.ts`](/Users/liklaysh/Documents/dev/voice/sori/apps/backend/src/tests/smoke.runtime.test.ts)
+- [`apps/backend/src/tests/smoke.runtime.test.ts`](apps/backend/src/tests/smoke.runtime.test.ts)
 
 Current smoke coverage includes:
 - admin login
@@ -266,6 +323,10 @@ The following work has already been integrated into the repository:
 - direct-call lifecycle hardening
 - removal of legacy frontend dead hooks
 - bundle splitting and lazy loading for major frontend surfaces
+- removal of hardcoded seeded admin credentials from runtime boot
+- install bootstrap for hidden adminpanel provisioning
+- production-ready Caddy automatic HTTPS path
+- GitHub-ready release metadata and build workflow
 
 ## Current Constraints
 
@@ -290,6 +351,7 @@ npm run deploy:backend
 npm run deploy:web
 npm test
 bash scripts/validate-caddy-migration.sh
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.production.yml config
 ```
 
 Then manually smoke:
@@ -309,3 +371,7 @@ SORI today is a single-community, Caddy-routed, Docker-friendly communication st
 The most important architectural rule going forward is this:
 
 One server URL should be enough for a future client to discover how to talk to the whole system.
+
+The second most important operational rule is this:
+
+Public installs must keep the same Caddy-only topology and be reproducible through `install.sh` and `update.sh`.

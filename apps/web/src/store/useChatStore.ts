@@ -46,6 +46,23 @@ interface ChatState {
   markConversationAsRead: (conversationId: string) => Promise<void>;
 }
 
+function normalizeConversation(conversation: DMConversation): DMConversation {
+  const unreadCount = Number(conversation.unreadCount || 0);
+
+  return {
+    ...conversation,
+    unreadCount: unreadCount > 0 ? unreadCount : 0,
+  };
+}
+
+function sortVoiceOccupantsByJoinTime(occupants: VoiceOccupant[]) {
+  return [...occupants].sort((a, b) => {
+    const joinedAtA = Number(a.joinedAt || 0);
+    const joinedAtB = Number(b.joinedAt || 0);
+    return joinedAtA - joinedAtB;
+  });
+}
+
 function dedupeMessages(messages: ChatItem[]) {
   const seen = new Set<string>();
 
@@ -130,16 +147,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
     return { messagesByContext: nextBuckets };
   }),
   setMembers: (members) => set({ members }),
-  setConversations: (conversations) => set({ conversations }),
-  setVoiceOccupants: (voiceOccupants) => set({ voiceOccupants }),
+  setConversations: (conversations) => set({
+    conversations: conversations.map(normalizeConversation),
+  }),
+  setVoiceOccupants: (voiceOccupants) => set({
+    voiceOccupants: Object.fromEntries(
+      Object.entries(voiceOccupants).map(([channelId, occupants]) => [
+        channelId,
+        sortVoiceOccupantsByJoinTime(occupants),
+      ]),
+    ),
+  }),
   updateVoiceOccupants: (channelId, occupants) => set((state) => ({
-    voiceOccupants: { ...state.voiceOccupants, [channelId]: occupants }
+    voiceOccupants: { ...state.voiceOccupants, [channelId]: sortVoiceOccupantsByJoinTime(occupants) }
   })),
   updateOccupantStatus: (channelId, userId, data) => set((state) => {
     const occupants = state.voiceOccupants[channelId] || [];
     const updated = occupants.map(o => o.userId === userId ? { ...o, ...data } : o);
     return {
-      voiceOccupants: { ...state.voiceOccupants, [channelId]: updated }
+      voiceOccupants: { ...state.voiceOccupants, [channelId]: sortVoiceOccupantsByJoinTime(updated) }
     };
   }),
   setTyping: (channelId, username) => set((state) => {
@@ -149,13 +175,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     return { typingUsers: next };
   }),
   upsertConversation: (conv) => set((state) => {
+    const normalizedConversation = normalizeConversation(conv);
     const exists = state.conversations.some(c => c.id === conv.id);
     if (exists) {
       return {
-        conversations: state.conversations.map(c => c.id === conv.id ? { ...c, ...conv } : c)
+        conversations: state.conversations.map(c => c.id === conv.id ? normalizeConversation({ ...c, ...normalizedConversation }) : c)
       };
     }
-    return { conversations: [conv, ...state.conversations] };
+    return { conversations: [normalizedConversation, ...state.conversations] };
   }),
   startDM: async (targetUserId) => {
     try {
@@ -192,7 +219,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   fetchConversations: async () => {
     const res = await api.get("/dm/conversations");
-    set({ conversations: (res.data as DMConversation[]) || [] });
+    set({ conversations: ((res.data as DMConversation[]) || []).map(normalizeConversation) });
   },
 
   fetchMessages: async (channelId, options = {}) => {

@@ -1,0 +1,104 @@
+{
+	admin off
+	email {$CADDY_ACME_EMAIL}
+}
+
+(sori_common_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
+
+(sori_proxy_transport) {
+	transport http {
+		dial_timeout 10s
+		response_header_timeout 30s
+		keepalive 2m
+	}
+}
+
+{$SORI_WEB_HOST} {
+	import sori_common_headers
+	encode zstd gzip
+	@client_bootstrap path /.well-known/sori/client.json
+	route {
+		handle @client_bootstrap {
+			reverse_proxy sori-backend:3000 {
+				header_up Host {host}
+				header_up X-Real-IP {remote_host}
+				import sori_proxy_transport
+			}
+		}
+
+		reverse_proxy sori-web:80 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			import sori_proxy_transport
+		}
+	}
+}
+
+{$SORI_API_HOST} {
+	import sori_common_headers
+	encode zstd gzip
+	@client_bootstrap path /.well-known/sori/client.json
+	route {
+		handle @client_bootstrap {
+			reverse_proxy sori-backend:3000 {
+				header_up Host {host}
+				header_up X-Real-IP {remote_host}
+				import sori_proxy_transport
+			}
+		}
+
+		reverse_proxy sori-backend:3000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			import sori_proxy_transport
+		}
+	}
+}
+
+{$SORI_LIVEKIT_HOST} {
+	import sori_common_headers
+	encode zstd gzip
+	@client_bootstrap path /.well-known/sori/client.json
+	route {
+		handle @client_bootstrap {
+			reverse_proxy sori-backend:3000 {
+				header_up Host {host}
+				header_up X-Real-IP {remote_host}
+				import sori_proxy_transport
+			}
+		}
+
+		reverse_proxy sori-livekit:7880 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			import sori_proxy_transport
+		}
+	}
+}
+
+{$SORI_MEDIA_HOST} {
+	import sori_common_headers
+	encode zstd gzip
+	@client_bootstrap path /.well-known/sori/client.json
+	route {
+		handle @client_bootstrap {
+			reverse_proxy sori-backend:3000 {
+				header_up Host {host}
+				header_up X-Real-IP {remote_host}
+				import sori_proxy_transport
+			}
+		}
+
+		reverse_proxy sori-media:9000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			import sori_proxy_transport
+		}
+	}
+}

@@ -66,12 +66,20 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
                      lastFirstMessageIdRef.current === firstMsgId && 
                      lastLastMessageIdRef.current !== lastMsgId;
 
+    const lastMessage = messages[messages.length - 1];
+    const appendedByCurrentUser = isAppend
+      && lastMessage?.type !== "system_call"
+      && (lastMessage as Message).authorId === user?.id;
+
     // [PREPEND]: Loading older history (last message stayed same, first changed)
     // No action needed here, handled by manual scroll offset preservation in internalHandleScroll
 
     if (isReset || (isAppend && (() => {
       const threshold = 150;
-      return scrollRef.current!.scrollHeight - scrollRef.current!.scrollTop - scrollRef.current!.clientHeight < threshold;
+      const isNearBottom =
+        scrollRef.current!.scrollHeight - scrollRef.current!.scrollTop - scrollRef.current!.clientHeight < threshold;
+
+      return appendedByCurrentUser || isNearBottom;
     })())) {
       
       const performScroll = () => {

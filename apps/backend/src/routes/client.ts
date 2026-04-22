@@ -3,6 +3,7 @@ import { db } from "../db/index.js";
 import { serverSettings } from "../db/schema.js";
 import { config } from "../config.js";
 import { safe } from "../utils/safe.js";
+import { CLIENT_BOOTSTRAP_VERSION, ClientBootstrapPayload } from "../types/clientBootstrap.js";
 
 const client = new Hono();
 
@@ -12,11 +13,11 @@ async function getServerName() {
   return byKey.get("ServerName") || byKey.get("server_name") || "Sori Sanctuary";
 }
 
-async function buildBootstrapPayload() {
+async function buildBootstrapPayload(): Promise<ClientBootstrapPayload> {
   const serverName = await getServerName();
 
   return {
-    version: 1,
+    version: CLIENT_BOOTSTRAP_VERSION,
     server: {
       name: serverName,
       installMode: "single-community",

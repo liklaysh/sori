@@ -154,6 +154,34 @@ function waitForSocketEvent<T>(
   });
 }
 
+function expectNoSocketEvent<T>(
+  socket: Socket,
+  eventName: string,
+  predicate?: (payload: T) => boolean,
+  timeoutMs = 5000,
+) {
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, timeoutMs);
+
+    const onEvent = (payload: T) => {
+      if (!predicate || predicate(payload)) {
+        cleanup();
+        reject(new Error(`Unexpected socket event "${eventName}" received`));
+      }
+    };
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      socket.off(eventName, onEvent);
+    };
+
+    socket.on(eventName, onEvent);
+  });
+}
+
 async function login(loginName: string, password: string): Promise<Session> {
   const client = createHttpClient();
   const response = await client.post("/auth/login", {
@@ -459,10 +487,53 @@ test("runtime smoke gate against deployed Sori stack", async () => {
     expect(callerTokenResponse.status).toBe(200);
     expect(calleeTokenResponse.status).toBe(200);
 
-    const endedForCaller = waitForSocketEvent<any>(socketA, "call_ended", (payload) => payload?.callId === callId);
-    const endedForCallee = waitForSocketEvent<any>(socketB, "call_ended", (payload) => payload?.callId === callId);
-    socketA.emit("direct_call_end", { callId });
-    await Promise.all([endedForCaller, endedForCallee]);
+    const adminCallActive = await waitFor(
+      async () => {
+        const response = await adminSession!.client.get("/admin/calls");
+        expect(response.status).toBe(200);
+        return (response.data as any[]).find((entry: any) => entry.id === callId);
+      },
+      (entry) => entry?.status === "active" && entry?.isActive === true,
+      { timeoutMs: 10000, description: "active direct call to appear in admin telemetry" },
+    );
+
+    expect(adminCallActive.status).toBe("active");
+
+    const noEndedDuringReconnect = expectNoSocketEvent<any>(
+      socketA,
+      "call_ended",
+      (payload) => payload?.callId === callId,
+      6000,
+    );
+
+    socketB.disconnect();
+    await delay(1500);
+
+    const socketBReconnected = await connectSocket(userBSession, "user-b-reconnect");
+    sockets.push(socketBReconnected);
+
+    await noEndedDuringReconnect;
+
+    const activeAfterReconnect = await waitFor(
+      async () => {
+        const response = await adminSession!.client.get("/admin/calls");
+        expect(response.status).toBe(200);
+        return (response.data as any[]).find((entry: any) => entry.id === callId);
+      },
+      (entry) => entry?.status === "active" && entry?.isActive === true,
+      { timeoutMs: 10000, description: "direct call to stay active after reconnect" },
+    );
+
+    expect(activeAfterReconnect.status).toBe("active");
+
+    const endedForCaller = waitForSocketEvent<any>(
+      socketA,
+      "call_ended",
+      (payload) => payload?.callId === callId,
+      30000,
+    );
+    socketBReconnected.disconnect();
+    await endedForCaller;
 
     const adminCallsAfterEnd = await waitFor(
       async () => {
@@ -494,4 +565,4 @@ test("runtime smoke gate against deployed Sori stack", async () => {
       await adminSession.client.delete(`/admin/users/${userBProvisioned.id}`);
     }
   }
-}, 120000);
+}, 180000);

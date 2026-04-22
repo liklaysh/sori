@@ -38,7 +38,7 @@ export const ServerSidebar: React.FC<ServerSidebarProps> = ({
           
           {/* Unread Badge */}
           {totalUnreadDMs > 0 && (
-            <div className="absolute -top-1 -right-1 bg-sori-accent-danger text-sori-text-on-accent text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-sori-surface-panel animate-in zoom-in">
+            <div className="absolute -top-1 -right-1 bg-sori-accent-secondary text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-sori-surface-panel shadow-lg shadow-sori-accent-secondary/25 animate-in zoom-in">
               {totalUnreadDMs > 99 ? '99+' : totalUnreadDMs}
             </div>
           )}

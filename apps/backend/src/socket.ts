@@ -19,11 +19,39 @@ import { rateLimiter } from "./middleware/rateLimiter.js";
 
 import { Socket, UserProfile } from "./types/socket.js";
 
+function isAllowedSocketOrigin(origin?: string) {
+  if (!origin) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase();
+    const allowed = new Set(config.cors.allowedOrigins);
+
+    return allowed.has(origin)
+      || hostname === "localhost"
+      || hostname === "127.0.0.1"
+      || hostname === "sori.orb.local"
+      || hostname.endsWith(".sori.orb.local");
+  } catch {
+    return false;
+  }
+}
+
 export function initSocket(server: any) {
   const io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: (origin, callback) => {
+        if (isAllowedSocketOrigin(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error("Socket origin is not allowed by CORS"));
+      },
       methods: ["GET", "POST"],
+      credentials: true,
     },
   });
 

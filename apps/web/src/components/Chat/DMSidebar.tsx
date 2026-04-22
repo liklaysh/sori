@@ -59,12 +59,12 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
   if (!user) return null;
 
   return (
-    <div className="w-64 h-full bg-sori-surface-panel flex flex-col border-r border-sori-border-subtle animate-in fade-in duration-300 relative">
+    <div className="w-64 h-full min-h-0 bg-sori-surface-panel flex flex-col border-r border-sori-border-subtle animate-in fade-in duration-300 relative">
       <header className="h-14 border-b border-sori-border-subtle flex items-center px-4 shrink-0 bg-sori-surface-panel">
         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-sori-text-muted">Direct Messages</h2>
       </header>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-1">
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-3 space-y-1">
         <button 
           onClick={onOpenFindFriend}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sori-text-muted hover:bg-sori-surface-hover hover:text-white transition-all group mb-4"
@@ -88,6 +88,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
             if (!otherUser || otherUser.id === user.id) return null;
             const isActive = activeConversationId === conv.id;
             const isOnline = onlineUsersSet.has(otherUser.id);
+            const unreadCount = Number(conv.unreadCount || 0);
 
             return (
               <div 
@@ -123,9 +124,9 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
                   </p>
                 </div>
 
-                {conv.unreadCount && conv.unreadCount > 0 && (
-                   <div className="bg-sori-accent-primary text-black text-[9px] font-black min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 animate-in zoom-in">
-                      {conv.unreadCount}
+                {unreadCount > 0 && (
+                   <div className="bg-sori-accent-secondary text-black text-[9px] font-black min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 shadow-lg shadow-sori-accent-secondary/25 animate-in zoom-in">
+                      {unreadCount}
                    </div>
                 )}
               </div>
