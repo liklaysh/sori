@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/logo.png" width="120" alt="Sori Logo" />
+  <img src="docs/images/logo.png" width="120" />
 </p>
 
 <h1 align="center">Sori</h1>
