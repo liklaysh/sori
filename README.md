@@ -1,3 +1,8 @@
+<p align="center">
+  <b>Real-time communication platform you actually control.</b><br/>
+  Messaging. Voice. Infrastructure. All yours.
+</p>
+
 🚀 SORI
 
 SORI is a self-hosted communication platform that brings chat, voice, calls, media, and administration into a single system — fully under your control.
