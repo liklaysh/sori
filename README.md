@@ -5,184 +5,123 @@
 <h1 align="center">Sori</h1>
 
 <p align="center">
-  <b>Real-time communication platform you actually control.</b><br/>
-  Messaging. Voice. Infrastructure. All yours.
+  <b>Self-hosted communication platform you actually control.</b><br/>
+  Chat • Voice • Calls • Media • Admin — in one system
+</p>
+
+---
+
+## ✨ What is SORI
+
+SORI is a self-hosted communication platform that brings messaging, voice, calls, media, and administration into a single unified system.
+
+It is designed to replace fragmented tools with one controlled environment:
+
+💬 real-time messaging  
+🔊 voice channels  
+📞 direct and group calls  
+📎 file and media sharing  
+🛠 built-in admin panel  
+
+No external services. No vendor lock-in.  
+Just your infrastructure, fully under your control.
+
+---
+
+## 📸 Preview
+
+<p align="center">
+  <img src="./docs/images/login.png" width="800"/>
+  <br/>
+  <i>Login</i>
 </p>
 
 <p align="center">
-  ⚡ Self-hosted • 🔒 Private • 🚀 Realtime
+  <img src="./docs/images/chat.png" width="800"/>
+  <br/>
+  <i>Chat</i>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-AGPL%20v3-blue.svg" />
-  <img src="https://img.shields.io/badge/status-active-success.svg" />
-  <img src="https://img.shields.io/badge/self--hosted-yes-important.svg" />
-  <img src="https://img.shields.io/badge/docker-ready-blue.svg" />
-  <img src="https://img.shields.io/badge/realtime-socket.io-orange.svg" />
+  <img src="./docs/images/call.png" width="800"/>
+  <br/>
+  <i>Calls</i>
 </p>
 
+<p align="center">
+  <img src="./docs/images/admin.png" width="800"/>
+  <br/>
+  <i>Admin</i>
+</p>
 
-SORI is a self-hosted communication platform that brings chat, voice, calls, media, and administration into a single system — fully under your control.
+---
 
-⸻
+## ⚡ Features
 
-✨ What is SORI
+- Real-time chat — fast messaging, reactions, live updates  
+- Voice & calls — powered by LiveKit for low-latency communication  
+- Media uploads — S3-compatible storage via MinIO  
+- Channels & direct messages — structured communication model  
+- Admin panel — manage users, channels, storage, and system state  
+- Self-hosted — full ownership of data and infrastructure  
 
-SORI is designed as a single-server communication platform that combines:
+---
 
-* 💬 real-time messaging
-* 🔊 voice channels
-* 📞 direct and group calls
-* 📎 file and media sharing
-* 🛠 built-in admin panel
+## 🧠 Architecture
 
-No external dependencies. No vendor lock-in. Just your infrastructure.
+SORI is built as a modular, production-ready system where each component has a clear responsibility:
 
-⸻
+## 🧠 Architecture
 
-⚡ Features
+| Layer | Stack | Role |
+|------|------|------|
+| **Frontend** | React 18 + Vite + Zustand | Interface & real-time UI |
+| **Backend** | Node.js + Hono | API & core logic |
+| **Database** | PostgreSQL + Drizzle | Data persistence |
+| **Realtime** | Socket.IO + Valkey | Events & presence |
+| **Voice** | LiveKit | Calls & voice channels |
+| **Storage** | MinIO | Media & files |
+| **Gateway** | Caddy | Routing & TLS |
 
-* Real-time chat — fast messaging, reactions
-* Voice & calls — powered by LiveKit for low latency
-* Media uploads — S3-compatible storage (MinIO)
-* Channels & direct messages — structured communication
-* Admin panel — users, channels, storage, backups, telemetry
-* Self-hosted — full ownership of your data and system
+👉 Docker-based unified system.
 
-⸻
+---
 
-🧠 Architecture
+## 🏗 Deployment Model
 
-SORI is built as a cohesive system of services:
+SORI is designed around simplicity and predictability:
 
-* Frontend — React + Zustand
-* Backend — Node.js + Hono
-* Database — PostgreSQL
-* Realtime — Socket.IO + Valkey
-* Voice engine — LiveKit
-* Object storage — MinIO (S3-compatible)
-* Gateway — Caddy (routing + TLS)
+- 🖥 Single-server deployment  
+- 🌐 One domain → full system access  
+- 🔐 Automatic HTTPS via Caddy  
+- ⚙️ Minimal infrastructure requirements  
 
-👉 Everything runs via Docker.
+Everything runs as a unified stack, making it easy to deploy, maintain, and scale when needed.
 
-⸻
+---
 
-🏗 Deployment Model
+## 🧑‍💻 Who It’s For
 
-SORI is intentionally designed for simplicity:
+- Private communities  
+- Teams and small organizations  
+- Self-hosting enthusiasts  
+- Developers building internal communication systems  
 
-* 🖥 Single-server deployment
-* 🏠 Single default community
-* 🔐 HTTPS-enabled setup
-* ⚙️ Minimal infrastructure complexity
+---
 
-⸻
+## 💡 Summary
 
-🌐 How It Works
+SORI is not just a chat app.
 
-One server → one URL → full system access:
+It’s a complete, self-hosted communication platform that gives you full control over your data, infrastructure, and user experience.
 
-* Web interface
-* API
-* WebSocket
-* Voice services
-* Media delivery
+____
 
-👉 Clients can automatically discover endpoints via a bootstrap API.
-
-⸻
-
-📦 Core Components
-
-* Chat & messaging system
-* Voice channels
-* Direct call system (overlay → full workspace)
-* File upload pipeline
-* Admin panel
-* Backup service
-
-⸻
-
-🔐 Configuration
-
-SORI uses environment variables for configuration:
-
-* database connection
-* storage configuration
-* voice service credentials
-* public endpoints
-* upload limits
-
-👉 No insecure defaults — everything is explicit.
-
-⸻
-
-🧪 What’s Already Implemented
-
-* stable real-time messaging
-* voice and call lifecycle handling
-* streaming uploads (no full file buffering)
-* SSRF protections
-* centralized routing via Caddy
-* health checks and telemetry
-* end-to-end smoke testing
-
-⸻
-
-🎯 Design Principles
-
-SORI is built around:
-
-* single server simplicity
-* predictable architecture
-* minimal hidden complexity
-* full ownership and control
-* self-host-first mindset
-
-⸻
-
-🚧 Status
-
-SORI is under active development.
-
-Current focus:
-
-* stability and reliability
-* simplified installation
-* production readiness
-* future native clients
-
-⸻
-
-🔮 Roadmap
-
-* native desktop and mobile clients
-* extended admin capabilities
-
-⸻
-
-🧑‍💻 Who It’s For
-
-* private communities
-* teams and small organizations
-* self-hosting enthusiasts
-* developers building internal communication systems
-
-⸻
-
-💡 Summary
-
-SORI is more than a messaging tool.
-It’s a complete communication platform you fully control.
-
-_____
-
-License
+## 📄 License
 
 This project is licensed under the **GNU AGPL v3**.
 
 You are free to use, modify, and deploy this software.  
+If you run a modified version as a service, you must make the source code available.
 
-However, if you run a modified version as a service, you must make the source code available.
-
-See the [LICENSE](LICENSE) file for details.
+See the `[LICENSE](LICENSE)` file for details.
