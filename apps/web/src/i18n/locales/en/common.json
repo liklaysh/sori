@@ -1,0 +1,48 @@
+{
+  "appName": "Sori",
+  "loading": {
+    "sync": "Synchronizing Sori..."
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveChanges": "Save Changes",
+    "create": "Create",
+    "show": "Show",
+    "explore": "Explore",
+    "start": "Start",
+    "stop": "Stop",
+    "edit": "Edit",
+    "download": "Download",
+    "forward": "Forward",
+    "copyLink": "Copy Link",
+    "close": "Close"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "languages": {
+    "selector": "Language",
+    "english": "English",
+    "russian": "Russian",
+    "short": {
+      "en": "EN",
+      "ru": "RU"
+    }
+  },
+  "navigation": {
+    "community": "Community",
+    "directMessages": "Direct Messages",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "search": {
+    "results": "Search Results",
+    "noResults": "No results found"
+  },
+  "system": "System",
+  "accessibility": {
+    "closeUserSearch": "Close user search"
+  }
+}

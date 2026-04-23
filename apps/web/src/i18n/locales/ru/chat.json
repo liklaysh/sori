@@ -1,0 +1,108 @@
+{
+  "directMessages": "Личные сообщения",
+  "findFriendButton": "Найти друга",
+  "noActiveChats": "Нет активных чатов",
+  "voiceConnected": "Голос подключён",
+  "privateConversations": "Личные диалоги",
+  "privateConversationsDescription": "Выберите пользователя, чтобы начать диалог, или найдите нового друга.",
+  "showConversations": "Показать диалоги",
+  "welcomeCommunity": "Добро пожаловать в Sanctuary",
+  "welcomeCommunityDescription": "Выберите канал слева, чтобы начать общение с сообществом.",
+  "exploreChannels": "Открыть каналы",
+  "replyingTo": "Ответ пользователю {{name}}",
+  "editing": "Редактирование",
+  "detectedProtocols": "Обнаруженные ссылки",
+  "sendFile": "Отправить файл",
+  "addFile": "Добавить файл",
+  "searchConversation": "Поиск в беседе...",
+  "history": {
+    "syncingArchives": "Синхронизация истории...",
+    "endOfRecentHistory": "Конец последних сообщений",
+    "welcomeToConversation": "Добро пожаловать в ваш диалог!"
+  },
+  "security": {
+    "guard": "Защита безопасности",
+    "internalProtocolBlocked": "Внутренний протокол заблокирован"
+  },
+  "findFriendDialog": {
+    "searchPlaceholder": "Поиск пользователей для чата...",
+    "globalDiscovery": "Глобальный поиск Sori"
+  },
+  "forward": {
+    "title": "Переслать сообщение",
+    "description": "Выберите пользователя или канал, куда переслать это содержимое.",
+    "placeholder": "Кому переслать...",
+    "channels": "Каналы",
+    "directMessages": "Личные сообщения"
+  },
+  "modals": {
+    "createChannel": {
+      "title": "Создать канал",
+      "text": "Текст",
+      "voice": "Голос",
+      "channelName": "Название канала",
+      "placeholder": "new-channel"
+    },
+    "createCategory": {
+      "title": "Создать категорию",
+      "placeholder": "Название категории"
+    },
+    "renameChannel": {
+      "title": "Переименовать канал",
+      "placeholder": "channel-name"
+    },
+    "deleteChannel": {
+      "title": "Удалить канал",
+      "description": "Это действие необратимо. Все сообщения и данные, связанные с этим каналом, будут навсегда удалены из системы.",
+      "confirm": "Удалить канал",
+      "cancel": "Отменить действие"
+    },
+    "logout": {
+      "title": "Выйти",
+      "description": "Вы уверены, что хотите выйти из Sanctuary?",
+      "cancel": "Остаться в системе",
+      "confirm": "Выйти"
+    }
+  },
+  "messages": {
+    "missedCall": "Пропущенный звонок",
+    "callEnded": "Звонок завершён",
+    "declinedCall": "Звонок отклонён",
+    "duration": "Длительность: {{duration}}",
+    "fullscreenPreview": "Полноэкранный просмотр",
+    "you": "ВЫ",
+    "deletedUser": "Пользователь удалён"
+  },
+  "members": {
+    "title": "Участники — {{count}}",
+    "online": "В сети — {{count}}",
+    "offline": "Не в сети — {{count}}",
+    "chat": "Чат",
+    "call": "Звонок"
+  },
+  "channelContext": {
+    "options": "Параметры канала",
+    "rename": "Переименовать канал",
+    "delete": "Удалить канал"
+  },
+  "systemCallToast": {
+    "missedCall_one": "Пропущенный звонок",
+    "missedCall_other": "{{count}} пропущенных звонков",
+    "declinedCall_one": "Звонок отклонён",
+    "declinedCall_other": "{{count}} отклонённых звонков",
+    "callAccepted": "Звонок принят",
+    "callEnded": "Звонок завершён",
+    "callEndedWithDuration": "Звонок завершён • {{duration}}",
+    "noAnswer": "Нет ответа",
+    "voiceEvent": "Голосовое событие"
+  },
+  "categories": {
+    "textChannels": "ТЕКСТОВЫЕ КАНАЛЫ",
+    "voiceChannels": "ГОЛОСОВЫЕ КАНАЛЫ"
+  },
+  "placeholders": {
+    "editMessage": "Изменить сообщение...",
+    "messageUser": "Сообщение для @{{username}}",
+    "messageChannel": "Сообщение в #{{channel}}"
+  }
+}

@@ -1,5 +1,6 @@
 import React from "react";
 import { Home, MessageCircle, Settings, LogOut } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ServerSidebarProps {
   onLogout: () => void;
@@ -16,11 +17,15 @@ export const ServerSidebar: React.FC<ServerSidebarProps> = ({
   setActiveModule,
   totalUnreadDMs
 }) => {
+  const { t } = useTranslation("common");
+
   return (
     <aside className="fixed left-0 top-0 h-full flex flex-col z-50 bg-sori-surface-base w-20 items-center py-4 space-y-4 border-r border-sori-border-subtle overflow-x-hidden overflow-y-auto no-scrollbar capitalize">
       {/* Home / Community Button */}
       <div 
         onClick={() => setActiveModule('community')}
+        title={t("navigation.community")}
+        aria-label={t("navigation.community")}
         className={`w-12 h-12 flex items-center justify-center rounded-[1.5rem] shadow-lg cursor-pointer transition-all active:scale-95 group relative flex-shrink-0 border-none ${activeModule === 'community' ? 'bg-sori-accent-primary text-sori-text-on-primary' : 'bg-sori-surface-panel text-sori-text-muted hover:text-sori-accent-primary hover:rounded-xl'}`}
       >
         <Home className="h-6 w-6" />
@@ -32,6 +37,8 @@ export const ServerSidebar: React.FC<ServerSidebarProps> = ({
         {/* DM Button */}
         <div 
           onClick={() => setActiveModule('dm')}
+          title={t("navigation.directMessages")}
+          aria-label={t("navigation.directMessages")}
           className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all cursor-pointer group relative flex-shrink-0 ${activeModule === 'dm' ? 'bg-sori-accent-primary text-sori-text-on-primary shadow-lg' : 'bg-sori-surface-panel text-sori-text-muted hover:text-sori-accent-primary'}`}
         >
           <MessageCircle className="h-6 w-6" />
@@ -48,12 +55,16 @@ export const ServerSidebar: React.FC<ServerSidebarProps> = ({
       <div className="mt-auto flex flex-col items-center gap-4 pb-6 flex-shrink-0">
         <button 
           onClick={onOpenSettings}
+          title={t("navigation.settings")}
+          aria-label={t("navigation.settings")}
           className="w-12 h-12 flex items-center justify-center text-sori-text-muted hover:text-sori-accent-primary hover:bg-sori-surface-hover rounded-xl transition-all"
         >
           <Settings className="h-6 w-6" />
         </button>
         <button 
           onClick={onLogout} 
+          title={t("navigation.logout")}
+          aria-label={t("navigation.logout")}
           className="w-12 h-12 flex items-center justify-center text-sori-accent-danger hover:bg-sori-surface-danger-subtle rounded-xl transition-all"
         >
           <LogOut className="h-6 w-6" />

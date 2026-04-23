@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { LinkMetadata } from "../../types/chat";
 import { Globe, ShieldAlert, ExternalLink } from "lucide-react";
 
@@ -8,6 +9,7 @@ interface EmbedCardProps {
 }
 
 export const EmbedCard: React.FC<EmbedCardProps> = ({ data, compact }) => {
+  const { t } = useTranslation(["chat"]);
   const domain = new URL(data.url).hostname.replace("www.", "");
 
   if (data.isPrivate) {
@@ -17,8 +19,8 @@ export const EmbedCard: React.FC<EmbedCardProps> = ({ data, compact }) => {
           <ShieldAlert className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-sori-accent-danger mb-0.5">Security Guard</p>
-          <p className="text-xs font-bold text-sori-text-muted line-clamp-1">Internal Protocol Blocked</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-sori-accent-danger mb-0.5">{t("chat:security.guard")}</p>
+          <p className="text-xs font-bold text-sori-text-muted line-clamp-1">{t("chat:security.internalProtocolBlocked")}</p>
         </div>
       </div>
     );

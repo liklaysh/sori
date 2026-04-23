@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAdminApi } from "../../../hooks/useAdminApi";
 import { toast } from "sonner";
 import { 
@@ -26,6 +27,7 @@ import {
 import { Button } from "@sori/ui";
 
 export default function SettingsTab() {
+  const { t } = useTranslation(["admin"]);
   const [serverName, setServerName] = useState("");
   const [tempServerName, setTempServerName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -57,11 +59,11 @@ export default function SettingsTab() {
     try {
       await api.updateSetting("ServerName", tempServerName);
       setServerName(tempServerName);
-      toast.success("Settings saved successfully!");
+      toast.success(t("admin:settings.toasts.saved"));
       document.title = tempServerName;
       setIsDialogOpen(false);
     } catch (e) {
-      toast.error("Failed to save settings");
+      toast.error(t("admin:settings.toasts.saveFailed"));
     } finally {
       setIsSaving(false);
     }
@@ -75,9 +77,9 @@ export default function SettingsTab() {
             <div className="p-1.5 bg-sori-accent-danger rounded-lg">
               <Settings className="h-5 w-5 text-sori-text-on-accent" />
             </div>
-            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">Core Logic</h1>
+            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">{t("admin:settings.title")}</h1>
           </div>
-          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">Platform-wide behavioral constants.</p>
+          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">{t("admin:settings.description")}</p>
         </div>
       </div>
 
@@ -91,14 +93,14 @@ export default function SettingsTab() {
           <div className="relative z-10 space-y-6">
             <div className="flex items-center gap-2 mb-1">
               <Globe className="h-4 w-4 text-sori-accent-danger" />
-              <h2 className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.2em]">Identity Design</h2>
+              <h2 className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.2em]">{t("admin:settings.identityDesign")}</h2>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between bg-sori-surface-base p-4 rounded-2xl border border-sori-border-subtle">
                 <div className="space-y-0.5">
-                  <label className="text-[9px] font-black text-sori-text-muted uppercase tracking-widest">Platform Alias</label>
-                  <p className="text-lg font-black text-sori-text-strong">{isLoading ? "Syncing..." : serverName}</p>
+                  <label className="text-[9px] font-black text-sori-text-muted uppercase tracking-widest">{t("admin:settings.platformAlias")}</label>
+                  <p className="text-lg font-black text-sori-text-strong">{isLoading ? t("admin:settings.syncing") : serverName}</p>
                 </div>
                 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -109,14 +111,14 @@ export default function SettingsTab() {
                       disabled={isLoading}
                     >
                       <Edit2 className="h-3 w-3" />
-                      Modify
+                      {t("admin:settings.modify")}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="bg-sori-surface-main border-sori-border-subtle text-sori-text-strong shadow-2xl">
                     <DialogHeader>
-                      <DialogTitle>Modify Alias</DialogTitle>
+                      <DialogTitle>{t("admin:settings.modifyAlias")}</DialogTitle>
                       <DialogDescription className="text-sori-text-muted">
-                        Input a new designation for your Sori platform.
+                        {t("admin:settings.modifyAliasDescription")}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
@@ -125,19 +127,19 @@ export default function SettingsTab() {
                         value={tempServerName}
                         onChange={(e) => setTempServerName(e.target.value)}
                         className="w-full bg-sori-surface-panel border border-sori-border-subtle rounded-xl px-4 py-3 text-sori-text-strong focus:border-sori-accent-danger outline-none transition-all font-bold"
-                        placeholder="e.g., Sori Sanctuary"
+                        placeholder={t("admin:settings.placeholder")}
                       />
                     </div>
                     <DialogFooter>
                       <DialogClose asChild>
-                        <Button variant="ghost" className="text-sori-text-muted hover:text-sori-text-strong uppercase text-[10px] font-black tracking-widest">Abort</Button>
+                        <Button variant="ghost" className="text-sori-text-muted hover:text-sori-text-strong uppercase text-[10px] font-black tracking-widest">{t("admin:settings.abort")}</Button>
                       </DialogClose>
                       <Button 
                         onClick={handleSave} 
                         disabled={isSaving}
                         className="bg-sori-accent-danger hover:brightness-110 text-sori-text-on-accent font-black uppercase text-[10px] tracking-widest"
                       >
-                        {isSaving ? "Syncing..." : "Commit Changes"}
+                        {isSaving ? t("admin:settings.syncing") : t("admin:settings.commitChanges")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -145,14 +147,14 @@ export default function SettingsTab() {
               </div>
               
               <p className="text-[10px] text-sori-text-dim leading-relaxed font-medium">
-                This value overrides the "Sori" designation across system headers, metadata, and local broadcasts.
+                {t("admin:settings.helper")}
               </p>
             </div>
 
             <div className="pt-4 border-t border-sori-border-subtle flex items-center justify-between">
               <div className="flex items-center gap-2 text-[8px] text-sori-text-dim font-black uppercase tracking-widest italic">
                 <Activity className="h-2.5 w-2.5" />
-                Latest sync operation successful
+                {t("admin:settings.latestSyncSuccessful")}
               </div>
             </div>
           </div>
@@ -161,5 +163,4 @@ export default function SettingsTab() {
     </div>
   );
 }
-
 

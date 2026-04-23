@@ -40,6 +40,7 @@ export interface Message {
   isDeleted?: boolean;
   linkMetadata?: string | null;
   reactions?: Reaction[];
+  attachments?: Attachment[] | null;
   attachment?: Attachment | null;
   type?: "text" | "call_missed" | "call_ended" | "call_rejected" | "system_call" | string;
   requestId?: string;

@@ -1,0 +1,108 @@
+{
+  "directMessages": "Direct Messages",
+  "findFriendButton": "Find a friend",
+  "noActiveChats": "No active chats",
+  "voiceConnected": "Voice Connected",
+  "privateConversations": "Private Conversations",
+  "privateConversationsDescription": "Select a user to start a conversation or find a new friend.",
+  "showConversations": "Show Conversations",
+  "welcomeCommunity": "Welcome to Sanctuary",
+  "welcomeCommunityDescription": "Select a channel from the left to start communicating with your community.",
+  "exploreChannels": "Explore Channels",
+  "replyingTo": "Replying to {{name}}",
+  "editing": "Editing",
+  "detectedProtocols": "Detected Protocols",
+  "sendFile": "Send File",
+  "addFile": "Add File",
+  "searchConversation": "Search in conversation...",
+  "history": {
+    "syncingArchives": "Syncing archives...",
+    "endOfRecentHistory": "End of recent history",
+    "welcomeToConversation": "Welcome to your conversation!"
+  },
+  "security": {
+    "guard": "Security Guard",
+    "internalProtocolBlocked": "Internal Protocol Blocked"
+  },
+  "findFriendDialog": {
+    "searchPlaceholder": "Search users to chat...",
+    "globalDiscovery": "Global Sori Discovery"
+  },
+  "forward": {
+    "title": "Forward Message",
+    "description": "Select a user or channel to forward this content to.",
+    "placeholder": "Forward to...",
+    "channels": "Channels",
+    "directMessages": "Direct Messages"
+  },
+  "modals": {
+    "createChannel": {
+      "title": "Create Channel",
+      "text": "Text",
+      "voice": "Voice",
+      "channelName": "Channel Name",
+      "placeholder": "new-channel"
+    },
+    "createCategory": {
+      "title": "Create Category",
+      "placeholder": "Category Name"
+    },
+    "renameChannel": {
+      "title": "Rename Channel",
+      "placeholder": "channel-name"
+    },
+    "deleteChannel": {
+      "title": "Delete Channel",
+      "description": "This action is irreversible. All messages and data associated with this channel will be permanently purged from the neural network.",
+      "confirm": "Purge Channel",
+      "cancel": "Abort Action"
+    },
+    "logout": {
+      "title": "Sign Out",
+      "description": "Are you sure you want to log out of Sanctuary?",
+      "cancel": "Stay Connected",
+      "confirm": "Log Out"
+    }
+  },
+  "messages": {
+    "missedCall": "Missed Call",
+    "callEnded": "Call Ended",
+    "declinedCall": "Declined Call",
+    "duration": "Duration: {{duration}}",
+    "fullscreenPreview": "Fullscreen preview",
+    "you": "You",
+    "deletedUser": "Deleted User"
+  },
+  "members": {
+    "title": "Members — {{count}}",
+    "online": "Online — {{count}}",
+    "offline": "Offline — {{count}}",
+    "chat": "Chat",
+    "call": "Call"
+  },
+  "channelContext": {
+    "options": "Channel Options",
+    "rename": "Rename Channel",
+    "delete": "Delete Channel"
+  },
+  "systemCallToast": {
+    "missedCall_one": "Missed Call",
+    "missedCall_other": "{{count}} Missed Calls",
+    "declinedCall_one": "Declined Call",
+    "declinedCall_other": "{{count}} Declined Calls",
+    "callAccepted": "Call Accepted",
+    "callEnded": "Call Ended",
+    "callEndedWithDuration": "Call Ended • {{duration}}",
+    "noAnswer": "No Answer",
+    "voiceEvent": "Voice Event"
+  },
+  "categories": {
+    "textChannels": "TEXT CHANNELS",
+    "voiceChannels": "VOICE CHANNELS"
+  },
+  "placeholders": {
+    "editMessage": "Edit message...",
+    "messageUser": "Message @{{username}}",
+    "messageChannel": "Message #{{channel}}"
+  }
+}

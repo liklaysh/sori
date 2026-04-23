@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, RefObject, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Message, CallLog, ChatItem } from "../../types/chat";
 import { MessageItem } from "./MessageItem";
 import { SystemCallToast } from "./SystemCallToast";
@@ -26,6 +27,7 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
   isLoadingMessages,
   onForward
 }) => {
+  const { t } = useTranslation(["chat"]);
   const { user } = useUserStore();
   const { activeModule, activeChannelId, activeConversationId } = useUIStore();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -151,10 +153,10 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
           {isLoadingMore ? (
             <div className="flex gap-2 items-center text-sori-accent-primary text-[10px] font-black uppercase animate-pulse">
                <Loader2 className="h-3 w-3 animate-spin" />
-               Syncing archives...
+               {t("chat:history.syncingArchives")}
             </div>
           ) : (
-            <div className="text-sori-text-muted text-[9px] font-black uppercase tracking-tighter">End of recent history</div>
+            <div className="text-sori-text-muted text-[9px] font-black uppercase tracking-tighter">{t("chat:history.endOfRecentHistory")}</div>
           )}
         </div>
       )}
@@ -178,7 +180,7 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
       ) : messages.length === 0 ? (
         <div className="h-full items-center justify-center space-y-4 flex flex-col flex-1 text-sori-text-muted">
           <MessageCircle className="h-16 w-16" />
-          <p className="font-headline font-bold text-xl text-sori-text-strong">Welcome to your conversation!</p>
+          <p className="font-headline font-bold text-xl text-sori-text-strong">{t("chat:history.welcomeToConversation")}</p>
         </div>
       ) : (
         (() => {

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import api from "../lib/api"; // Updated to use centralized api
 import { useUserStore } from "../store/useUserStore"; // Added user store
 import { User, Lock, Eye, EyeOff } from "lucide-react";
@@ -12,6 +13,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const setUser = useUserStore(s => s.setUser);
+  const { t } = useTranslation(["auth", "common"]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +36,7 @@ const Login: React.FC = () => {
         navigate("/chat");
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "Failed to login. Please try again.");
+      setError(err.response?.data?.error || t("auth:errors.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,7 @@ const Login: React.FC = () => {
           <div className="flex flex-col items-center mb-10">
             <img src="/logo.png" alt="Sori Logo" className="w-20 h-20 mb-4 object-contain shadow-2xl" />
             <h1 className="font-headline text-3xl font-extrabold tracking-tight text-sori-text-strong mb-2">Sori</h1>
-            <p className="text-sori-text-muted font-label text-sm uppercase tracking-widest font-bold">Protocol Access</p>
+            <p className="text-sori-text-muted font-label text-sm uppercase tracking-widest font-bold">{t("auth:protocolAccess")}</p>
           </div>
 
           {/* Login Form */}
@@ -60,7 +62,7 @@ const Login: React.FC = () => {
             )}
             <div className="space-y-2">
               <label className="block text-xs font-black uppercase tracking-widest text-sori-accent-secondary ml-2" htmlFor="identity">
-                Email or Username
+                {t("auth:emailOrUsername")}
               </label>
               <div className="group relative transition-all duration-300">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-sori-text-muted group-focus-within:text-primary transition-colors pointer-events-none">
@@ -69,7 +71,7 @@ const Login: React.FC = () => {
                 <input
                   className="w-full bg-sori-surface-panel border border-sori-border-subtle rounded-xl py-4 pl-12 pr-4 text-sori-text-strong placeholder:text-sori-text-dim focus:ring-1 focus:ring-primary transition-all outline-none font-bold"
                   id="identity"
-                  placeholder="Enter email or username"
+                  placeholder={t("auth:enterEmailOrUsername")}
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -81,7 +83,7 @@ const Login: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between items-center px-2">
                 <label className="block text-xs font-black uppercase tracking-widest text-sori-accent-secondary ml-2" htmlFor="password">
-                  Password
+                  {t("auth:password")}
                 </label>
               </div>
               <div className="group relative transition-all duration-300">
@@ -112,7 +114,7 @@ const Login: React.FC = () => {
               type="submit"
               disabled={loading}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? t("auth:loggingIn") : t("auth:login")}
             </button>
           </form>
         </div>

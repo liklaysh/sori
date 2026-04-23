@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Message, User, ChatItem } from "../../../types/chat";
 import { MessageList } from "../MessageList";
 import { cn } from "@sori/ui";
@@ -44,6 +45,7 @@ export const SoriCallSidebar: React.FC<SoriCallSidebarProps> = ({
   onOpenForward,
   className
 }) => {
+  const { t } = useTranslation(["voice"]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -60,7 +62,7 @@ export const SoriCallSidebar: React.FC<SoriCallSidebarProps> = ({
       <header className="h-14 border-b border-sori-border-subtle flex items-center px-4 gap-3 bg-sori-surface-panel shrink-0">
         <MessageCircle className="h-4 w-4 text-on-surface-variant" />
         <h2 className="text-[11px] font-black uppercase text-white truncate flex-1 tracking-wider">
-          Chat: {title}
+          {t("voice:room.callChatTitle", { title })}
         </h2>
         <button 
           onClick={onClose} 
@@ -95,7 +97,7 @@ export const SoriCallSidebar: React.FC<SoriCallSidebarProps> = ({
         >
           <input 
             className="flex-1 bg-transparent border-none text-[11px] text-white outline-none" 
-            placeholder="Message in call..." 
+            placeholder={t("voice:room.messageInCall")} 
             value={inputValue} 
             onChange={(e) => setInputValue(e.target.value)} 
           />

@@ -9,7 +9,7 @@ import { logger } from "../utils/logger.js";
 import { getGlobalIo } from "../globals.js";
 import { createDirectMessageSchema } from "../validation/schemas.js";
 import { markConversationRead } from "../utils/dmRead.js";
-import { extractAttachment, serializeMessage } from "../utils/messageContract.js";
+import { extractAttachments, serializeMessage } from "../utils/messageContract.js";
 import { getLinkPreviews } from "../utils/linkPreview.js";
 import { sanitizeUser } from "../utils/publicUser.js";
 
@@ -232,9 +232,10 @@ app.post("/conversations/:id/messages", authMiddleware, safe(async (c) => {
       return c.json({ error: "Invalid message payload", details: parsed.error.format() }, 400);
     }
 
-    const attachment = extractAttachment(parsed.data);
+    const attachments = extractAttachments(parsed.data);
+    const firstAttachment = attachments[0] || null;
     const content = parsed.data.content?.trim() || "";
-    const type = attachment ? "file" : "text";
+    const type = attachments.length > 0 ? "file" : "text";
     const linkPreviews = content ? await getLinkPreviews(content) : [];
 
     // Verify membership
@@ -253,10 +254,11 @@ app.post("/conversations/:id/messages", authMiddleware, safe(async (c) => {
       authorId: userId,
       content,
       type,
-      fileUrl: attachment?.fileUrl,
-      fileName: attachment?.fileName,
-      fileSize: attachment?.fileSize,
-      fileType: attachment?.fileType,
+      fileUrl: firstAttachment?.fileUrl,
+      fileName: firstAttachment?.fileName,
+      fileSize: firstAttachment?.fileSize,
+      fileType: firstAttachment?.fileType,
+      attachments: attachments.length > 0 ? JSON.stringify(attachments) : null,
       linkMetadata: linkPreviews.length > 0 ? JSON.stringify(linkPreviews) : null,
     }).returning();
 

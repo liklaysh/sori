@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAdminApi } from "../../../hooks/useAdminApi";
 import { toast } from "sonner";
 import { 
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 
 export default function AuditLogTab() {
+  const { t } = useTranslation(["admin"]);
   const [logs, setLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const api = useAdminApi();
@@ -24,7 +26,7 @@ export default function AuditLogTab() {
       if (auditRes.data) setLogs(auditRes.data);
     } catch (e) {
       console.error(e);
-      toast.error("Audit sync failed");
+      toast.error(t("admin:audit.toasts.syncFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -54,18 +56,18 @@ export default function AuditLogTab() {
     a.download = `sori_audit_${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Operational ledger exported");
+    toast.success(t("admin:audit.toasts.exported"));
   };
 
   const handleCleanup = async () => {
-    if (!confirm("Confirm purging of operational logs older than 72 hours? This operation is irreversible.")) return;
+    if (!confirm(t("admin:audit.confirmCleanup"))) return;
     try {
       const { error } = await api.cleanupAuditLogs();
       if (error) throw new Error(error);
-      toast.success("History purged");
+      toast.success(t("admin:audit.toasts.historyPurged"));
       fetchData();
     } catch (e) { 
-      toast.error("Cleanup operation failed"); 
+      toast.error(t("admin:audit.toasts.cleanupFailed")); 
     }
   };
 
@@ -79,9 +81,9 @@ export default function AuditLogTab() {
               <div className="p-1.5 bg-sori-accent-danger rounded-lg">
                 <ShieldCheck className="h-5 w-5 text-sori-text-on-accent" />
               </div>
-              <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">Action Ledger</h1>
+              <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">{t("admin:audit.title")}</h1>
             </div>
-            <p className="text-sori-text-muted text-[10px] font-medium max-w-lg tracking-wide uppercase">Historical trace of administrative operations.</p>
+            <p className="text-sori-text-muted text-[10px] font-medium max-w-lg tracking-wide uppercase">{t("admin:audit.description")}</p>
           </div>
           <div className="flex gap-3">
             <button 
@@ -89,14 +91,14 @@ export default function AuditLogTab() {
               className="bg-sori-surface-main border border-sori-border-subtle hover:border-sori-accent-danger text-sori-accent-danger font-black px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all active:scale-95 shadow-lg group/clean"
             >
               <Eraser className="h-3.5 w-3.5 group-hover/clean:rotate-12 transition-transform" />
-              <span className="text-[10px] uppercase tracking-widest">Purge</span>
+              <span className="text-[10px] uppercase tracking-widest">{t("admin:audit.purge")}</span>
             </button>
             <button 
               onClick={handleExportCSV} 
               className="bg-sori-accent-danger text-sori-text-on-accent font-black px-5 py-2.5 rounded-xl flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-lg"
             >
               <Download className="h-3.5 w-3.5" />
-              <span className="text-[10px] uppercase tracking-widest">Export</span>
+              <span className="text-[10px] uppercase tracking-widest">{t("admin:audit.export")}</span>
             </button>
           </div>
         </div>
@@ -106,10 +108,10 @@ export default function AuditLogTab() {
             <table className="w-full min-w-[800px] text-left">
               <thead className="bg-sori-surface-active">
                 <tr>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Timestamp</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Identity</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Operation</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Object</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:audit.table.timestamp")}</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:audit.table.identity")}</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:audit.table.operation")}</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:audit.table.object")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-sori-border-subtle">
@@ -118,7 +120,7 @@ export default function AuditLogTab() {
                     <td colSpan={4} className="px-6 py-16 text-center">
                       <div className="flex flex-col items-center gap-3 text-sori-text-muted">
                         <RefreshCw className="h-6 w-6 animate-spin text-sori-accent-danger" />
-                        <p className="text-[10px] font-bold animate-pulse uppercase tracking-widest">Syncing ledger...</p>
+                        <p className="text-[10px] font-bold animate-pulse uppercase tracking-widest">{t("admin:audit.loading")}</p>
                       </div>
                     </td>
                   </tr>
@@ -127,7 +129,7 @@ export default function AuditLogTab() {
                     <td colSpan={4} className="px-6 py-16 text-center">
                        <div className="flex flex-col items-center gap-2">
                          <Search className="h-8 w-8 text-sori-text-dim" />
-                         <p className="font-black uppercase tracking-[0.2em] text-[10px] text-sori-text-dim">Ledger Empty</p>
+                         <p className="font-black uppercase tracking-[0.2em] text-[10px] text-sori-text-dim">{t("admin:audit.empty")}</p>
                        </div>
                     </td>
                   </tr>

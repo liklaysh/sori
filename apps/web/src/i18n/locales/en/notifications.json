@@ -1,0 +1,20 @@
+{
+  "mentions": {
+    "youWereMentioned": "You're mentioned",
+    "inChannel": "{{authorName}} in #{{channelName}}",
+    "directFrom": "Direct from {{authorName}}"
+  },
+  "attachments": {
+    "fileTooLarge": "File {{fileName}} is too large. Max is {{maxSize}}MB.",
+    "uploadFailed": "Failed to upload: {{fileName}}"
+  },
+  "hardware": {
+    "accessFailed": "Could not access camera or microphone."
+  },
+  "voice": {
+    "connectFailed": "Failed to connect to voice server"
+  },
+  "clipboard": {
+    "linkCopied": "Link copied to clipboard"
+  }
+}

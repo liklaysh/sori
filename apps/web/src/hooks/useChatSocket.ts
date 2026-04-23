@@ -9,7 +9,8 @@ import { useChatStore } from "../store/useChatStore";
 import { useUserStore } from "../store/useUserStore";
 import { useUIStore } from "../store/useUIStore";
 import { useVoiceStore } from "../store/useVoiceStore";
-import { getConversationContextKey, getMessageAttachment, normalizeMessage } from "../utils/chatMessages";
+import { getConversationContextKey, getMessageAttachments, normalizeMessage } from "../utils/chatMessages";
+import i18n from "../i18n";
 
 export function useChatSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -64,7 +65,8 @@ export function useChatSocket() {
     newSocket.on("new_message", (incoming: Message & { username?: string }) => {
       const m = normalizeMessage(incoming);
       const isMe = m.authorId === userRef.current?.id;
-      const attachment = getMessageAttachment(m);
+      const attachments = getMessageAttachments(m);
+      const attachment = attachments[0] || null;
       if (isMe) {
         addMessage(m);
         return;
@@ -83,12 +85,15 @@ export function useChatSocket() {
         const authorName = m.author?.username || m.username || "User";
         let displayContent = content;
         if (attachment) {
-          if (attachment.fileType?.startsWith('image/')) displayContent = "(Image) " + displayContent;
+          if (attachments.length > 1) displayContent = `(Files: ${attachments.length}) ` + displayContent;
+          else if (attachment.fileType?.startsWith('image/')) displayContent = "(Image) " + displayContent;
           else if (attachment.fileType?.startsWith('video/')) displayContent = "(Video) " + displayContent;
           else displayContent = "(Document) " + displayContent;
         }
 
-        toast((isEveryone || isMentioned) ? "You're mentioned" : `${authorName} in #${channelName}`, {
+        toast((isEveryone || isMentioned)
+          ? i18n.t("notifications:mentions.youWereMentioned")
+          : i18n.t("notifications:mentions.inChannel", { authorName, channelName }), {
           description: displayContent
         });
       }
@@ -105,7 +110,7 @@ export function useChatSocket() {
         });
       } else {
         const authorName = m.author?.username || "User";
-        toast(`Direct from ${authorName}`, { description: m.content });
+        toast(i18n.t("notifications:mentions.directFrom", { authorName }), { description: m.content });
       }
       refreshConversations();
     });

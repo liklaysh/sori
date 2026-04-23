@@ -140,7 +140,7 @@ const Chat: React.FC = () => {
     const syncResponsiveLayout = () => {
       setChannelSidebarOpen(channelSidebarQuery.matches);
       setMemberSidebarOpen(
-        memberSidebarQuery.matches && activeModule === "community" && !isVoiceChatOpen,
+        memberSidebarQuery.matches && (activeModule === "community" || activeModule === "dm") && !isVoiceChatOpen,
       );
     };
 
@@ -237,7 +237,7 @@ const Chat: React.FC = () => {
           {...media}
         />
 
-        {activeModule === "community" && !isVoiceChatOpen && (
+        {(activeModule === "community" || activeModule === "dm") && !isVoiceChatOpen && (
           <div className={`fixed inset-0 z-40 xl:static xl:z-auto ${isMemberSidebarOpen ? "flex" : "hidden"}`}>
             <div className="absolute inset-0 bg-sori-surface-overlay xl:hidden" onClick={() => setMemberSidebarOpen(false)} />
             <MemberSidebar onlineUsersSet={onlineUsersSet} onMemberClick={handleMemberClick} />

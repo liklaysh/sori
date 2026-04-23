@@ -6,7 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { sendMessageSchema, sendDirectMessageSchema } from "../../validation/schemas.js";
 import { getLinkPreviews } from "../../utils/linkPreview.js";
 import { logger } from "../../utils/logger.js";
-import { extractAttachment, serializeMessage } from "../../utils/messageContract.js";
+import { extractAttachments, serializeMessage } from "../../utils/messageContract.js";
 
 export function handleMessages(io: Server, socket: Socket, user: { id: string, username: string }, isAdminPanel: boolean) {
 
@@ -20,7 +20,8 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       const { channelId } = result.data;
       const content = result.data.content?.trim() || "";
       const parentId = result.data.parentId || null;
-      const finalAttachment = extractAttachment(result.data);
+      const attachments = extractAttachments(result.data);
+      const firstAttachment = attachments[0] || null;
       const requestId = result.data.requestId || socket.data.requestId;
 
       const messageId = nanoid();
@@ -32,11 +33,12 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
         authorId: user.id,
         channelId,
         parentId,
-        fileUrl: finalAttachment?.fileUrl,
-        fileName: finalAttachment?.fileName,
-        fileSize: finalAttachment?.fileSize,
-        fileType: finalAttachment?.fileType,
-        type: finalAttachment ? "file" : "text",
+        fileUrl: firstAttachment?.fileUrl,
+        fileName: firstAttachment?.fileName,
+        fileSize: firstAttachment?.fileSize,
+        fileType: firstAttachment?.fileType,
+        attachments: attachments.length > 0 ? JSON.stringify(attachments) : null,
+        type: attachments.length > 0 ? "file" : "text",
         linkMetadata: linkPreviews.length > 0 ? JSON.stringify(linkPreviews) : null,
         createdAt: new Date()
       });
@@ -135,7 +137,8 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       }
       const { conversationId } = result.data;
       const content = result.data.content?.trim() || "";
-      const finalAttachment = extractAttachment(result.data);
+      const attachments = extractAttachments(result.data);
+      const firstAttachment = attachments[0] || null;
       const requestId = result.data.requestId || socket.data.requestId;
 
       const conv = await db.query.dmConversations.findFirst({
@@ -151,11 +154,12 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
         conversationId,
         content,
         authorId: user.id,
-        fileUrl: finalAttachment?.fileUrl,
-        fileName: finalAttachment?.fileName,
-        fileSize: finalAttachment?.fileSize,
-        fileType: finalAttachment?.fileType,
-        type: finalAttachment ? "file" : "text",
+        fileUrl: firstAttachment?.fileUrl,
+        fileName: firstAttachment?.fileName,
+        fileSize: firstAttachment?.fileSize,
+        fileType: firstAttachment?.fileType,
+        attachments: attachments.length > 0 ? JSON.stringify(attachments) : null,
+        type: attachments.length > 0 ? "file" : "text",
         linkMetadata: linkPreviews.length > 0 ? JSON.stringify(linkPreviews) : null,
         createdAt: new Date()
       });

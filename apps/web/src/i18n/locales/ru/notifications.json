@@ -1,0 +1,20 @@
+{
+  "mentions": {
+    "youWereMentioned": "Вас упомянули",
+    "inChannel": "{{authorName}} в #{{channelName}}",
+    "directFrom": "Личное сообщение от {{authorName}}"
+  },
+  "attachments": {
+    "fileTooLarge": "Файл {{fileName}} слишком большой. Максимум {{maxSize}} МБ.",
+    "uploadFailed": "Не удалось загрузить файл: {{fileName}}"
+  },
+  "hardware": {
+    "accessFailed": "Не удалось получить доступ к камере или микрофону."
+  },
+  "voice": {
+    "connectFailed": "Не удалось подключиться к голосовому серверу"
+  },
+  "clipboard": {
+    "linkCopied": "Ссылка скопирована в буфер обмена"
+  }
+}

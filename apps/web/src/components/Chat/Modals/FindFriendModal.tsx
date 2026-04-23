@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useUserStore } from '../../../store/useUserStore';
 import { useUIStore } from '../../../store/useUIStore';
 import { useChatStore } from '../../../store/useChatStore';
@@ -25,6 +26,7 @@ export const FindFriendModal: React.FC<FindFriendModalProps> = ({
   onlineUsersSet
 }) => {
   const { user: currentUser } = useUserStore();
+  const { t } = useTranslation(["chat", "common"]);
   const { setActiveConversationId, setActiveModule } = useUIStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -102,19 +104,19 @@ export const FindFriendModal: React.FC<FindFriendModalProps> = ({
       >
         <Command className="bg-transparent border-none" shouldFilter={false}>
           <div className="flex items-center gap-3 border-b border-sori-border-subtle px-5">
-            <UserSearch className="h-5 w-5 text-sori-text-dim" />
-            <CommandInput
-              autoFocus
-              placeholder="Search users to chat..."
-              className="border-none bg-transparent py-5 text-base focus:ring-0"
-              value={searchQuery}
-              onValueChange={setSearchQuery}
+              <UserSearch className="h-5 w-5 text-sori-text-dim" />
+              <CommandInput
+                autoFocus
+                placeholder={t("chat:findFriendDialog.searchPlaceholder")}
+                className="border-none bg-transparent py-5 text-base focus:ring-0"
+                value={searchQuery}
+                onValueChange={setSearchQuery}
             />
             <button
               type="button"
               onClick={onClose}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sori-text-dim transition-all hover:bg-sori-surface-hover hover:text-sori-text-strong"
-              aria-label="Close user search"
+              aria-label={t("common:accessibility.closeUserSearch")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -122,7 +124,7 @@ export const FindFriendModal: React.FC<FindFriendModalProps> = ({
 
           <CommandList className="max-h-[450px] pb-4 no-scrollbar">
             {visibleResults.length > 0 && (
-              <CommandGroup heading="Global Sori Discovery" className="px-3 pt-4">
+              <CommandGroup heading={t("chat:findFriendDialog.globalDiscovery")} className="px-3 pt-4">
                 <div className="space-y-1">
                   {visibleResults.map(u => {
                   const isOnline = onlineUsersSet.has(u.id);
@@ -151,7 +153,7 @@ export const FindFriendModal: React.FC<FindFriendModalProps> = ({
                             "text-[9px] uppercase font-black tracking-widest leading-none",
                             isOnline ? 'text-sori-accent-success' : 'text-sori-text-muted'
                           )}>
-                            {isOnline ? 'Online' : 'Offline'}
+                            {isOnline ? t("common:status.online") : t("common:status.offline")}
                           </p>
                         </div>
                       </div>

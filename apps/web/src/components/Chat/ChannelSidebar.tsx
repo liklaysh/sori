@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useChatStore } from "../../store/useChatStore";
 import { useUserStore } from "../../store/useUserStore";
 import { useUIStore } from "../../store/useUIStore";
@@ -40,6 +41,7 @@ interface ChannelSidebarProps {
 }
 
 export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
+  const { t } = useTranslation(["chat", "common", "voice"]);
   const {
     socket, setIsVoiceChatOpen,
     micGain, setMicGain, outputVolume, setOutputVolume,
@@ -87,7 +89,9 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
   const categories = Array.from(new Set(channels.map(c => c.categoryId))).map((id) => {
     const categoryChannels = channels.filter((channel) => channel.categoryId === id);
     const firstChannel = categoryChannels[0];
-    const fallbackName = firstChannel?.type === "voice" ? "VOICE CHANNELS" : "TEXT CHANNELS";
+    const fallbackName = firstChannel?.type === "voice"
+      ? t("chat:categories.voiceChannels")
+      : t("chat:categories.textChannels");
 
     return {
       id,
@@ -208,7 +212,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
           <div className="bg-sori-surface-elevated px-3 py-2 border-t border-sori-border-subtle flex items-center gap-3 animate-in slide-in-from-bottom relative">
             <Volume2 className="h-4 w-4 text-sori-accent-secondary animate-pulse" />
             <div className="flex-1 min-w-0">
-              <div className="text-[9px] font-black uppercase text-sori-accent-secondary leading-none">Voice Connected</div>
+              <div className="text-[9px] font-black uppercase text-sori-accent-secondary leading-none">{t("chat:voiceConnected")}</div>
               <div className="text-[10px] text-sori-text-muted font-bold truncate">{connectedChannel?.name}</div>
             </div>
             
@@ -219,7 +223,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                     "p-1.5 rounded-lg transition-all",
                     noiseSuppression ? 'text-sori-accent-primary' : 'text-sori-text-dim hover:text-sori-text-muted'
                   )}
-                  title="Noise Suppression"
+                  title={t("voice:noiseSuppression")}
                 >
                   <Waves className="h-5 w-5" />
                 </button>
@@ -229,7 +233,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
             <button 
               onClick={handleLeaveVoiceChannel} 
               className="p-1.5 bg-sori-accent-danger rounded-xl text-sori-text-on-accent hover:brightness-110 transition-all shadow-sm"
-              title="Disconnect"
+              title={t("voice:controls.disconnect")}
             >
               <PhoneOff className="h-5 w-5" /> 
             </button>
@@ -253,7 +257,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
             </div>
             <div className="min-w-0">
               <div className="text-[12px] font-black truncate text-sori-text-strong leading-tight">{user.username}</div>
-              <div className="text-[8px] text-sori-text-dim font-bold uppercase tracking-tighter">Online</div>
+              <div className="text-[8px] text-sori-text-dim font-bold uppercase tracking-tighter">{t("common:status.online")}</div>
             </div>
           </div>
           <div className="flex items-center gap-0.5">
@@ -276,7 +280,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                 <PopoverContent side="top" align="start" className="w-64 p-4">
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest mb-3 ml-1">Input Device</p>
+                      <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest mb-3 ml-1">{t("voice:controls.inputDevice")}</p>
                       <div className="space-y-1 max-h-40 overflow-y-auto no-scrollbar">
                         {micDevices.map(d => (
                           <div 
@@ -289,7 +293,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                                 : 'text-sori-text-muted hover:bg-sori-surface-hover hover:text-white'
                             )}
                           >
-                            {d.label || 'Microphone'}
+                            {d.label || t("voice:controls.microphone")}
                           </div>
                         ))}
                       </div>
@@ -299,7 +303,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                     
                     <div>
                       <div className="flex items-center justify-between mb-3 px-1">
-                        <p className="text-[10px] font-black uppercase text-sori-accent-primary tracking-widest">Input Volume</p>
+                        <p className="text-[10px] font-black uppercase text-sori-accent-primary tracking-widest">{t("voice:controls.inputVolume")}</p>
                         <span className="text-[11px] text-sori-accent-primary font-bold">{micGain}%</span>
                       </div>
                       <Slider 
@@ -338,7 +342,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                 <PopoverContent side="top" align="start" className="w-64 p-4 ml-[-40px]">
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest mb-3 ml-1">Output Device</p>
+                      <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest mb-3 ml-1">{t("voice:controls.outputDevice")}</p>
                       <div className="space-y-1 max-h-40 overflow-y-auto no-scrollbar">
                         {outputDevices.map(d => (
                           <div 
@@ -351,7 +355,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                                 : 'text-sori-text-muted hover:bg-sori-surface-hover hover:text-white'
                             )}
                           >
-                            {d.label || 'Speaker'}
+                            {d.label || t("voice:controls.speaker")}
                           </div>
                         ))}
                       </div>
@@ -361,7 +365,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                     
                     <div>
                       <div className="flex items-center justify-between mb-3 px-1">
-                        <p className="text-[10px] font-black uppercase text-sori-accent-secondary tracking-widest">Output Volume</p>
+                        <p className="text-[10px] font-black uppercase text-sori-accent-secondary tracking-widest">{t("voice:controls.outputVolume")}</p>
                         <span className="text-[11px] text-sori-accent-secondary font-bold">{outputVolume}%</span>
                       </div>
                       <Slider 

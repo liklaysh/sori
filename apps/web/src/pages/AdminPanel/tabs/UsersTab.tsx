@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useAdminApi } from "../../../hooks/useAdminApi";
 import { toast } from "sonner";
 import { 
@@ -16,6 +17,7 @@ import {
 import { User } from "../../../types/chat";
 
 export default function UsersTab() {
+  const { t } = useTranslation(["admin"]);
   const [users, setUsers] = useState<User[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [generatedAuth, setGeneratedAuth] = useState<{ email: string, pass: string } | null>(null);
@@ -81,38 +83,38 @@ export default function UsersTab() {
       setGeneratedAuth({ email: data.user.email, pass: data.temporaryPassword });
       setNewEmail("");
       fetchUsers(true);
-      toast.success("Identity profile generated");
+      toast.success(t("admin:users.toasts.identityGenerated"));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Confirm permanent deletion of this citizen profile? This operation is irreversible.")) return;
+    if (!confirm(t("admin:users.confirmDelete"))) return;
     
     const { error } = await api.deleteUser(id);
     if (error) {
       toast.error(error);
     } else {
-      toast.success("Profile terminated");
+      toast.success(t("admin:users.toasts.profileTerminated"));
       fetchUsers(true);
     }
   };
 
   const handleResetPass = async (id: string) => {
-    if (!confirm("Regenerate security credentials for this user?")) return;
+    if (!confirm(t("admin:users.confirmReset"))) return;
     
     const { data, error } = await api.resetUserPassword(id);
     if (error) {
       toast.error(error);
     } else if (data) {
       setGeneratedAuth({ email: users.find((u: User) => u.id === id)?.email || "User", pass: data.temporaryPassword });
-      toast.success("Security keys rotated");
+      toast.success(t("admin:users.toasts.securityRotated"));
     }
   };
 
   const copyAuth = () => {
     if (generatedAuth) {
       navigator.clipboard.writeText(generatedAuth.pass);
-      toast.success("Password secured to clipboard");
+      toast.success(t("admin:users.toasts.passwordCopied"));
     }
   };
 
@@ -124,9 +126,9 @@ export default function UsersTab() {
             <div className="p-1.5 bg-sori-accent-danger rounded-lg">
               <Users className="h-5 w-5 text-sori-text-on-accent" />
             </div>
-            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">User Registry</h1>
+            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">{t("admin:users.title")}</h1>
           </div>
-          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">Provision identities and manage access levels.</p>
+          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">{t("admin:users.description")}</p>
         </div>
       </div>
 
@@ -138,7 +140,7 @@ export default function UsersTab() {
         
         <div className="flex items-center gap-2 mb-4">
           <UserPlus className="h-4 w-4 text-sori-accent-danger" />
-          <h2 className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.2em]">Generate New Identity</h2>
+          <h2 className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.2em]">{t("admin:users.generateIdentity")}</h2>
         </div>
         
         <form onSubmit={handleCreateUser} className="flex flex-col md:flex-row gap-3 relative z-10">
@@ -146,7 +148,7 @@ export default function UsersTab() {
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-sori-text-dim group-focus-within/input:text-sori-accent-danger transition-colors" />
             <input 
               type="email" 
-              placeholder="Citizen Email Address" 
+              placeholder={t("admin:users.emailPlaceholder")} 
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               className="w-full bg-sori-surface-panel border border-sori-border-subtle rounded-xl pl-12 pr-5 py-3 text-sm text-sori-text-strong hover:border-sori-accent-danger focus:border-sori-accent-danger outline-none transition-all placeholder:text-sori-text-dim font-medium"
@@ -156,7 +158,7 @@ export default function UsersTab() {
             type="submit" 
             className="bg-sori-accent-danger text-sori-text-on-accent font-black px-8 py-3 rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg text-xs uppercase tracking-widest"
           >
-            Generate
+            {t("admin:users.generate")}
           </button>
         </form>
 
@@ -170,9 +172,9 @@ export default function UsersTab() {
             </button>
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle className="h-3 w-3 text-sori-accent-danger" />
-              <h3 className="text-sori-accent-danger font-black uppercase tracking-widest text-[8px]">Security Credentials</h3>
+              <h3 className="text-sori-accent-danger font-black uppercase tracking-widest text-[8px]">{t("admin:users.securityCredentials")}</h3>
             </div>
-            <p className="text-[10px] font-medium mb-3 text-sori-text-muted">Save this immediately. Keys are not stored in plain text.</p>
+            <p className="text-[10px] font-medium mb-3 text-sori-text-muted">{t("admin:users.securityHint")}</p>
             
             <div className="flex items-center gap-3">
               <div className="flex-1 font-mono text-sm bg-sori-surface-base p-3 rounded-lg select-all tracking-wider text-sori-accent-secondary border border-sori-border-subtle flex items-center justify-between">
@@ -185,7 +187,7 @@ export default function UsersTab() {
                 onClick={copyAuth} 
                 className="text-[9px] bg-sori-accent-danger text-sori-text-on-accent font-black px-4 py-3 rounded-lg flex items-center gap-2 hover:brightness-110 shadow-lg uppercase tracking-widest"
               >
-                <Copy className="h-3 w-3" /> Copy
+                <Copy className="h-3 w-3" /> {t("admin:users.copy")}
               </button>
             </div>
           </div>
@@ -198,7 +200,7 @@ export default function UsersTab() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-sori-text-dim group-focus-within/input:text-sori-accent-danger transition-colors" />
           <input 
             type="text"
-            placeholder="Search citizen registry..."
+            placeholder={t("admin:users.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-sori-surface-main border border-sori-border-subtle rounded-xl pl-12 pr-5 py-3 text-xs font-bold text-sori-text-strong outline-none focus:border-sori-accent-danger transition-all placeholder:text-sori-text-dim uppercase tracking-widest"
@@ -212,10 +214,10 @@ export default function UsersTab() {
           <table className="w-full min-w-[600px] text-left">
             <thead className="bg-sori-surface-active">
               <tr>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Avatar</th>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Identity</th>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Role</th>
-                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted text-right">Operations</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:users.table.avatar")}</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:users.table.identity")}</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:users.table.role")}</th>
+                <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted text-right">{t("admin:users.table.operations")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-sori-border-subtle">
@@ -252,14 +254,14 @@ export default function UsersTab() {
                       <button 
                         onClick={() => handleResetPass(u.id)} 
                         className="p-2.5 rounded-lg bg-sori-surface-active hover:bg-sori-surface-accent-subtle hover:text-sori-accent-secondary border border-transparent hover:border-sori-accent-secondary transition-all font-sans" 
-                        title="Rotate Keys"
+                        title={t("admin:users.tooltips.rotateKeys")}
                       >
                         <KeyRound className="h-3.5 w-3.5" />
                       </button>
                       <button 
                         onClick={() => handleDelete(u.id)} 
                         className="p-2.5 rounded-lg bg-sori-surface-active hover:bg-sori-surface-danger-subtle hover:text-sori-accent-danger border border-transparent hover:border-sori-accent-danger transition-all group/btn font-sans" 
-                        title="Terminate Profile"
+                        title={t("admin:users.tooltips.terminateProfile")}
                       >
                         <Trash2 className="h-3.5 w-3.5 group-hover/btn:rotate-12 transition-transform" />
                       </button>
@@ -272,7 +274,7 @@ export default function UsersTab() {
                   <td colSpan={4} className="px-6 py-10 text-center">
                     <div className="flex flex-col items-center gap-2 text-sori-text-muted">
                       <Loader2 className="h-6 w-6 animate-spin text-sori-accent-danger" />
-                      <p className="text-[10px] font-bold animate-pulse uppercase tracking-[0.2em]">Syncing citizens...</p>
+                      <p className="text-[10px] font-bold animate-pulse uppercase tracking-[0.2em]">{t("admin:users.loading")}</p>
                     </div>
                   </td>
                 </tr>
@@ -280,7 +282,7 @@ export default function UsersTab() {
               {!isLoading && filteredUsers.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-6 py-20 text-center text-sori-text-dim font-bold uppercase tracking-widest text-[10px]">
-                    No records identified
+                    {t("admin:users.empty")}
                   </td>
                 </tr>
               )}

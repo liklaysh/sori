@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { useUserStore } from "../../../store/useUserStore";
 import { 
   User as UserIcon, 
@@ -26,6 +27,7 @@ import { getAvatarUrl } from "../../../utils/avatar";
 
 export const ProfileTab: React.FC = () => {
   const { user, setUser } = useUserStore();
+  const { t } = useTranslation(["settings", "common"]);
   const [tempNickname, setTempNickname] = useState(user?.username || "");
   const [tempEmail, setTempEmail] = useState(user?.email || "");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -84,8 +86,8 @@ export const ProfileTab: React.FC = () => {
   return (
     <div className="space-y-8 md:space-y-12 animate-in slide-in-from-bottom-4">
       <div>
-        <h1 className="text-2xl md:text-3xl font-black text-sori-text-strong mb-2">My Account</h1>
-        <p className="text-sori-text-muted text-sm">Manage your identity in Sanctuary.</p>
+        <h1 className="text-2xl md:text-3xl font-black text-sori-text-strong mb-2">{t("settings:myAccount")}</h1>
+        <p className="text-sori-text-muted text-sm">{t("settings:manageIdentity")}</p>
       </div>
 
       <div className="bg-sori-surface-panel rounded-[2.5rem] p-6 md:p-10 border border-sori-border-subtle space-y-10 relative overflow-hidden">
@@ -115,16 +117,16 @@ export const ProfileTab: React.FC = () => {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 mb-1">
                   <Shield className="h-3 w-3 text-sori-accent-primary" />
-                  <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">Username</label>
+                  <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">{t("settings:username")}</label>
                 </div>
                 <p className="text-xl font-black text-sori-text-strong tracking-tight">{user.username}</p>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 mb-1">
                   <Mail className="h-3 w-3 text-sori-accent-secondary" />
-                  <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">Email</label>
+                  <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">{t("settings:email")}</label>
                 </div>
-                <p className="text-xl font-black text-sori-text-strong tracking-tight">{user.email || "Not specified"}</p>
+                <p className="text-xl font-black text-sori-text-strong tracking-tight">{user.email || t("settings:notSpecified")}</p>
               </div>
             </div>
 
@@ -132,27 +134,27 @@ export const ProfileTab: React.FC = () => {
               <DialogTrigger asChild>
                 <Button className="bg-sori-accent-primary hover:brightness-110 text-sori-text-on-primary font-black px-8 py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-xs gap-2 border-none">
                   <Edit2 className="h-3.5 w-3.5" />
-                  Edit Profile
+                  {t("settings:editProfile")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-sori-surface-main border-sori-border-subtle text-sori-text-strong max-w-md rounded-[2.5rem] p-8 z-[2001]">
                 <DialogHeader className="mb-6">
-                  <DialogTitle className="text-xl">Personal Information</DialogTitle>
-                  <DialogDescription className="text-sori-text-muted">Visibility: Residents Only.</DialogDescription>
+                  <DialogTitle className="text-xl">{t("settings:personalInformation")}</DialogTitle>
+                  <DialogDescription className="text-sori-text-muted">{t("settings:visibilityResidentsOnly")}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6 py-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest ml-1">New Username</label>
+                    <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest ml-1">{t("settings:newUsername")}</label>
                     <input type="text" value={tempNickname} onChange={(e) => setTempNickname(e.target.value)} className="w-full bg-sori-surface-base border border-sori-border-subtle rounded-xl px-5 py-3.5 text-sori-text-strong focus:border-sori-accent-primary outline-none transition-all font-bold" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest ml-1">Email Address</label>
+                    <label className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest ml-1">{t("settings:emailAddress")}</label>
                     <input type="email" value={tempEmail} onChange={(e) => setTempEmail(e.target.value)} className="w-full bg-sori-surface-base border border-sori-border-subtle rounded-xl px-5 py-3.5 text-sori-text-strong focus:border-sori-accent-secondary outline-none transition-all font-bold" />
                   </div>
                 </div>
                 <DialogFooter className="mt-8 flex flex-col sm:flex-row gap-3">
-                  <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                  <Button onClick={handleUpdateProfile} disabled={isUpdating}>{isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}</Button>
+                  <DialogClose asChild><Button variant="ghost">{t("common:actions.cancel")}</Button></DialogClose>
+                  <Button onClick={handleUpdateProfile} disabled={isUpdating}>{isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common:actions.saveChanges")}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>

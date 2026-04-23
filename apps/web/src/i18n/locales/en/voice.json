@@ -1,0 +1,53 @@
+{
+  "initiateCall": "Initiate Call",
+  "voiceChat": "Voice Chat",
+  "noiseSuppression": "Noise Suppression",
+  "controls": {
+    "inputDevice": "Input Device",
+    "inputVolume": "Input Volume",
+    "outputDevice": "Output Device",
+    "outputVolume": "Output Volume",
+    "disconnect": "Disconnect",
+    "microphone": "Microphone",
+    "speaker": "Speaker",
+    "presentScreen": "Present Screen",
+    "videoDevice": "Video Device",
+    "hideMyCamera": "Hide My Camera"
+  },
+  "noisePopup": {
+    "title": "Protocol: Silence",
+    "neuralIsolation": "Neural Isolation",
+    "neuralIsolationDescription": "Distinguishes voice from background via AI.",
+    "acousticShield": "Acoustic Shield",
+    "acousticShieldDescription": "Eliminates clicks and environment static.",
+    "active": "Active",
+    "suspended": "Suspended",
+    "engine": "Neural Engine"
+  },
+  "room": {
+    "expand": "Expand",
+    "callProtocolActive": "Call Protocol Active •",
+    "minimizeCall": "Minimize Call",
+    "addToCall": "Add to call",
+    "toggleChat": "Toggle Chat",
+    "page": "Page {{current}} / {{total}}",
+    "callChatTitle": "Chat: {{title}}",
+    "messageInCall": "Message in call..."
+  },
+  "participant": {
+    "you": "YOU",
+    "live": "LIVE",
+    "streamMuted": "Stream Muted",
+    "muteStreamAudio": "Mute Stream Audio",
+    "unmuteStreamAudio": "Unmute Stream Audio"
+  },
+  "overlay": {
+    "incomingCall": "Incoming Call...",
+    "contacting": "Contacting...",
+    "liveConnection": "Live Connection •",
+    "ignore": "Ignore",
+    "accept": "Accept",
+    "abortCall": "Abort Call",
+    "hangUp": "Hang Up"
+  }
+}

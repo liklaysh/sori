@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAdminApi } from "../../../hooks/useAdminApi";
 import { toast } from "sonner";
 import { 
@@ -29,6 +30,7 @@ interface StorageFile {
 }
 
 export default function StorageTab() {
+  const { t } = useTranslation(["admin"]);
   const [stats, setStats] = useState<StorageStats | null>(null);
   const [files, setFiles] = useState<StorageFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +49,7 @@ export default function StorageTab() {
       if (filesRes.data) setFiles(filesRes.data);
     } catch (e) {
       console.error(e);
-      toast.error("Failed to sync storage data");
+      toast.error(t("admin:storage.toasts.syncFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -58,17 +60,17 @@ export default function StorageTab() {
   }, []);
 
   const handleDelete = async (key: string) => {
-    if (!confirm(`Confirm permanent termination of asset: ${key}?`)) return;
+    if (!confirm(t("admin:storage.confirmDelete", { key }))) return;
     
     setIsDeleting(key);
     try {
       const { error } = await api.deleteStorageFile(key);
       if (error) throw new Error(error);
       
-      toast.success("Artifact purged");
+      toast.success(t("admin:storage.toasts.artifactPurged"));
       fetchData();
     } catch (e) {
-      toast.error("Purge operation failed");
+      toast.error(t("admin:storage.toasts.purgeFailed"));
     } finally {
       setIsDeleting(null);
     }
@@ -95,9 +97,9 @@ export default function StorageTab() {
             <div className="p-1.5 bg-sori-accent-danger rounded-lg shadow-lg">
               <Cloud className="h-5 w-5 text-sori-text-on-accent" />
             </div>
-            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">Media Repository</h1>
+            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">{t("admin:storage.title")}</h1>
           </div>
-          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">MinIO asset orchestration and tracking.</p>
+          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">{t("admin:storage.description")}</p>
         </div>
       </div>
 
@@ -109,12 +111,12 @@ export default function StorageTab() {
           </div>
           <div className="flex items-center gap-2 mb-4 relative z-10 font-black uppercase tracking-[0.2em] text-[8px] text-sori-accent-danger">
             <Package className="h-3 w-3" />
-            Total Objects
+            {t("admin:storage.totalObjects")}
           </div>
           <div className="text-3xl font-black relative z-10 text-sori-text-strong tabular-nums">
             {stats ? stats.objectCount : "..."}
           </div>
-          <div className="mt-2 text-[8px] font-bold text-sori-text-dim uppercase tracking-widest">Verified cluster assets</div>
+          <div className="mt-2 text-[8px] font-bold text-sori-text-dim uppercase tracking-widest">{t("admin:storage.verifiedAssets")}</div>
         </div>
 
         <div className="bg-sori-surface-main border border-sori-border-subtle rounded-3xl p-5 shadow-xl relative overflow-hidden group">
@@ -123,13 +125,13 @@ export default function StorageTab() {
           </div>
           <div className="flex items-center gap-2 mb-4 relative z-10 font-black uppercase tracking-[0.2em] text-[8px] text-sori-accent-danger">
             <Database className="h-3 w-3" />
-            Storage Used
+            {t("admin:storage.storageUsed")}
           </div>
           <div className="text-3xl font-black relative z-10 text-sori-text-strong tabular-nums">
             {stats ? formatFileSize(stats.totalSize).split(' ')[0] : "..."}
             <span className="text-lg ml-1 text-sori-text-muted">{stats ? formatFileSize(stats.totalSize).split(' ')[1] : ""}</span>
           </div>
-          <div className="mt-2 text-[8px] font-bold text-sori-text-dim uppercase tracking-widest">Binary data volume</div>
+          <div className="mt-2 text-[8px] font-bold text-sori-text-dim uppercase tracking-widest">{t("admin:storage.binaryVolume")}</div>
         </div>
       </div>
 
@@ -138,7 +140,7 @@ export default function StorageTab() {
          <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
               <Activity className="h-3 w-3 text-sori-accent-danger" />
-              <h2 className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.3em]">Recent Ingress</h2>
+              <h2 className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.3em]">{t("admin:storage.recentIngress")}</h2>
             </div>
             <button 
               onClick={fetchData} 
@@ -154,11 +156,11 @@ export default function StorageTab() {
             <table className="w-full text-left font-sans">
               <thead>
                 <tr className="bg-sori-surface-active border-b border-sori-border-subtle">
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Preview</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Node Identity</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Size</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Accession</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted text-right">Ops</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:storage.table.preview")}</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:storage.table.nodeIdentity")}</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:storage.table.size")}</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:storage.table.accession")}</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted text-right">{t("admin:storage.table.ops")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-sori-border-subtle">
@@ -167,7 +169,7 @@ export default function StorageTab() {
                     <td colSpan={5} className="px-6 py-16 text-center">
                       <div className="flex flex-col items-center gap-3 text-sori-text-muted">
                         <Activity className="h-6 w-6 animate-spin text-sori-accent-danger" />
-                        <p className="text-[10px] font-bold animate-pulse uppercase tracking-widest">Scanning network...</p>
+                        <p className="text-[10px] font-bold animate-pulse uppercase tracking-widest">{t("admin:storage.loading")}</p>
                       </div>
                     </td>
                   </tr>
@@ -191,7 +193,7 @@ export default function StorageTab() {
                           rel="noreferrer" 
                           className="flex items-center gap-1 text-[8px] text-sori-accent-danger font-black uppercase tracking-widest hover:underline w-fit"
                         >
-                          Pulse Entry
+                          {t("admin:storage.pulseEntry")}
                           <ExternalLink className="h-2 w-2" />
                         </a>
                       </div>
@@ -209,7 +211,7 @@ export default function StorageTab() {
                         onClick={() => handleDelete(file.key)}
                         disabled={isDeleting === file.key}
                         className="w-10 h-10 rounded-xl bg-sori-surface-danger-subtle text-sori-accent-danger hover:bg-sori-accent-danger hover:text-sori-text-on-accent transition-all disabled:bg-sori-surface-active flex items-center justify-center ml-auto shadow-md active:scale-95"
-                        title="Delete permanently"
+                        title={t("admin:storage.deletePermanently")}
                       >
                         {isDeleting === file.key ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       </button>
@@ -221,7 +223,7 @@ export default function StorageTab() {
                       <td colSpan={5} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-3">
                            <Search className="h-10 w-10 text-sori-text-dim" />
-                           <p className="font-black uppercase tracking-[0.3em] text-[10px] text-sori-text-dim">Registry Empty</p>
+                           <p className="font-black uppercase tracking-[0.3em] text-[10px] text-sori-text-dim">{t("admin:storage.empty")}</p>
                         </div>
                       </td>
                    </tr>
@@ -241,9 +243,9 @@ export default function StorageTab() {
            <AlertTriangle className="h-5 w-5 text-sori-accent-danger animate-pulse" />
         </div>
         <div className="relative z-10">
-           <h3 className="text-[9px] font-black text-sori-text-strong uppercase tracking-[0.2em] mb-1">Critical Modification Notice</h3>
+           <h3 className="text-[9px] font-black text-sori-text-strong uppercase tracking-[0.2em] mb-1">{t("admin:storage.criticalNoticeTitle")}</h3>
            <p className="text-[10px] text-sori-text-dim font-medium leading-relaxed max-w-2xl">
-              Object deletion bypasses temporary storage and is executed instantly. Confirm asset redundancy before termination.
+              {t("admin:storage.criticalNoticeDescription")}
            </p>
         </div>
       </div>

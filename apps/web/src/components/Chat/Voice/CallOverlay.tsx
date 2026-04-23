@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { CallStatus } from "../../../store/useVoiceStore";
 import { getAvatarUrl } from "../../../utils/avatar";
 import { Phone, PhoneOff, X, Loader2, Maximize2, Mic, MicOff } from "lucide-react";
@@ -31,6 +32,7 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
   isPartnerSpeaking,
   startTime
 }) => {
+  const { t } = useTranslation(["voice"]);
   const { getSyncedDate } = useServerTime();
   const [duration, setDuration] = useState("00:00");
 
@@ -103,11 +105,11 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-black text-white uppercase tracking-tight truncate">{partner?.username}</h3>
             <div className="flex items-center gap-2">
-              {isIncoming && <p className="text-[9px] font-black text-sori-accent-secondary uppercase tracking-[0.2em] animate-pulse transition-all">Incoming Call...</p>}
-              {isOutgoing && <p className="text-[9px] font-black text-sori-text-muted uppercase tracking-[0.2em]">Contacting...</p>}
+              {isIncoming && <p className="text-[9px] font-black text-sori-accent-secondary uppercase tracking-[0.2em] animate-pulse transition-all">{t("voice:overlay.incomingCall")}</p>}
+              {isOutgoing && <p className="text-[9px] font-black text-sori-text-muted uppercase tracking-[0.2em]">{t("voice:overlay.contacting")}</p>}
               {isConnected && (
                 <p className="text-[9px] font-black text-sori-accent-primary uppercase tracking-[0.2em] flex items-center gap-1">
-                  <span>Live Connection •</span>
+                  <span>{t("voice:overlay.liveConnection")}</span>
                   <span className="font-mono tabular-nums tracking-normal">{duration}</span>
                 </p>
               )}
@@ -133,14 +135,14 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
                 className="flex-1 h-12 rounded-2xl hover:bg-sori-surface-hover hover:text-sori-accent-danger transition-all font-black uppercase text-[9px] tracking-widest gap-2 text-sori-text-muted"
               >
                 <PhoneOff className="h-3.5 w-3.5" />
-                Ignore
+                {t("voice:overlay.ignore")}
               </Button>
               <Button 
                 onClick={onAccept}
                 className="flex-[2] h-12 bg-sori-accent-secondary text-black hover:brightness-110 active:scale-95 rounded-2xl transition-all font-black uppercase text-[9px] tracking-widest gap-2"
               >
                 <Phone className="h-4 w-4 fill-current" />
-                Accept
+                {t("voice:overlay.accept")}
               </Button>
             </>
           )}
@@ -152,7 +154,7 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
               className="w-full h-12 rounded-2xl hover:bg-sori-surface-hover hover:text-sori-accent-danger transition-all font-black uppercase text-[9px] tracking-widest gap-2 text-sori-text-muted group"
             >
               <X className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-              {isOutgoing ? "Abort Call" : "Hang Up"}
+              {isOutgoing ? t("voice:overlay.abortCall") : t("voice:overlay.hangUp")}
             </Button>
           )}
         </div>

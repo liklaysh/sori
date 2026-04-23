@@ -1,0 +1,48 @@
+{
+  "appName": "Sori",
+  "loading": {
+    "sync": "Синхронизация Sori..."
+  },
+  "actions": {
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "saveChanges": "Сохранить изменения",
+    "create": "Создать",
+    "show": "Показать",
+    "explore": "Открыть",
+    "start": "Запустить",
+    "stop": "Остановить",
+    "edit": "Изменить",
+    "download": "Скачать",
+    "forward": "Переслать",
+    "copyLink": "Копировать ссылку",
+    "close": "Закрыть"
+  },
+  "status": {
+    "online": "В сети",
+    "offline": "Не в сети"
+  },
+  "languages": {
+    "selector": "Язык",
+    "english": "English",
+    "russian": "Русский",
+    "short": {
+      "en": "EN",
+      "ru": "RU"
+    }
+  },
+  "navigation": {
+    "community": "Сообщество",
+    "directMessages": "Личные сообщения",
+    "settings": "Настройки",
+    "logout": "Выйти"
+  },
+  "search": {
+    "results": "Результаты поиска",
+    "noResults": "Ничего не найдено"
+  },
+  "system": "Система",
+  "accessibility": {
+    "closeUserSearch": "Закрыть поиск пользователей"
+  }
+}

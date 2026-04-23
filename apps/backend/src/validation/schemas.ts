@@ -32,10 +32,11 @@ const messagePayloadSchema = z.object({
   content: z.string().optional(),
   parentId: z.string().optional().nullable(),
   attachment: attachmentSchema.optional().nullable(),
+  attachments: z.array(attachmentSchema).max(10).optional().nullable(),
   requestId: z.string().optional(),
 }).superRefine((data, ctx) => {
   const hasContent = Boolean(data.content?.trim());
-  const hasAttachment = Boolean(data.attachment);
+  const hasAttachment = Boolean(data.attachment) || Boolean(data.attachments?.length);
 
   if (!hasContent && !hasAttachment) {
     ctx.addIssue({

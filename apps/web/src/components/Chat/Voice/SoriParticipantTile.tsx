@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { getAvatarUrl } from "../../../utils/avatar";
 import { 
   TrackReferenceOrPlaceholder, 
@@ -17,6 +18,7 @@ interface SoriParticipantTileProps {
 }
 
 export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackRef }) => {
+  const { t } = useTranslation(["voice"]);
   const participant = trackRef.participant;
   const isSpeaking = participant.isSpeaking;
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
@@ -110,7 +112,7 @@ export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackR
             {participant.name || participant.identity}
           </span>
           {participant.isLocal && (
-            <span className="text-[8px] bg-sori-surface-hover text-sori-text-strong px-1.5 py-0.5 rounded-md font-bold border border-sori-border-subtle">YOU</span>
+            <span className="text-[8px] bg-sori-surface-hover text-sori-text-strong px-1.5 py-0.5 rounded-md font-bold border border-sori-border-subtle">{t("voice:participant.you")}</span>
           )}
        </div>
 
@@ -121,7 +123,7 @@ export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackR
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sori-accent-danger"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-sori-accent-danger"></span>
              </span>
-             <span className="text-[9px] font-black text-sori-accent-danger tracking-[0.1em] uppercase">LIVE</span>
+             <span className="text-[9px] font-black text-sori-accent-danger tracking-[0.1em] uppercase">{t("voice:participant.live")}</span>
              <span className="text-[9px] font-black text-sori-accent-primary tracking-[0.1em] uppercase">1080P, 30FPS</span>
           </div>
        )}
@@ -146,7 +148,7 @@ export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackR
                 ? "bg-sori-surface-danger-subtle border-sori-accent-danger text-sori-text-strong" 
                 : "bg-sori-surface-accent-subtle border-sori-border-accent text-sori-text-strong hover:bg-sori-surface-hover"
            )}
-            title={isStreamMuted ? "Unmute Stream Audio" : "Mute Stream Audio"}
+            title={isStreamMuted ? t("voice:participant.unmuteStreamAudio") : t("voice:participant.muteStreamAudio")}
           >
             {isStreamMuted ? (
               <VolumeX className="h-5 w-5" />
@@ -160,7 +162,7 @@ export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackR
             isStreamMuted ? "visible translate-x-0" : "invisible translate-x-4 pointer-events-none"
           )}>
             <div className="bg-sori-accent-danger px-3 py-1.5 rounded-xl border border-sori-accent-danger shadow-2xl">
-               <span className="text-[10px] font-black text-sori-text-strong uppercase tracking-widest leading-none">Stream Muted</span>
+               <span className="text-[10px] font-black text-sori-text-strong uppercase tracking-widest leading-none">{t("voice:participant.streamMuted")}</span>
             </div>
           </div>
        </div>

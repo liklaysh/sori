@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAdminApi } from "../../../hooks/useAdminApi";
 import { toast } from "sonner";
 import { 
@@ -26,6 +27,7 @@ import {
 import { API_URL } from "../../../config";
 
 export default function ChannelsTab() {
+  const { t } = useTranslation(["admin"]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [filter, setFilter] = useState<"all" | "text" | "voice">("all");
   
@@ -43,7 +45,7 @@ export default function ChannelsTab() {
       if (res.data) setChannels(res.data);
     } catch (e) {
       console.error(e);
-      toast.error("Failed to load network nodes");
+      toast.error(t("admin:channels.toasts.loadFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -63,20 +65,20 @@ export default function ChannelsTab() {
       setNewChannelName("");
       setIsCreating(false);
       fetchChannels();
-      toast.success("Network node established");
+      toast.success(t("admin:channels.toasts.nodeCreated"));
     } catch (e) { 
-      toast.error("Failed to create node"); 
+      toast.error(t("admin:channels.toasts.createFailed")); 
     }
   };
 
   const handleDelete = async (id: string) => {
-    if(!confirm("Are you sure you want to terminate this node? All data streams within it will be purged.")) return;
+    if(!confirm(t("admin:channels.confirmDelete"))) return;
     try {
       await api.deleteChannel(id);
       fetchChannels();
-      toast.success("Node disconnected");
+      toast.success(t("admin:channels.toasts.nodeDeleted"));
     } catch (e) { 
-      toast.error("Termination failed"); 
+      toast.error(t("admin:channels.toasts.deleteFailed")); 
     }
   };
 
@@ -95,9 +97,9 @@ export default function ChannelsTab() {
             <div className="p-1.5 bg-sori-accent-danger rounded-lg">
               <Network className="h-5 w-5 text-sori-text-on-accent" />
             </div>
-            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">Network Nodes</h1>
+            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">{t("admin:channels.title")}</h1>
           </div>
-          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">Define and monitor communication frequencies.</p>
+          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">{t("admin:channels.description")}</p>
         </div>
         <button 
           onClick={() => setIsCreating(!isCreating)}
@@ -110,7 +112,7 @@ export default function ChannelsTab() {
           `}
         >
           {isCreating ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {isCreating ? "Cancel" : "New Node"}
+          {isCreating ? t("admin:channels.cancel") : t("admin:channels.newNode")}
         </button>
       </div>
 
@@ -122,7 +124,7 @@ export default function ChannelsTab() {
           
           <div className="flex flex-col md:flex-row gap-5 items-end relative z-10">
             <div className="flex-1 w-full">
-              <label className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.2em] ml-1 block mb-2">Node Identity</label>
+              <label className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.2em] ml-1 block mb-2">{t("admin:channels.nodeIdentity")}</label>
               <div className="relative group/input">
                 <Hash className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-sori-text-dim group-focus-within/input:text-sori-accent-danger transition-colors" />
                 <input 
@@ -130,28 +132,28 @@ export default function ChannelsTab() {
                   value={newChannelName}
                   onChange={(e) => setNewChannelName(e.target.value)}
                   className="w-full bg-sori-surface-panel border border-sori-border-subtle rounded-xl pl-12 pr-5 py-3 text-sm text-sori-text-strong outline-none focus:border-sori-accent-danger transition-all placeholder:text-sori-text-dim font-medium"
-                  placeholder="e.g., general-ops"
+                  placeholder={t("admin:channels.nodeIdentityPlaceholder")}
                 />
               </div>
             </div>
             <div className="w-full md:w-56">
-              <label className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.2em] ml-1 block mb-2">Frequency Type</label>
+              <label className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.2em] ml-1 block mb-2">{t("admin:channels.frequencyType")}</label>
               <Select value={newChannelType} onValueChange={(v: any) => setNewChannelType(v)}>
                 <SelectTrigger className="w-full h-[46px] bg-sori-surface-panel border-sori-border-subtle rounded-xl text-sori-text-strong focus:ring-sori-accent-danger focus:border-sori-accent-danger text-sm font-medium">
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t("admin:channels.selectType")} />
                 </SelectTrigger>
                 <SelectContent className="bg-sori-surface-main border-sori-border-subtle text-sori-text-strong">
                   <SelectGroup>
                     <SelectItem value="text" className="focus:bg-sori-accent-danger focus:text-sori-text-on-accent transition-colors">
                       <div className="flex items-center gap-2">
                         <Hash className="h-3.5 w-3.5" />
-                        <span>Text Node</span>
+                        <span>{t("admin:channels.textNode")}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="voice" className="focus:bg-sori-accent-danger focus:text-sori-text-on-accent transition-colors">
                       <div className="flex items-center gap-2">
                         <Volume2 className="h-3.5 w-3.5" />
-                        <span>Voice Node</span>
+                        <span>{t("admin:channels.voiceNode")}</span>
                       </div>
                     </SelectItem>
                   </SelectGroup>
@@ -162,7 +164,7 @@ export default function ChannelsTab() {
               onClick={handleCreate} 
               className="w-full md:w-auto bg-sori-accent-danger text-sori-text-on-accent font-black px-8 py-3.5 rounded-xl hover:brightness-110 shadow-lg active:scale-95 transition-all text-xs uppercase tracking-widest"
             >
-              Initialize
+              {t("admin:channels.initialize")}
             </button>
           </div>
         </div>
@@ -171,18 +173,18 @@ export default function ChannelsTab() {
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row items-center gap-4">
           <div className="flex items-center gap-2 px-1 overflow-x-auto no-scrollbar flex-1">
-            {(["all", "text", "voice"] as const).map(t => (
+            {(["all", "text", "voice"] as const).map(filterType => (
               <button 
-                key={t} 
-                onClick={() => setFilter(t)}
+                key={filterType} 
+                onClick={() => setFilter(filterType)}
                 className={`
                   px-5 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border
-                  ${filter === t 
+                  ${filter === filterType 
                     ? 'bg-sori-surface-danger-subtle border-sori-accent-danger text-sori-accent-danger shadow-lg' 
                     : 'bg-sori-surface-active border-transparent text-sori-text-muted hover:text-sori-text-strong hover:bg-sori-surface-hover'}
                 `}
               >
-                {t === "all" ? "All Channels" : t === "text" ? "Textual" : "Voice"}
+                {filterType === "all" ? t("admin:channels.allChannels") : filterType === "text" ? t("admin:channels.textual") : t("admin:channels.voice")}
               </button>
             ))}
           </div>
@@ -191,7 +193,7 @@ export default function ChannelsTab() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sori-text-dim group-focus-within:text-sori-accent-danger transition-colors" />
             <input 
               type="text"
-              placeholder="Search nodes..."
+              placeholder={t("admin:channels.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-sori-surface-main border border-sori-border-subtle rounded-xl pl-10 pr-4 py-2 text-[10px] font-bold text-sori-text-strong outline-none focus:border-sori-accent-danger transition-all placeholder:text-sori-text-dim uppercase tracking-widest"
@@ -204,10 +206,10 @@ export default function ChannelsTab() {
             <table className="w-full min-w-[600px] text-left">
               <thead className="bg-sori-surface-active">
                 <tr>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Medium</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Identity</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">Node ID</th>
-                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted text-right">Ops</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:channels.table.medium")}</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:channels.table.identity")}</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted">{t("admin:channels.table.nodeId")}</th>
+                  <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-sori-text-muted text-right">{t("admin:channels.table.ops")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-sori-border-subtle">
@@ -216,7 +218,7 @@ export default function ChannelsTab() {
                     <td colSpan={4} className="px-6 py-16 text-center">
                       <div className="flex flex-col items-center gap-3 text-sori-text-muted">
                         <Activity className="h-6 w-6 animate-spin text-sori-accent-danger" />
-                        <p className="text-[10px] font-bold animate-pulse uppercase tracking-widest">Scanning network...</p>
+                        <p className="text-[10px] font-bold animate-pulse uppercase tracking-widest">{t("admin:channels.loading")}</p>
                       </div>
                     </td>
                   </tr>
@@ -236,7 +238,7 @@ export default function ChannelsTab() {
                         {c.name}
                         {c.type === 'voice' && <div className="w-1.5 h-1.5 rounded-full bg-sori-accent-secondary animate-pulse shadow-lg"></div>}
                       </div>
-                      <p className="text-[8px] text-sori-text-muted uppercase font-black tracking-widest mt-0.5">{c.type} frequency</p>
+                      <p className="text-[8px] text-sori-text-muted uppercase font-black tracking-widest mt-0.5">{c.type === "voice" ? t("admin:channels.voiceFrequency") : t("admin:channels.textFrequency")}</p>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-[10px] text-sori-text-muted font-mono bg-sori-surface-base px-2 py-1 rounded-md border border-sori-border-subtle">
@@ -247,7 +249,7 @@ export default function ChannelsTab() {
                       <button 
                         onClick={() => handleDelete(c.id)} 
                         className="p-2.5 rounded-lg bg-sori-surface-active hover:bg-sori-surface-danger-subtle hover:text-sori-accent-danger border border-transparent hover:border-sori-accent-danger transition-all invisible group-hover:visible transform translate-x-2 group-hover:translate-x-0"
-                        title="Delete Channel"
+                        title={t("admin:channels.tooltips.deleteChannel")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -257,7 +259,7 @@ export default function ChannelsTab() {
                 {!isLoading && filteredChannels.length === 0 && (
                   <tr>
                     <td colSpan={4} className="px-6 py-20 text-center text-sori-text-muted font-bold text-[10px] uppercase tracking-widest">
-                      Zero nodes identified
+                      {t("admin:channels.empty")}
                     </td>
                   </tr>
                 )}
@@ -269,4 +271,3 @@ export default function ChannelsTab() {
     </div>
   );
 }
-

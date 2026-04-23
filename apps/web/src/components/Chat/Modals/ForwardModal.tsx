@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { User, DMConversation, Channel } from '../../../types/chat';
 import { 
   cn,
@@ -36,30 +37,32 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
   channels,
   currentUser
 }) => {
+  const { t } = useTranslation(["chat", "common"]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md p-0 overflow-hidden border-sori-border-subtle bg-sori-surface-panel shadow-2xl rounded-[1.5rem] z-[1100]">
         <div className="sr-only">
-          <DialogTitle>Forward Message</DialogTitle>
-          <DialogDescription>Select a user or channel to forward this content to.</DialogDescription>
+          <DialogTitle>{t("chat:forward.title")}</DialogTitle>
+          <DialogDescription>{t("chat:forward.description")}</DialogDescription>
         </div>
 
         <Command className="bg-transparent border-none">
           <div className="flex items-center border-b border-sori-border-subtle px-6">
             <Search className="mr-3 h-5 w-5 text-sori-text-dim" />
             <CommandInput 
-              placeholder="Forward to..."
+              placeholder={t("chat:forward.placeholder")}
               className="bg-transparent border-none py-6 text-base focus:ring-0"
             />
           </div>
           
           <CommandList className="pb-4 max-h-[400px] no-scrollbar">
             <CommandEmpty className="py-12 text-center text-sori-text-muted font-bold uppercase text-[10px] tracking-widest">
-              No results found
+              {t("common:search.noResults")}
             </CommandEmpty>
             
             {channels.length > 0 && (
-              <CommandGroup heading="Channels" className="px-3 pt-3">
+              <CommandGroup heading={t("chat:forward.channels")} className="px-3 pt-3">
                 {channels.map(ch => (
                   <CommandItem 
                     key={ch.id}
@@ -78,7 +81,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
               </CommandGroup>
             )}
 
-            <CommandGroup heading="Direct Messages" className="px-3 pt-3">
+            <CommandGroup heading={t("chat:forward.directMessages")} className="px-3 pt-3">
               {conversations.map(conv => {
                 const targetUser = conv.user1Id === currentUser.id ? conv.user2 : conv.user1;
                 if (!targetUser) return null;

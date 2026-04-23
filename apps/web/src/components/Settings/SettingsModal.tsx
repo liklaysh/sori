@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useUserStore } from "../../store/useUserStore";
 import { 
   cn
@@ -12,6 +13,7 @@ import {
 
 import { ProfileTab } from "./Tabs/ProfileTab";
 import { VoiceVideoTab } from "./Tabs/VoiceVideoTab";
+import { LanguageSelector } from "../Chat/LanguageSelector";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -38,6 +40,7 @@ type Tab = "profile" | "equipment";
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
   const { user } = useUserStore();
+  const { t } = useTranslation(["settings", "common"]);
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [isNavOpen, setIsNavOpen] = useState(false);
 
@@ -52,7 +55,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
           <button onClick={() => setIsNavOpen(true)} className="flex items-center gap-3">
             <Menu className="h-5 w-5 text-sori-accent-primary" />
             <span className="text-[10px] font-black uppercase tracking-widest text-sori-text-strong">
-              {activeTab === "profile" ? "Profile" : "Equipment"}
+              {activeTab === "profile" ? t("settings:profile") : t("settings:equipment")}
             </span>
           </button>
           <button onClick={props.onClose} className="w-8 h-8 rounded-full bg-sori-surface-hover flex items-center justify-center transition-all">
@@ -67,15 +70,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
           isNavOpen ? 'translate-x-0' : '-translate-x-full'
         )}>
           <div className="flex items-center justify-between mb-8 md:hidden">
-            <h2 className="text-sm font-black uppercase tracking-widest text-sori-text-strong">Settings</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest text-sori-text-strong">{t("settings:title")}</h2>
             <button onClick={() => setIsNavOpen(false)}><X className="h-5 w-5 text-sori-text-muted" /></button>
           </div>
 
-          <h2 className="text-[10px] font-black uppercase text-sori-text-muted tracking-[0.2em] mb-6 ml-4">User Settings</h2>
+          <h2 className="text-[10px] font-black uppercase text-sori-text-muted tracking-[0.2em] mb-6 ml-4">{t("settings:userSettings")}</h2>
           <nav className="space-y-1">
-            <TabItem icon="profile" label="Profile" active={activeTab === "profile"} onClick={() => { setActiveTab("profile"); setIsNavOpen(false); }} />
-            <TabItem icon="equipment" label="Equipment" active={activeTab === "equipment"} onClick={() => { setActiveTab("equipment"); setIsNavOpen(false); }} />
+            <TabItem icon="profile" label={t("settings:profile")} active={activeTab === "profile"} onClick={() => { setActiveTab("profile"); setIsNavOpen(false); }} />
+            <TabItem icon="equipment" label={t("settings:equipment")} active={activeTab === "equipment"} onClick={() => { setActiveTab("equipment"); setIsNavOpen(false); }} />
           </nav>
+
+          <div className="mt-auto pt-6">
+            <div className="border-t border-sori-border-subtle pt-6">
+              <LanguageSelector variant="panel" />
+            </div>
+          </div>
         </aside>
 
         {/* Sidebar Backdrop for mobile */}

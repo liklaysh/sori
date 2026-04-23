@@ -165,13 +165,17 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
     if (!inputValue.trim() && !manualAttachments?.length) return;
 
     try {
-      const firstAttachment = manualAttachments?.[0]?.result;
+      const uploadedAttachments = (manualAttachments || [])
+        .map((attachment) => attachment?.result)
+        .filter(Boolean);
+      const firstAttachment = uploadedAttachments[0];
       const payload: any = {
         content: inputValue,
         parentId: replyTo?.id
       };
 
-      if (firstAttachment) {
+      if (uploadedAttachments.length > 0) {
+        payload.attachments = uploadedAttachments;
         payload.attachment = {
           fileUrl: firstAttachment.fileUrl,
           fileName: firstAttachment.fileName,

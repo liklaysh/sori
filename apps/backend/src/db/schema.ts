@@ -57,6 +57,7 @@ export const messages = pgTable("messages", {
   fileName: text("file_name"),
   fileSize: integer("file_size"),
   fileType: text("file_type"),
+  attachments: text("attachments"), // JSON string
   isEdited: boolean("is_edited").default(false),
   editedAt: timestamp("edited_at", { withTimezone: true, mode: "date" }),
   isDeleted: boolean("is_deleted").default(false),
@@ -120,6 +121,7 @@ export const directMessages = pgTable("direct_messages", {
   fileName: text("file_name"),
   fileSize: integer("file_size"),
   fileType: text("file_type"),
+  attachments: text("attachments"), // JSON string
   isRead: boolean("is_read").default(false),
   isDelivered: boolean("is_delivered").default(false),
   type: text("type").notNull().default("text"), // 'text', 'call_missed', etc.

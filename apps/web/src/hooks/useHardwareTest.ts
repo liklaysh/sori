@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import i18n from "../i18n";
 
 export const useHardwareTest = (activeMicId?: string) => {
   const [testStream, setTestStream] = useState<MediaStream | null>(null);
@@ -65,7 +66,7 @@ export const useHardwareTest = (activeMicId?: string) => {
       updateLevel();
     } catch (err) {
       console.error("[HardwareTest] Failed", err);
-      toast.error("Could not access camera or microphone.");
+      toast.error(i18n.t("notifications:hardware.accessFailed"));
     }
   };
 

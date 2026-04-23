@@ -1,0 +1,53 @@
+{
+  "initiateCall": "Начать звонок",
+  "voiceChat": "Чат звонка",
+  "noiseSuppression": "Шумоподавление",
+  "controls": {
+    "inputDevice": "Устройство ввода",
+    "inputVolume": "Громкость микрофона",
+    "outputDevice": "Устройство вывода",
+    "outputVolume": "Громкость звука",
+    "disconnect": "Отключиться",
+    "microphone": "Микрофон",
+    "speaker": "Динамик",
+    "presentScreen": "Транслировать экран",
+    "videoDevice": "Камера",
+    "hideMyCamera": "Скрыть мою камеру"
+  },
+  "noisePopup": {
+    "title": "Протокол: Тишина",
+    "neuralIsolation": "Нейронная изоляция",
+    "neuralIsolationDescription": "Отделяет голос от фонового шума с помощью AI.",
+    "acousticShield": "Акустический щит",
+    "acousticShieldDescription": "Убирает щелчки и посторонние шумы окружения.",
+    "active": "Активно",
+    "suspended": "Приостановлено",
+    "engine": "Нейронный движок"
+  },
+  "room": {
+    "expand": "Развернуть",
+    "callProtocolActive": "Протокол звонка активен •",
+    "minimizeCall": "Свернуть звонок",
+    "addToCall": "Добавить в звонок",
+    "toggleChat": "Открыть чат",
+    "page": "Страница {{current}} / {{total}}",
+    "callChatTitle": "Чат: {{title}}",
+    "messageInCall": "Сообщение в звонок..."
+  },
+  "participant": {
+    "you": "ВЫ",
+    "live": "LIVE",
+    "streamMuted": "Звук трансляции выключен",
+    "muteStreamAudio": "Выключить звук трансляции",
+    "unmuteStreamAudio": "Включить звук трансляции"
+  },
+  "overlay": {
+    "incomingCall": "Входящий звонок...",
+    "contacting": "Соединяемся...",
+    "liveConnection": "Активное соединение •",
+    "ignore": "Игнорировать",
+    "accept": "Принять",
+    "abortCall": "Отменить звонок",
+    "hangUp": "Завершить звонок"
+  }
+}

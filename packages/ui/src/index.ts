@@ -4,6 +4,7 @@ export * from "./components/ui/command";
 export * from "./components/ui/dialog";
 export * from "./components/ui/popover";
 export * from "./components/ui/alert-dialog";
+export * from "./components/ui/dropdown-menu";
 export * from "./components/ui/select";
 export * from "./components/ui/skeleton";
 export * from "./components/ui/slider";

@@ -353,20 +353,25 @@ test("runtime smoke gate against deployed Sori stack", async () => {
     sockets.push(socketA, socketB);
     await delay(500);
 
-    const uploadForm = new FormData();
-    uploadForm.append("file", Buffer.from("sori smoke upload"), {
-      filename: `smoke-${Date.now()}.txt`,
-      contentType: "text/plain",
-    });
+    const uploadFile = async (fileName: string, contents: string) => {
+      const uploadForm = new FormData();
+      uploadForm.append("file", Buffer.from(contents), {
+        filename: fileName,
+        contentType: "text/plain",
+      });
 
-    const uploadResponse = await userASession.client.post("/upload", uploadForm, {
-      headers: uploadForm.getHeaders(),
-      maxBodyLength: Infinity,
-    } as any);
-    const uploadData = uploadResponse.data as any;
+      const uploadResponse = await userASession!.client.post("/upload", uploadForm, {
+        headers: uploadForm.getHeaders(),
+        maxBodyLength: Infinity,
+      } as any);
 
-    expect(uploadResponse.status).toBe(200);
-    expect(uploadData?.attachment?.fileUrl).toContain("sori-media.sori.orb.local");
+      expect(uploadResponse.status).toBe(200);
+      expect((uploadResponse.data as any)?.attachment?.fileUrl).toContain("sori-media.sori.orb.local");
+      return uploadResponse.data as any;
+    };
+
+    const uploadData = await uploadFile(`smoke-${Date.now()}-1.txt`, "sori smoke upload one");
+    const secondUploadData = await uploadFile(`smoke-${Date.now()}-2.txt`, "sori smoke upload two");
 
     const channelMessageText = `smoke-channel-${randomUUID()}`;
     const expectedChannelEvent = waitForSocketEvent<any>(
@@ -377,15 +382,18 @@ test("runtime smoke gate against deployed Sori stack", async () => {
 
     const channelPostResponse = await userASession.client.post(`/channels/${textChannel!.id}/messages`, {
       content: channelMessageText,
-      attachment: uploadData.attachment,
+      attachments: [uploadData.attachment, secondUploadData.attachment],
     });
     const channelPostData = channelPostResponse.data as any;
 
     expect(channelPostResponse.status).toBe(200);
     expect(channelPostData?.attachment?.fileName).toBe(uploadData.attachment.fileName);
+    expect(channelPostData?.attachments).toHaveLength(2);
+    expect(channelPostData?.attachments?.[1]?.fileName).toBe(secondUploadData.attachment.fileName);
 
     const channelEvent = await expectedChannelEvent;
     expect(channelEvent.attachment?.fileName).toBe(uploadData.attachment.fileName);
+    expect(channelEvent.attachments).toHaveLength(2);
 
     const conversationResponse = await userASession.client.post("/dm/conversations", {
       targetUserId: userBSession.user.id,
@@ -405,10 +413,14 @@ test("runtime smoke gate against deployed Sori stack", async () => {
 
     const directMessageResponse = await userASession.client.post(`/dm/conversations/${conversationId}/messages`, {
       content: directMessageText,
+      attachments: [uploadData.attachment, secondUploadData.attachment],
     });
+    const directMessageData = directMessageResponse.data as any;
 
     expect(directMessageResponse.status).toBe(200);
-    await expectedDirectMessageEvent;
+    expect(directMessageData.attachments).toHaveLength(2);
+    const directMessageEvent = await expectedDirectMessageEvent;
+    expect(directMessageEvent.attachments).toHaveLength(2);
 
     const unreadConversation = await waitFor(
       async () => {

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useChatStore } from "../../store/useChatStore";
 import { useUserStore } from "../../store/useUserStore";
 import { useUIStore } from "../../store/useUIStore";
@@ -45,6 +46,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
     livekitToken, connectedChannelId, partner, endCall, setIsDisconnecting
   } = props;
   const { user } = useUserStore();
+  const { t } = useTranslation(["chat", "common", "voice"]);
   const { conversations } = useChatStore();
   const { 
     activeConversationId, setActiveConversationId,
@@ -61,7 +63,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
   return (
     <div className="w-64 h-full min-h-0 bg-sori-surface-panel flex flex-col border-r border-sori-border-subtle animate-in fade-in duration-300 relative">
       <header className="h-14 border-b border-sori-border-subtle flex items-center px-4 shrink-0 bg-sori-surface-panel">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-sori-text-muted">Direct Messages</h2>
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-sori-text-muted">{t("chat:directMessages")}</h2>
       </header>
 
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-3 space-y-1">
@@ -72,7 +74,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
            <div className="w-8 h-8 rounded-lg bg-sori-surface-elevated flex items-center justify-center border border-sori-border-subtle group-hover:border-sori-border-accent transition-all text-sori-accent-primary">
               <UserPlus className="h-4 w-4" />
            </div>
-           <span className="text-xs font-bold">Find a friend</span>
+           <span className="text-xs font-bold">{t("chat:findFriendButton")}</span>
         </button>
 
         {conversations.length === 0 ? (
@@ -80,7 +82,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
              <div className="w-12 h-12 bg-sori-surface-elevated rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <MessageSquare className="h-6 w-6 text-sori-text-dim" />
              </div>
-             <p className="text-[10px] font-bold uppercase text-sori-text-dim tracking-wider">No active chats</p>
+             <p className="text-[10px] font-bold uppercase text-sori-text-dim tracking-wider">{t("chat:noActiveChats")}</p>
           </div>
         ) : (
           conversations.map(conv => {
@@ -120,7 +122,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
                 <div className="flex-1 min-w-0">
                   <p className={cn("text-xs font-bold truncate", isActive ? 'text-sori-accent-primary' : '')}>{otherUser.username}</p>
                   <p className="text-[9px] text-sori-text-dim truncate font-medium uppercase tracking-tighter">
-                    {isOnline ? 'online' : 'offline'}
+                    {isOnline ? t("common:status.online") : t("common:status.offline")}
                   </p>
                 </div>
 
@@ -140,7 +142,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
           <div className="bg-sori-surface-elevated px-3 py-2 border-t border-sori-border-subtle flex items-center gap-3 animate-in slide-in-from-bottom relative">
             <Volume2 className="h-4 w-4 text-sori-accent-secondary animate-pulse" />
             <div className="flex-1 min-w-0">
-              <div className="text-[9px] font-black uppercase text-sori-accent-secondary leading-none">Voice Connected</div>
+              <div className="text-[9px] font-black uppercase text-sori-accent-secondary leading-none">{t("chat:voiceConnected")}</div>
               <div className="text-[10px] text-sori-text-muted font-bold truncate">{activeCallLabel}</div>
             </div>
             
@@ -151,7 +153,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
                     "p-1.5 rounded-lg transition-all",
                     noiseSuppression ? 'text-sori-accent-primary' : 'text-sori-text-dim hover:text-sori-text-muted'
                   )}
-                  title="Noise Suppression"
+                  title={t("voice:noiseSuppression")}
                 >
                    <Waves className="h-5 w-5" />
                 </button>
@@ -164,7 +166,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
                 endCall();
               }} 
               className="p-1.5 bg-sori-accent-danger rounded-xl text-sori-text-on-accent hover:brightness-110 transition-all shadow-sm"
-              title="Disconnect"
+              title={t("voice:controls.disconnect")}
             >
               <PhoneOff className="h-5 w-5" /> 
             </button>
@@ -184,7 +186,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
             </div>
             <div className="min-w-0">
               <div className="text-[12px] font-black truncate text-sori-text-strong leading-tight">{user.username}</div>
-              <div className="text-[8px] text-sori-text-dim font-bold uppercase tracking-tighter">Online</div>
+              <div className="text-[8px] text-sori-text-dim font-bold uppercase tracking-tighter">{t("common:status.online")}</div>
             </div>
           </div>
           <div className="flex items-center gap-0.5">
@@ -207,7 +209,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
                  <PopoverContent side="top" align="start" className="w-64 p-4">
                    <div className="space-y-4">
                      <div>
-                       <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest mb-3 ml-1">Input Device</p>
+                      <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest mb-3 ml-1">{t("voice:controls.inputDevice")}</p>
                        <div className="space-y-1 max-h-40 overflow-y-auto no-scrollbar">
                          {micDevices.map(d => (
                            <div 
@@ -218,7 +220,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
                                activeMicId === d.deviceId ? 'text-sori-accent-primary bg-sori-surface-accent-subtle font-bold' : 'text-sori-text-muted hover:bg-sori-surface-hover hover:text-white'
                              )}
                            >
-                             {d.label || 'Microphone'}
+                            {d.label || t("voice:controls.microphone")}
                            </div>
                          ))}
                        </div>
@@ -226,7 +228,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
                      <div className="h-px bg-sori-border-subtle" />
                     <div>
                       <div className="flex items-center justify-between mb-3 px-1">
-                        <p className="text-[10px] font-black uppercase text-sori-accent-primary tracking-widest">Input Volume</p>
+                        <p className="text-[10px] font-black uppercase text-sori-accent-primary tracking-widest">{t("voice:controls.inputVolume")}</p>
                         <span className="text-[11px] text-sori-accent-primary font-bold">{micGain}%</span>
                       </div>
                       <Slider value={[micGain]} onValueChange={([val]: number[]) => setMicGain(val)} max={100} step={1} className="py-2" />
@@ -260,7 +262,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
                  <PopoverContent side="top" align="start" className="w-64 p-4 ml-[-40px]">
                    <div className="space-y-4">
                      <div>
-                       <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest mb-3 ml-1">Output Device</p>
+                       <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest mb-3 ml-1">{t("voice:controls.outputDevice")}</p>
                        <div className="space-y-1 max-h-40 overflow-y-auto no-scrollbar">
                          {outputDevices.map(d => (
                            <div 
@@ -271,7 +273,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
                                activeOutputId === d.deviceId ? 'text-sori-accent-secondary bg-sori-surface-accent-subtle font-bold' : 'text-sori-text-muted hover:bg-sori-surface-hover hover:text-white'
                              )}
                            >
-                             {d.label || 'Speaker'}
+                            {d.label || t("voice:controls.speaker")}
                            </div>
                          ))}
                        </div>
@@ -279,7 +281,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
                      <div className="h-px bg-sori-border-subtle" />
                     <div>
                       <div className="flex items-center justify-between mb-3 px-1">
-                        <p className="text-[10px] font-black uppercase text-sori-accent-secondary tracking-widest">Output Volume</p>
+                        <p className="text-[10px] font-black uppercase text-sori-accent-secondary tracking-widest">{t("voice:controls.outputVolume")}</p>
                         <span className="text-[11px] text-sori-accent-secondary font-bold">{outputVolume}%</span>
                       </div>
                       <Slider value={[outputVolume]} onValueChange={([val]: number[]) => setOutputVolume(val)} max={200} step={1} className="py-2" />

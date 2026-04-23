@@ -3,6 +3,7 @@ import { Socket } from "socket.io-client";
 import api from "../lib/api";
 import { toast } from "sonner";
 import { useVoiceStore } from "../store/useVoiceStore";
+import i18n from "../i18n";
 
 interface CallMetrics {
   duration?: number;
@@ -164,7 +165,7 @@ export function useCall({ socket }: UseCallProps) {
       return tokenData.token;
     } catch (err) {
       console.error("❌ [useCall] getChannelToken failed:", err);
-      toast.error("Failed to connect to voice server");
+      toast.error(i18n.t("notifications:voice.connectFailed"));
       throw err;
     }
   }, [setToken, setStatus, setCallData, setConnectedChannel]);

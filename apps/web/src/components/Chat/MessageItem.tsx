@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Message, Reaction } from "../../types/chat";
+import { useTranslation } from "react-i18next";
+import { Attachment, Message, Reaction } from "../../types/chat";
 import { useUserStore } from "../../store/useUserStore";
 import { cn } from "@sori/ui";
 import { CornerUpLeft, FileText, Download, X, PhoneMissed, Phone, PhoneOff, Forward, Copy, Save } from "lucide-react";
@@ -9,7 +10,7 @@ import { useServerTime } from "../../hooks/useServerTime";
 import { EmbedCard } from "./EmbedCard";
 import { LinkMetadata } from "../../types/chat";
 import { getAvatarUrl } from "../../utils/avatar";
-import { getMessageAttachment } from "../../utils/chatMessages";
+import { getMessageAttachments } from "../../utils/chatMessages";
 
 interface MessageItemProps {
   msg: Message;
@@ -18,18 +19,16 @@ interface MessageItemProps {
 }
 
 export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, onForward }) => {
+  const { t } = useTranslation(["chat", "common", "notifications"]);
   const { user } = useUserStore();
   const { formatServerTimestamp } = useServerTime();
-  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxAttachment, setLightboxAttachment] = useState<Attachment | null>(null);
   
   if (!user) return null;
 
   const isMe = msg.authorId === user.id;
-  const username = msg.username || msg.author?.username || "Unknown";
-  const attachment = getMessageAttachment(msg);
-
-  const isImage = attachment?.fileType?.startsWith('image/');
-  const isVideo = attachment?.fileType?.startsWith('video/');
+  const username = msg.username || msg.author?.username || t("chat:messages.deletedUser");
+  const attachments = getMessageAttachments(msg);
 
   const parseLinkMetadata = (raw: string | null | undefined): LinkMetadata[] => {
     if (!raw) return [];
@@ -65,12 +64,48 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
     }
   };
 
-  const handleCopy = (e: React.MouseEvent) => {
+  const handleCopy = (attachment: Attachment, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (attachment?.fileUrl) {
+    if (attachment.fileUrl) {
       navigator.clipboard.writeText(attachment.fileUrl);
-      toast.success("Link copied to clipboard");
+      toast.success(t("notifications:clipboard.linkCopied"));
     }
+  };
+
+  const renderAttachment = (attachment: Attachment, index: number) => {
+    const isImage = attachment.fileType?.startsWith('image/');
+    const isVideo = attachment.fileType?.startsWith('video/');
+
+    return (
+      <div
+        key={`${msg.id}-attachment-${index}`}
+        className="max-w-md rounded-2xl overflow-hidden border border-sori-border-subtle bg-sori-surface-elevated group/file relative shadow-lg"
+      >
+        {isImage ? (
+          <div className="cursor-pointer" onClick={() => setLightboxAttachment(attachment)}>
+            <img src={attachment.fileUrl} alt={attachment.fileName || 'Attachment'} className="max-h-80 w-auto object-contain hover:brightness-110 transition-all" loading="lazy" />
+          </div>
+        ) : isVideo ? (
+          <video src={attachment.fileUrl} controls className="max-h-80 w-auto" />
+        ) : (
+          <div className="p-4 flex items-center gap-4 min-w-[240px]">
+            <FileText className="h-6 w-6" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-sori-text-strong truncate">{attachment.fileName}</p>
+              <p className="text-[10px] text-sori-text-muted font-black uppercase tracking-widest">{formatFileSize(attachment.fileSize)}</p>
+            </div>
+            <a
+              href={attachment.fileUrl}
+              download={attachment.fileName}
+              className="w-10 h-10 rounded-xl bg-sori-surface-accent-subtle text-sori-accent-primary flex items-center justify-center hover:bg-sori-accent-primary hover:text-black transition-all shadow-sm"
+              title={t("common:actions.download")}
+            >
+              <Download className="h-5 w-5" />
+            </a>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderContentWithLinks = (content?: string | null) => {
@@ -126,7 +161,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
         <div className={`flex flex-col ${isMe ? "items-end" : "items-start"} max-w-full`}>
           <div className="flex items-baseline gap-2 mb-0.5 px-1">
             <span className={`text-[11px] font-black ${isMe ? "text-sori-accent-primary" : "text-sori-accent-secondary"}`}>
-              {isMe ? "You" : username}
+              {isMe ? t("chat:messages.you") : username}
             </span>
             <span className="text-[10px] font-bold text-sori-text-muted tracking-tight">
               {formatMessageTime(msg.createdAt)}
@@ -145,7 +180,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                   <PhoneMissed className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sori-text-strong text-xs font-black tracking-tight uppercase">Missed Call</p>
+                  <p className="text-sori-text-strong text-xs font-black tracking-tight uppercase">{t("chat:messages.missedCall")}</p>
                   <p className="text-[10px] text-sori-accent-danger font-bold">{formatMessageTime(msg.createdAt)}</p>
                 </div>
               </div>
@@ -155,8 +190,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                   <Phone className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sori-text-strong text-xs font-black tracking-tight uppercase">Call Ended</p>
-                  <p className="text-[10px] text-sori-accent-primary font-black uppercase tracking-widest leading-none mt-0.5">Duration: {msg.content}</p>
+                  <p className="text-sori-text-strong text-xs font-black tracking-tight uppercase">{t("chat:messages.callEnded")}</p>
+                  <p className="text-[10px] text-sori-accent-primary font-black uppercase tracking-widest leading-none mt-0.5">{t("chat:messages.duration", { duration: msg.content })}</p>
                 </div>
               </div>
             ) : msg.type === 'call_rejected' ? (
@@ -165,7 +200,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                   <PhoneOff className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sori-text-dim text-xs font-black tracking-tight uppercase">Declined Call</p>
+                  <p className="text-sori-text-dim text-xs font-black tracking-tight uppercase">{t("chat:messages.declinedCall")}</p>
                   <p className="text-[10px] text-sori-text-muted font-bold">{formatMessageTime(msg.createdAt)}</p>
                 </div>
               </div>
@@ -192,31 +227,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
               </div>
             )}
 
-            {attachment && !msg.isDeleted && (
-              <div className="max-w-md rounded-2xl overflow-hidden border border-sori-border-subtle bg-sori-surface-elevated group/file relative shadow-lg">
-                {isImage ? (
-                  <div className="cursor-pointer" onClick={() => setShowLightbox(true)}>
-                    <img src={attachment.fileUrl} alt={attachment.fileName || 'Attachment'} className="max-h-80 w-auto object-contain hover:brightness-110 transition-all" loading="lazy" />
-                  </div>
-                ) : isVideo ? (
-                  <video src={attachment.fileUrl} controls className="max-h-80 w-auto" />
-                ) : (
-                  <div className="p-4 flex items-center gap-4 min-w-[240px]">
-                      <FileText className="h-6 w-6" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-sori-text-strong truncate">{attachment.fileName}</p>
-                      <p className="text-[10px] text-sori-text-muted font-black uppercase tracking-widest">{formatFileSize(attachment.fileSize)}</p>
-                    </div>
-                    <a 
-                      href={attachment.fileUrl} 
-                      download={attachment.fileName} 
-                      className="w-10 h-10 rounded-xl bg-sori-surface-accent-subtle text-sori-accent-primary flex items-center justify-center hover:bg-sori-accent-primary hover:text-black transition-all shadow-sm"
-                      title="Download"
-                    >
-                      <Download className="h-5 w-5" />
-                    </a>
-                  </div>
-                )}
+            {attachments.length > 0 && !msg.isDeleted && (
+              <div className="flex flex-col gap-2 w-full">
+                {attachments.map((attachment, index) => renderAttachment(attachment, index))}
               </div>
             )}
           </div>
@@ -234,10 +247,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
         </div>
       </div>
 
-      {showLightbox && isImage && (
+      {lightboxAttachment && (
         <div 
           className="fixed inset-0 z-[1000] bg-sori-surface-base flex items-center justify-center p-8 animate-in fade-in duration-300"
-          onClick={() => setShowLightbox(false)}
+          onClick={() => setLightboxAttachment(null)}
         >
           <div className="absolute top-6 right-6 flex gap-3">
              <button 
@@ -245,41 +258,42 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                   e.stopPropagation();
                   onForward?.({
                     content: msg.content || "",
-                    attachment: attachment || undefined,
+                    attachments: attachments.length > 0 ? attachments : undefined,
+                    attachment: attachments[0] || undefined,
                   });
                 }}
                 className="w-12 h-12 rounded-2xl bg-sori-surface-panel text-white flex items-center justify-center hover:bg-sori-accent-primary hover:text-black transition-all shadow-lg border border-sori-border-subtle"
-                title="Forward"
+                title={t("common:actions.forward")}
               >
                 <Forward className="h-6 w-6" />
              </button>
              <button 
-                onClick={handleCopy}
+                onClick={(e) => handleCopy(lightboxAttachment, e)}
                 className="w-12 h-12 rounded-2xl bg-sori-surface-panel text-sori-text-strong flex items-center justify-center hover:bg-sori-surface-hover transition-all shadow-lg border border-sori-border-subtle"
-                title="Copy Link"
+                title={t("common:actions.copyLink")}
               >
                 <Copy className="h-6 w-6" />
              </button>
              <a 
-                href={attachment?.fileUrl} 
-                download={attachment?.fileName}
+                href={lightboxAttachment.fileUrl} 
+                download={lightboxAttachment.fileName}
                 onClick={e => e.stopPropagation()}
                 className="w-12 h-12 rounded-2xl bg-sori-surface-panel text-white flex items-center justify-center hover:bg-sori-accent-primary hover:text-black transition-all shadow-lg border border-sori-border-subtle"
-                title="Save"
+                title={t("common:actions.save")}
              >
                 <Save className="h-6 w-6" />
              </a>
              <button 
                 className="w-12 h-12 rounded-2xl bg-sori-surface-panel text-sori-text-strong flex items-center justify-center hover:bg-sori-accent-danger transition-all"
-                onClick={() => setShowLightbox(false)}
+                onClick={() => setLightboxAttachment(null)}
              >
                 <X className="h-6 w-6" />
              </button>
           </div>
           <img 
-            src={attachment?.fileUrl || undefined} 
+            src={lightboxAttachment.fileUrl} 
             className="max-w-full max-h-full object-contain shadow-2xl animate-in zoom-in-95 duration-300" 
-            alt="Fullscreen preview" 
+            alt={t("chat:messages.fullscreenPreview")} 
           />
         </div>
       )}

@@ -1,4 +1,5 @@
 import React, { RefObject, Suspense, lazy, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MentionPopup } from "./MentionPopup";
 import { Message } from "../../types/chat";
 import { useChatStore } from "../../store/useChatStore";
@@ -57,6 +58,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   fileInputRef, socket
 }) => {
   const trayShellClass = "mx-auto w-full max-w-[76rem]";
+  const { t } = useTranslation(["chat", "common"]);
   const { user } = useUserStore();
   const { members, channels, conversations } = useChatStore();
   const { activeModule, activeChannelId, activeConversationId } = useUIStore();
@@ -141,8 +143,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     <footer className="px-2 md:px-3 pb-2 pt-0 bg-sori-surface-main relative shrink-0">
       {(replyTo || editingMessage) && (
         <div className={cn(trayShellClass, "mb-2 p-3 bg-sori-surface-panel border-l-4 border-sori-accent-primary rounded-tr-2xl rounded-br-2xl flex items-center justify-between animate-in slide-in-from-bottom-2")}>
-          <div className="min-w-0">
-            <p className="text-[9px] font-black uppercase text-sori-accent-primary mb-0.5">{editingMessage ? "Editing" : `Replying to ${replyTo?.username || replyTo?.author?.username}`}</p>
+            <div className="min-w-0">
+            <p className="text-[9px] font-black uppercase text-sori-accent-primary mb-0.5">
+              {editingMessage
+                ? t("chat:editing")
+                : t("chat:replyingTo", { name: replyTo?.username || replyTo?.author?.username })}
+            </p>
             <p className="text-xs text-sori-text-muted truncate font-medium">{editingMessage?.content || replyTo?.content}</p>
           </div>
           <button onClick={() => { setReplyTo(null); setEditingMessage(null); if(editingMessage) setInputValue(""); }} className="w-8 h-8 rounded-full hover:bg-sori-surface-hover flex items-center justify-center text-sori-text-muted hover:text-sori-text-strong transition-all">
@@ -157,7 +163,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 px-1">
               <Globe className="h-3 w-3 text-sori-accent-primary" />
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-muted">Detected Protocols</span>
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-muted">{t("chat:detectedProtocols")}</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {Object.entries(previews).map(([url, data]) => data && (
@@ -226,7 +232,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             
             <button type="button" onClick={() => fileInputRef.current?.click()} className="group bg-sori-surface-panel border-2 border-dashed border-sori-border-medium rounded-2xl flex flex-col items-center justify-center gap-2 p-4 text-sori-text-muted hover:text-sori-accent-primary hover:border-sori-border-accent transition-all hover:bg-sori-surface-accent-subtle min-h-[72px]">
               <div className="p-2 bg-sori-surface-hover rounded-lg group-hover:bg-sori-surface-accent-subtle transition-colors"><PlusCircle className="h-5 w-5" /></div>
-              <span className="text-[10px] font-black uppercase tracking-tighter">Add File</span>
+              <span className="text-[10px] font-black uppercase tracking-tighter">{t("chat:addFile")}</span>
             </button>
           </div>
         </div>
@@ -245,18 +251,35 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               <div className="absolute bottom-11 left-0 bg-sori-surface-panel border border-sori-border-medium rounded-2xl p-2 shadow-2xl min-w-[200px] z-[500] animate-in slide-in-from-bottom-2 fade-in duration-200 border-l-4 border-sori-accent-primary">
                 <div onClick={() => { fileInputRef.current?.click(); setShowPlusMenu(false); }} className="flex items-center gap-3 px-3 py-3 hover:bg-sori-accent-primary-subtle rounded-xl cursor-pointer transition-all group">
                   <Upload className="h-4 w-4 text-sori-text-muted group-hover:text-sori-accent-primary transition-colors" />
-                  <span className="text-xs font-bold text-white group-hover:text-sori-accent-primary">Send File</span>
+                  <span className="text-xs font-bold text-white group-hover:text-sori-accent-primary">{t("chat:sendFile")}</span>
                 </div>
               </div>
             )}
           </div>
         </div>
         
-        <input type="file" className="hidden" ref={fileInputRef} onChange={(e) => { if (e.target.files?.[0]) { handleFileUpload(e.target.files[0]); e.target.value = ''; } }} />
+        <input
+          type="file"
+          multiple
+          className="hidden"
+          ref={fileInputRef}
+          onChange={(e) => {
+            if (e.target.files && e.target.files.length > 0) {
+              Array.from(e.target.files).forEach((file) => {
+                void handleFileUpload(file);
+              });
+              e.target.value = '';
+            }
+          }}
+        />
         
         <input 
           className="flex-1 bg-transparent border-none text-sm text-white outline-none placeholder:text-sori-text-dim min-w-0 font-medium" 
-          placeholder={editingMessage ? "Edit message..." : (activeModule === 'dm' ? `Message @${otherUser?.username || "..."}` : `Message #${currentChannel?.name || "..."}`)} 
+          placeholder={editingMessage
+            ? t("chat:placeholders.editMessage")
+            : (activeModule === 'dm'
+              ? t("chat:placeholders.messageUser", { username: otherUser?.username || "..." })
+              : t("chat:placeholders.messageChannel", { channel: currentChannel?.name || "..." }))}
           type="text" 
           value={inputValue} 
           onChange={handleInputChange} 

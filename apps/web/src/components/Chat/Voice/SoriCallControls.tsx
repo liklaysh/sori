@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { 
   useLocalParticipant, 
   useMediaDeviceSelect,
@@ -21,6 +22,7 @@ import { VideoPresets } from "livekit-client";
 
 // Internal component for camera selection
 const CameraDeviceSelector = () => {
+  const { t } = useTranslation(["voice"]);
   const { devices, activeDeviceId, setActiveMediaDevice } = useMediaDeviceSelect({ kind: 'videoinput' });
   
   return (
@@ -36,7 +38,7 @@ const CameraDeviceSelector = () => {
               : 'text-on-surface-variant hover:bg-sori-surface-panel hover:text-white'
           )}
         >
-          <span className="truncate flex-1 font-bold">{device.label || 'Camera'}</span>
+          <span className="truncate flex-1 font-bold">{device.label || t("voice:controls.videoDevice")}</span>
         </div>
       ))}
     </>
@@ -80,6 +82,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
   setMicGain,
   setOutputVolume
 }) => {
+  const { t } = useTranslation(["voice"]);
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
 
   return (
@@ -111,7 +114,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
             <div className="space-y-4">
               {/* INPUT SECTION */}
               <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">Input Device</p>
+                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">{t("voice:controls.inputDevice")}</p>
                 
                 <div className="space-y-1 max-h-[120px] overflow-y-auto no-scrollbar">
                    {micDevices.map(device => (
@@ -123,14 +126,14 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
                           activeMicId === device.deviceId ? 'bg-muted text-primary font-bold' : 'text-on-surface-variant hover:bg-sori-surface-panel hover:text-white'
                         )}
                       >
-                        <span className="truncate flex-1">{device.label || 'Microphone'}</span>
+                        <span className="truncate flex-1">{device.label || t("voice:controls.microphone")}</span>
                       </div>
                    ))}
                 </div>
 
                 <div className="pt-1">
                   <div className="flex items-center justify-between mb-2 px-1">
-                    <p className="text-[10px] font-black uppercase text-primary tracking-widest">Input Volume</p>
+                    <p className="text-[10px] font-black uppercase text-primary tracking-widest">{t("voice:controls.inputVolume")}</p>
                     <span className="text-[11px] text-primary font-bold">{micGain}%</span>
                   </div>
                   <Slider 
@@ -147,7 +150,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
 
               {/* OUTPUT SECTION */}
               <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">Output Device</p>
+                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">{t("voice:controls.outputDevice")}</p>
 
                 <div className="space-y-1 max-h-[120px] overflow-y-auto no-scrollbar">
                    {outputDevices.map(device => (
@@ -159,14 +162,14 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
                           activeOutputId === device.deviceId ? 'bg-muted text-secondary font-bold' : 'text-on-surface-variant hover:bg-sori-surface-panel hover:text-white'
                         )}
                       >
-                        <span className="truncate flex-1">{device.label || 'Speaker'}</span>
+                        <span className="truncate flex-1">{device.label || t("voice:controls.speaker")}</span>
                       </div>
                    ))}
                 </div>
 
                 <div className="pt-1">
                   <div className="flex items-center justify-between mb-2 px-1">
-                    <p className="text-[10px] font-black uppercase text-secondary tracking-widest">Output Volume</p>
+                    <p className="text-[10px] font-black uppercase text-secondary tracking-widest">{t("voice:controls.outputVolume")}</p>
                     <span className="text-[11px] text-secondary font-bold">{outputVolume}%</span>
                   </div>
                   <Slider 
@@ -206,7 +209,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
           <PopoverContent side="top" align="start" className="w-64 p-4 border-muted shadow-2xl rounded-2xl mb-4">
             <div className="space-y-4">
               <div>
-                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-3 ml-1">Video Device</p>
+                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-3 ml-1">{t("voice:controls.videoDevice")}</p>
                 <div className="space-y-1 max-h-[200px] overflow-y-auto no-scrollbar">
                   <CameraDeviceSelector />
                 </div>
@@ -215,7 +218,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
               <div className="h-px bg-muted" />
 
               <div className="flex items-center justify-between px-1">
-                <p className="text-[10px] font-black uppercase text-on-surface-variant tracking-widest">Hide My Camera</p>
+                <p className="text-[10px] font-black uppercase text-on-surface-variant tracking-widest">{t("voice:controls.hideMyCamera")}</p>
                 <Switch 
                   checked={hideSelfCamera} 
                   onCheckedChange={setHideSelfCamera}
@@ -241,7 +244,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
             ? 'bg-secondary text-black shadow-lg' 
             : 'bg-sori-surface-panel text-on-surface-variant hover:bg-sori-surface-base'
         )}
-        title="Present Screen"
+        title={t("voice:controls.presentScreen")}
       >
         {isScreenShareEnabled ? <StopCircle className="h-7 w-7" /> : <ScreenShare className="h-7 w-7" />}
       </button>
@@ -255,7 +258,7 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
               ? 'bg-muted text-primary border border-primary' 
               : 'bg-sori-surface-panel text-on-surface-variant hover:bg-sori-surface-base border border-transparent'
           )}
-          title="Noise Suppression"
+          title={t("voice:noiseSuppression")}
         >
           <Waves className="h-7 w-7" />
         </button>

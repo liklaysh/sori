@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { 
   Popover, 
   PopoverTrigger, 
@@ -18,6 +19,8 @@ export const NoiseSuppressionPopup: React.FC<NoiseSuppressionPopupProps> = ({
   isEnabled,
   onToggle
 }) => {
+  const { t } = useTranslation(["voice"]);
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -32,7 +35,7 @@ export const NoiseSuppressionPopup: React.FC<NoiseSuppressionPopupProps> = ({
             )}>
                <Waves className="h-5 w-5" />
             </div>
-            <h3 className="text-sm font-black tracking-tight uppercase text-white">Protocol: Silence</h3>
+            <h3 className="text-sm font-black tracking-tight uppercase text-white">{t("voice:noisePopup.title")}</h3>
           </div>
 
           <div className="space-y-4 mb-6">
@@ -41,8 +44,8 @@ export const NoiseSuppressionPopup: React.FC<NoiseSuppressionPopupProps> = ({
                    <Sparkles className="h-3 w-3 text-sori-accent-primary" />
                 </div>
                 <div className="space-y-0.5">
-                   <h4 className="text-[10px] font-black uppercase text-white tracking-wide">Neural Isolation</h4>
-                   <p className="text-[9px] text-sori-text-muted font-bold leading-tight">Distinguishes voice from background via AI.</p>
+                   <h4 className="text-[10px] font-black uppercase text-white tracking-wide">{t("voice:noisePopup.neuralIsolation")}</h4>
+                   <p className="text-[9px] text-sori-text-muted font-bold leading-tight">{t("voice:noisePopup.neuralIsolationDescription")}</p>
                 </div>
              </div>
              <div className="flex gap-3">
@@ -50,8 +53,8 @@ export const NoiseSuppressionPopup: React.FC<NoiseSuppressionPopupProps> = ({
                    <ShieldCheck className="h-3 w-3 text-sori-accent-secondary" />
                 </div>
                 <div className="space-y-0.5">
-                   <h4 className="text-[10px] font-black uppercase text-white tracking-wide">Acoustic Shield</h4>
-                   <p className="text-[9px] text-sori-text-muted font-bold leading-tight">Eliminates clicks and environment static.</p>
+                   <h4 className="text-[10px] font-black uppercase text-white tracking-wide">{t("voice:noisePopup.acousticShield")}</h4>
+                   <p className="text-[9px] text-sori-text-muted font-bold leading-tight">{t("voice:noisePopup.acousticShieldDescription")}</p>
                 </div>
              </div>
           </div>
@@ -62,9 +65,9 @@ export const NoiseSuppressionPopup: React.FC<NoiseSuppressionPopupProps> = ({
                   "text-[9px] font-black uppercase tracking-wider transition-colors",
                   isEnabled ? "text-sori-accent-primary" : "text-sori-text-dim"
                 )}>
-                  {isEnabled ? "Active" : "Suspended"}
+                  {isEnabled ? t("voice:noisePopup.active") : t("voice:noisePopup.suspended")}
                 </span>
-                <span className="text-[8px] text-sori-text-dim font-bold">Neural Engine</span>
+                <span className="text-[8px] text-sori-text-dim font-bold">{t("voice:noisePopup.engine")}</span>
              </div>
 
               <button 

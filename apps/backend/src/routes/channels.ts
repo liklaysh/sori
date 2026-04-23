@@ -8,7 +8,7 @@ import { safe } from "../utils/safe.js";
 import { logger } from "../utils/logger.js";
 import { getGlobalIo } from "../globals.js";
 import { createChannelMessageSchema } from "../validation/schemas.js";
-import { extractAttachment, serializeMessage } from "../utils/messageContract.js";
+import { extractAttachments, serializeMessage } from "../utils/messageContract.js";
 import { getLinkPreviews } from "../utils/linkPreview.js";
 
 const router = new Hono();
@@ -83,10 +83,11 @@ router.post("/:channelId/messages", safe(async (c) => {
       return c.json({ error: "Invalid message payload", details: parsed.error.format() }, 400);
     }
 
-    const attachment = extractAttachment(parsed.data);
+    const attachments = extractAttachments(parsed.data);
+    const firstAttachment = attachments[0] || null;
     const parentId = parsed.data.parentId || null;
     const content = parsed.data.content?.trim() || "";
-    const effectiveType = attachment ? "file" : "text";
+    const effectiveType = attachments.length > 0 ? "file" : "text";
     const linkPreviews = content ? await getLinkPreviews(content) : [];
 
     const id = nanoid();
@@ -97,10 +98,11 @@ router.post("/:channelId/messages", safe(async (c) => {
       content,
       parentId,
       type: effectiveType,
-      fileUrl: attachment?.fileUrl,
-      fileName: attachment?.fileName,
-      fileSize: attachment?.fileSize,
-      fileType: attachment?.fileType,
+      fileUrl: firstAttachment?.fileUrl,
+      fileName: firstAttachment?.fileName,
+      fileSize: firstAttachment?.fileSize,
+      fileType: firstAttachment?.fileType,
+      attachments: attachments.length > 0 ? JSON.stringify(attachments) : null,
       linkMetadata: linkPreviews.length > 0 ? JSON.stringify(linkPreviews) : null,
     }).returning();
 

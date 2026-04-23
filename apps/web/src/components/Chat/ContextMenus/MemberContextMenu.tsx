@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Member } from '../../../types/chat';
 import { MessageSquare, Phone } from 'lucide-react';
 import { cn } from "@sori/ui";
@@ -19,6 +20,7 @@ interface MemberContextMenuProps {
 export const MemberContextMenu: React.FC<MemberContextMenuProps> = ({ 
   visible, x, y, member, onlineUsersSet, currentUser, handleStartDM, handleStartCall 
 }) => {
+  const { t } = useTranslation(["chat", "common"]);
   const menuStyles = useContextMenuPosition(x, y);
 
   if (!visible || !member) return null;
@@ -62,7 +64,7 @@ export const MemberContextMenu: React.FC<MemberContextMenuProps> = ({
             </p>
             <p className="text-[10px] font-bold text-sori-text-muted uppercase tracking-widest flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
               <span className={cn("w-1.5 h-1.5 rounded-full", isOnline ? "bg-sori-accent-secondary animate-pulse" : "bg-sori-surface-disabled")}></span>
-               {isOnline ? 'Online' : 'Offline'}
+               {isOnline ? t("common:status.online") : t("common:status.offline")}
             </p>
           </div>
           <div className="h-px bg-sori-border-subtle my-3"></div>
@@ -74,7 +76,7 @@ export const MemberContextMenu: React.FC<MemberContextMenuProps> = ({
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sori-text-muted hover:bg-sori-surface-hover hover:text-sori-accent-primary transition-all font-bold text-xs group"
               >
                 <MessageSquare className="h-4 w-4 text-sori-text-muted group-hover:text-sori-accent-primary" />
-                Chat
+                {t("chat:members.chat")}
               </button>
               <button 
                 onClick={handleCallClick}
@@ -85,7 +87,7 @@ export const MemberContextMenu: React.FC<MemberContextMenuProps> = ({
                 )}
               >
                 <Phone className="h-4 w-4 text-sori-text-muted group-hover:text-sori-accent-secondary" />
-                Call
+                {t("chat:members.call")}
               </button>
             </>
           )}

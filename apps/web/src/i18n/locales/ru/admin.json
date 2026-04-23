@@ -1,0 +1,250 @@
+{
+  "panel": "Админ-панель",
+  "shell": {
+    "syncingModule": "Синхронизация модуля",
+    "systemPulse": "Пульс системы",
+    "logoutSystem": "Выйти из системы",
+    "statusStable": "Статус: стабильно",
+    "sections": {
+      "overview": "Обзор",
+      "management": "Управление",
+      "system": "Система",
+      "analytics": "Аналитика"
+    },
+    "tabs": {
+      "dashboard": "Дашборд",
+      "users": "Пользователи",
+      "channels": "Каналы",
+      "settings": "Настройки",
+      "storage": "Медиахранилище",
+      "audit": "Журнал аудита",
+      "telemetry": "Телеметрия",
+      "backups": "Резервные копии"
+    }
+  },
+  "dashboard": {
+    "loading": "Устанавливаем соединение...",
+    "title": "Пульс системы",
+    "description": "Мониторинг инфраструктуры в реальном времени.",
+    "statusStable": "Статус: стабильно",
+    "uptime": "Время работы",
+    "uptimeDescription": "Текущая сессия",
+    "memory": "Память",
+    "memoryDescription": "Использование heap",
+    "users": "Пользователи",
+    "usersDescription": "Зарегистрированные аккаунты",
+    "integrityNodes": "Узлы целостности",
+    "client": "Клиент",
+    "core": "Ядро",
+    "database": "БД",
+    "storage": "Хранилище",
+    "media": "Медиа",
+    "active": "АКТИВНО",
+    "error": "ОШИБКА",
+    "scan": "СКАНИРОВАНИЕ..."
+  },
+  "users": {
+    "title": "Список пользователей",
+    "description": "Создание учётных записей и управление доступом.",
+    "generateIdentity": "Создать новую учётную запись",
+    "emailPlaceholder": "Email пользователя",
+    "generate": "Создать",
+    "securityCredentials": "Данные безопасности",
+    "securityHint": "Сохраните это сразу. Ключи не хранятся в открытом виде.",
+    "copy": "Копировать",
+    "searchPlaceholder": "Поиск пользователя",
+    "table": {
+      "avatar": "Аватар",
+      "identity": "Учётная запись",
+      "role": "Роль",
+      "operations": "Операции"
+    },
+    "tooltips": {
+      "rotateKeys": "Обновить ключи",
+      "terminateProfile": "Удалить профиль"
+    },
+    "loading": "Синхронизация пользователей...",
+    "empty": "Записи не найдены",
+    "confirmDelete": "Подтвердите окончательное удаление этого профиля. Это действие необратимо.",
+    "confirmReset": "Пересоздать ключи безопасности для этого пользователя?",
+    "toasts": {
+      "identityGenerated": "Учётная запись создана",
+      "profileTerminated": "Профиль удалён",
+      "securityRotated": "Ключи безопасности обновлены",
+      "passwordCopied": "Пароль скопирован в буфер обмена"
+    }
+  },
+  "channels": {
+    "title": "Каналы",
+    "description": "Создание и мониторинг каналов связи.",
+    "newNode": "Создать канал",
+    "cancel": "Отмена",
+    "initialize": "Создать",
+    "nodeIdentity": "Имя узла",
+    "nodeIdentityPlaceholder": "например, general-ops",
+    "frequencyType": "Тип канала",
+    "selectType": "Выберите тип",
+    "textNode": "Текстовый канал",
+    "voiceNode": "Голосовой канал",
+    "allChannels": "Все каналы",
+    "textual": "Текстовые",
+    "voice": "Голосовые",
+    "searchPlaceholder": "Поиск каналов...",
+    "table": {
+      "medium": "Тип",
+      "identity": "Имя",
+      "nodeId": "ID узла",
+      "ops": "Операции"
+    },
+    "loading": "Сканирование сети...",
+    "empty": "Узлы не найдены",
+    "voiceFrequency": "голосовой канал",
+    "textFrequency": "текстовый канал",
+    "tooltips": {
+      "deleteChannel": "Удалить канал"
+    },
+    "confirmDelete": "Вы уверены, что хотите удалить этот узел? Все связанные потоки данных будут очищены.",
+    "toasts": {
+      "loadFailed": "Не удалось загрузить сетевые узлы",
+      "nodeCreated": "Сетевой узел создан",
+      "createFailed": "Не удалось создать узел",
+      "nodeDeleted": "Узел удалён",
+      "deleteFailed": "Не удалось удалить узел"
+    }
+  },
+  "storage": {
+    "title": "Медиахранилище",
+    "description": "Управление и отслеживание файлов в MinIO.",
+    "totalObjects": "Всего объектов",
+    "verifiedAssets": "Общее число файлов",
+    "storageUsed": "Использовано хранилища",
+    "binaryVolume": "Объём данных",
+    "recentIngress": "Последние загрузки",
+    "table": {
+      "preview": "Превью",
+      "nodeIdentity": "Имя объекта",
+      "size": "Размер",
+      "accession": "Дата",
+      "ops": "Операции"
+    },
+    "loading": "Сканирование хранилища...",
+    "empty": "Реестр пуст",
+    "pulseEntry": "Открыть файл",
+    "deletePermanently": "Удалить навсегда",
+    "criticalNoticeTitle": "Важное предупреждение",
+    "criticalNoticeDescription": "Удаление объекта выполняется мгновенно и без временного хранения. Убедитесь, что файл больше не нужен.",
+    "cards": {
+      "automated": "Автоматически",
+      "automatedDescription": "Резервные копии создаются каждые 24 часа сервисом инфраструктуры",
+      "postgresql": "PostgreSQL",
+      "postgresqlDescription": "Нативные SQL-дампы с сохранением целостности данных",
+      "retention": "Хранение",
+      "retentionDescription": "Сохраняются только 3 последних ежедневных снимка"
+    },
+    "confirmDelete": "Подтвердите окончательное удаление файла: {{key}}",
+    "toasts": {
+      "syncFailed": "Не удалось синхронизировать данные хранилища",
+      "artifactPurged": "Файл удалён",
+      "purgeFailed": "Не удалось удалить файл"
+    }
+  },
+  "audit": {
+    "title": "Журнал аудита",
+    "description": "История административных операций.",
+    "purge": "Очистить",
+    "export": "Экспорт",
+    "table": {
+      "timestamp": "Время",
+      "identity": "Кто",
+      "operation": "Операция",
+      "object": "Объект"
+    },
+    "loading": "Синхронизация журнала...",
+    "empty": "Журнал пуст",
+    "confirmCleanup": "Подтвердите очистку журналов старше 72 часов. Это действие необратимо.",
+    "toasts": {
+      "syncFailed": "Не удалось синхронизировать журнал аудита",
+      "exported": "Журнал экспортирован",
+      "historyPurged": "История очищена",
+      "cleanupFailed": "Не удалось выполнить очистку"
+    }
+  },
+  "telemetry": {
+    "loading": "Анализируем данные протокола...",
+    "title": "Телеметрия звонков",
+    "description": "Мониторинг качества WebRTC и состояния сессий в реальном времени.",
+    "monitoringActive": "Мониторинг активен",
+    "autoPurification": "Автоочистка активна (политика 72 часа)",
+    "cleanupNotice": "Данные старше 72 часов автоматически очищаются каждые 3 дня для оптимизации базы данных.",
+    "directCall": "Личный звонок",
+    "channel": "Канал",
+    "privateSession": "Личная сессия",
+    "participants": "Участники",
+    "mosQuality": "MOS (качество)",
+    "bitrate": "Битрейт",
+    "status": "Статус",
+    "calculating": "ВЫЧИСЛЕНИЕ...",
+    "noRecentTraffic": "Недавняя активность звонков не обнаружена",
+    "statuses": {
+      "live": "Активен",
+      "ringing": "Дозвон",
+      "missed": "Пропущен",
+      "rejected": "Отклонён",
+      "ended": "Завершён"
+    },
+    "errors": {
+      "fetchFailed": "Не удалось получить телеметрию звонков"
+    }
+  },
+  "backups": {
+    "title": "Резервные копии",
+    "description": "Резервирование базы данных",
+    "serviceStatus": "Сервис: {{status}}",
+    "serviceOperational": "Работает",
+    "serviceError": "Ошибка",
+    "registry": "Резервные копии",
+    "table": {
+      "snapshot": "Снимок",
+      "dimensions": "Размер",
+      "timestamp": "Дата",
+      "ops": "Операции"
+    },
+    "loading": "Сканирование инфраструктуры...",
+    "empty": "Автоматические снимки не найдены.",
+    "downloadLocal": "Скачать",
+    "noticeTitle": "Примечание",
+    "noticeDescription": "Резервные копии создаются каждые 24 часа. Хранятся только последние 3 копии.",
+    "cards": {
+      "automated": "Автоматически",
+      "automatedDescription": "Резервные копии создаются каждые 24 часа сервисом инфраструктуры",
+      "postgresql": "PostgreSQL",
+      "postgresqlDescription": "Нативные SQL-дампы с сохранением целостности данных",
+      "retention": "Хранение",
+      "retentionDescription": "Сохраняются только 3 последних ежедневных снимка"
+    },
+    "toasts": {
+      "syncFailed": "Не удалось синхронизировать реестр резервных копий",
+      "downloading": "Скачивание: {{filename}}",
+      "downloadFailed": "Не удалось скачать резервную копию"
+    }
+  },
+  "settings": {
+    "title": "Глобальные настройки",
+    "description": "Глобальные параметры платформы.",
+    "identityDesign": "Название платформы",
+    "platformAlias": "Псевдоним платформы",
+    "syncing": "Синхронизация...",
+    "modify": "Изменить",
+    "modifyAlias": "Изменить псевдоним",
+    "modifyAliasDescription": "Введите новое название для вашей платформы Sori.",
+    "placeholder": "например, Sori Sanctuary",
+    "abort": "Отмена",
+    "commitChanges": "Сохранить изменения",
+    "helper": "Это значение заменяет название «Sori» в системных заголовках, метаданных и локальных объявлениях.",
+    "latestSyncSuccessful": "Последняя синхронизация прошла успешно",
+    "toasts": {
+      "saved": "Настройки успешно сохранены",
+      "saveFailed": "Не удалось сохранить настройки"
+    }
+  }
+}

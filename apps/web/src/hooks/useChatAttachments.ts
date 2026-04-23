@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import api from "../lib/api";
 import { toast } from "sonner";
 import { MAX_UPLOAD_SIZE_MB } from "../config";
+import i18n from "../i18n";
 
 export interface PendingAttachment {
   id: string;
@@ -27,13 +28,11 @@ export const useChatAttachments = () => {
 
     const MAX_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      toast.error(`File ${file.name} too large! Max is ${MAX_UPLOAD_SIZE_MB}MB.`);
+      toast.error(i18n.t("notifications:attachments.fileTooLarge", {
+        fileName: file.name,
+        maxSize: MAX_UPLOAD_SIZE_MB,
+      }));
       return;
-    }
-
-    if (pendingAttachments.length > 0) {
-      clearAttachments();
-      toast.info("Only one attachment is supported right now. Previous file was replaced.");
     }
 
     const attachmentId = Math.random().toString(36).substring(7);
@@ -76,7 +75,7 @@ export const useChatAttachments = () => {
       
     } catch (err: any) {
       console.error("[Attachments] Upload failed", err);
-      toast.error(`Failed to upload: ${file.name}`);
+      toast.error(i18n.t("notifications:attachments.uploadFailed", { fileName: file.name }));
       setPendingAttachments(prev => prev.filter(a => a.id !== attachmentId));
       URL.revokeObjectURL(previewUrl);
     } finally {
@@ -84,6 +83,15 @@ export const useChatAttachments = () => {
         fileInputRef.current.value = "";
       }
     }
+  };
+
+  const handleFilesUpload = async (files: File[] | FileList) => {
+    const queue = Array.from(files).filter(Boolean);
+    if (queue.length === 0) {
+      return;
+    }
+
+    await Promise.all(queue.map((file) => handleFileUpload(file)));
   };
 
   const removePendingAttachment = (id: string) => {
@@ -111,7 +119,7 @@ export const useChatAttachments = () => {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileUpload(e.dataTransfer.files[0]);
+      void handleFilesUpload(e.dataTransfer.files);
     }
   };
 
@@ -120,6 +128,7 @@ export const useChatAttachments = () => {
     dragActive,
     fileInputRef,
     handleFileUpload,
+    handleFilesUpload,
     removePendingAttachment,
     clearAttachments,
     handleDrag,

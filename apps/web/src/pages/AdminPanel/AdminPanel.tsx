@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import { 
@@ -29,14 +30,22 @@ const TelemetryTab = lazy(() => import("./tabs/TelemetryTab"));
 type AdminTab = "dashboard" | "users" | "channels" | "settings" | "audit" | "backups" | "storage" | "telemetry";
 
 const AdminTabLoader = () => (
-  <div className="min-h-[22rem] flex items-center justify-center">
-    <div className="animate-pulse text-[11px] font-black uppercase tracking-[0.24em] text-sori-text-muted">
-      Synchronizing Module
-    </div>
-  </div>
+  <AdminTabLoaderInner />
 );
 
+const AdminTabLoaderInner = () => {
+  const { t } = useTranslation(["admin"]);
+  return (
+    <div className="min-h-[22rem] flex items-center justify-center">
+      <div className="animate-pulse text-[11px] font-black uppercase tracking-[0.24em] text-sori-text-muted">
+        {t("admin:shell.syncingModule")}
+      </div>
+    </div>
+  );
+};
+
 export default function AdminPanel() {
+  const { t } = useTranslation(["admin"]);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
@@ -48,14 +57,14 @@ export default function AdminPanel() {
   }, [activeTab]);
 
   const tabs: { id: AdminTab; label: string; icon: React.ReactNode; section?: string }[] = [
-    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, section: "Overview" },
-    { id: "users", label: "Users", icon: <Users className="h-5 w-5" />, section: "Management" },
-    { id: "channels", label: "Channels", icon: <Hash className="h-5 w-5" /> },
-    { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, section: "System" },
-    { id: "storage", label: "Media Storage", icon: <Database className="h-5 w-5" /> },
-    { id: "audit", label: "Audit Log", icon: <History className="h-5 w-5" /> },
-    { id: "telemetry", label: "Telemetry", icon: <Activity className="h-5 w-5" />, section: "Analytics" },
-    { id: "backups", label: "Backups", icon: <Save className="h-5 w-5" /> },
+    { id: "dashboard", label: t("admin:shell.tabs.dashboard"), icon: <LayoutDashboard className="h-5 w-5" />, section: t("admin:shell.sections.overview") },
+    { id: "users", label: t("admin:shell.tabs.users"), icon: <Users className="h-5 w-5" />, section: t("admin:shell.sections.management") },
+    { id: "channels", label: t("admin:shell.tabs.channels"), icon: <Hash className="h-5 w-5" /> },
+    { id: "settings", label: t("admin:shell.tabs.settings"), icon: <Settings className="h-5 w-5" />, section: t("admin:shell.sections.system") },
+    { id: "storage", label: t("admin:shell.tabs.storage"), icon: <Database className="h-5 w-5" /> },
+    { id: "audit", label: t("admin:shell.tabs.audit"), icon: <History className="h-5 w-5" /> },
+    { id: "telemetry", label: t("admin:shell.tabs.telemetry"), icon: <Activity className="h-5 w-5" />, section: t("admin:shell.sections.analytics") },
+    { id: "backups", label: t("admin:shell.tabs.backups"), icon: <Save className="h-5 w-5" /> },
   ];
 
   const handleLogout = () => {
@@ -83,7 +92,7 @@ export default function AdminPanel() {
           <div className="p-1.5 bg-sori-accent-danger rounded-lg">
             <ShieldCheck className="h-5 w-5 text-sori-text-on-accent" />
           </div>
-          <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">System Pulse</h1>
+          <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">{t("admin:shell.systemPulse")}</h1>
         </div>
 
         <nav className="space-y-1 flex-1 overflow-y-auto custom-scrollbar pr-1">
@@ -110,7 +119,7 @@ export default function AdminPanel() {
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sori-text-muted hover:bg-sori-surface-hover hover:text-sori-text-strong transition-all group"
           >
             <LogOut className="h-5 w-5 group-hover:rotate-12 transition-transform" />
-            <span className="text-sm font-bold">Logout System</span>
+            <span className="text-sm font-bold">{t("admin:shell.logoutSystem")}</span>
           </button>
         </div>
       </aside>
@@ -132,7 +141,7 @@ export default function AdminPanel() {
           
           <div className="flex items-center gap-3 bg-sori-surface-main border border-sori-border-subtle px-4 py-2 rounded-xl shrink-0">
             <div className="w-2 h-2 rounded-full bg-sori-accent-secondary shadow-lg animate-pulse"></div>
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-strong">Status: Stable</span>
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-strong">{t("admin:shell.statusStable")}</span>
           </div>
         </header>
 

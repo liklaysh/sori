@@ -1,4 +1,4 @@
-import { ChatItem, Message } from "../types/chat";
+import { Attachment, ChatItem, Message } from "../types/chat";
 
 export const getChannelContextKey = (channelId: string) => `channel:${channelId}`;
 export const getConversationContextKey = (conversationId: string) => `dm:${conversationId}`;
@@ -15,14 +15,25 @@ export function getMessageContextKey(message: Pick<Message, "channelId" | "conve
   return null;
 }
 
-export function getMessageAttachment(message: Pick<Message, "attachment">) {
-  return message.attachment || null;
+export function getMessageAttachments(message: Pick<Message, "attachments" | "attachment">) {
+  if (Array.isArray(message.attachments) && message.attachments.length > 0) {
+    return message.attachments;
+  }
+
+  return message.attachment ? [message.attachment] : [];
+}
+
+export function getMessageAttachment(message: Pick<Message, "attachments" | "attachment">): Attachment | null {
+  return getMessageAttachments(message)[0] || null;
 }
 
 export function normalizeMessage<T extends Message>(message: T): T {
+  const attachments = getMessageAttachments(message);
+
   return {
     ...message,
-    attachment: getMessageAttachment(message),
+    attachments,
+    attachment: attachments[0] || null,
   };
 }
 

@@ -19,6 +19,7 @@ type ReactionLike = {
 };
 
 type MessageLike = {
+  attachments?: string | MessageAttachment[] | null;
   fileUrl?: string | null;
   fileName?: string | null;
   fileSize?: number | null;
@@ -29,10 +30,15 @@ type MessageLike = {
   [key: string]: any;
 };
 
-export function extractAttachment(input: {
+export function extractAttachments(input: {
   attachment?: MessageAttachment | null;
+  attachments?: MessageAttachment[] | null;
 }) {
-  return input.attachment || null;
+  if (Array.isArray(input.attachments) && input.attachments.length > 0) {
+    return input.attachments.filter((attachment) => Boolean(attachment?.fileUrl && attachment?.fileName));
+  }
+
+  return input.attachment ? [input.attachment] : [];
 }
 
 export function buildAttachment(input: {
@@ -51,6 +57,47 @@ export function buildAttachment(input: {
     fileSize: input.fileSize ?? null,
     fileType: input.fileType ?? null,
   };
+}
+
+function parseAttachments(raw: string | MessageAttachment[] | null | undefined) {
+  if (!raw) {
+    return [];
+  }
+
+  if (Array.isArray(raw)) {
+    return raw
+      .map((attachment) => buildAttachment(attachment))
+      .filter(Boolean) as MessageAttachment[];
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((attachment) => buildAttachment(attachment))
+      .filter(Boolean) as MessageAttachment[];
+  } catch {
+    return [];
+  }
+}
+
+export function buildAttachments(input: {
+  attachments?: string | MessageAttachment[] | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  fileType?: string | null;
+}) {
+  const parsedAttachments = parseAttachments(input.attachments);
+  if (parsedAttachments.length > 0) {
+    return parsedAttachments;
+  }
+
+  const legacyAttachment = buildAttachment(input);
+  return legacyAttachment ? [legacyAttachment] : [];
 }
 
 function normalizeAuthor(author?: AuthorLike | null) {
@@ -74,19 +121,22 @@ export function serializeMessage(message: MessageLike | null | undefined): any {
   }
 
   const {
+    attachments: _attachments,
     fileUrl: _fileUrl,
     fileName: _fileName,
     fileSize: _fileSize,
     fileType: _fileType,
     ...rest
   } = message;
-  const attachment = buildAttachment(message);
+  const attachments = buildAttachments(message);
+  const attachment = attachments[0] || null;
 
   return {
     ...rest,
     author: normalizeAuthor(message.author),
     parent: message.parent ? serializeMessage(message.parent) : null,
     reactions: normalizeReactions(message.reactions),
+    attachments,
     attachment,
   };
 }

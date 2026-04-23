@@ -1,0 +1,250 @@
+{
+  "panel": "Admin Panel",
+  "shell": {
+    "syncingModule": "Synchronizing Module",
+    "systemPulse": "System Pulse",
+    "logoutSystem": "Logout System",
+    "statusStable": "Status: Stable",
+    "sections": {
+      "overview": "Overview",
+      "management": "Management",
+      "system": "System",
+      "analytics": "Analytics"
+    },
+    "tabs": {
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "channels": "Channels",
+      "settings": "Settings",
+      "storage": "Media Storage",
+      "audit": "Audit Log",
+      "telemetry": "Telemetry",
+      "backups": "Backups"
+    }
+  },
+  "dashboard": {
+    "loading": "Establishing Connection...",
+    "title": "System Pulse",
+    "description": "Real-time infrastructure monitoring.",
+    "statusStable": "Status: Stable",
+    "uptime": "Uptime",
+    "uptimeDescription": "Continuous session",
+    "memory": "Memory",
+    "memoryDescription": "Heap usage",
+    "users": "Users",
+    "usersDescription": "Registered accounts",
+    "integrityNodes": "Integrity Nodes",
+    "client": "Client",
+    "core": "Core",
+    "database": "DB",
+    "storage": "Storage",
+    "media": "Media",
+    "active": "ACTIVE",
+    "error": "ERROR",
+    "scan": "SCAN..."
+  },
+  "users": {
+    "title": "User Registry",
+    "description": "Provision identities and manage access levels.",
+    "generateIdentity": "Generate New Identity",
+    "emailPlaceholder": "Citizen Email Address",
+    "generate": "Generate",
+    "securityCredentials": "Security Credentials",
+    "securityHint": "Save this immediately. Keys are not stored in plain text.",
+    "copy": "Copy",
+    "searchPlaceholder": "Search citizen registry...",
+    "table": {
+      "avatar": "Avatar",
+      "identity": "Identity",
+      "role": "Role",
+      "operations": "Operations"
+    },
+    "tooltips": {
+      "rotateKeys": "Rotate Keys",
+      "terminateProfile": "Terminate Profile"
+    },
+    "loading": "Syncing citizens...",
+    "empty": "No records identified",
+    "confirmDelete": "Confirm permanent deletion of this citizen profile? This operation is irreversible.",
+    "confirmReset": "Regenerate security credentials for this user?",
+    "toasts": {
+      "identityGenerated": "Identity profile generated",
+      "profileTerminated": "Profile terminated",
+      "securityRotated": "Security keys rotated",
+      "passwordCopied": "Password secured to clipboard"
+    }
+  },
+  "channels": {
+    "title": "Network Nodes",
+    "description": "Define and monitor communication frequencies.",
+    "newNode": "New Node",
+    "cancel": "Cancel",
+    "initialize": "Initialize",
+    "nodeIdentity": "Node Identity",
+    "nodeIdentityPlaceholder": "e.g., general-ops",
+    "frequencyType": "Frequency Type",
+    "selectType": "Select type",
+    "textNode": "Text Node",
+    "voiceNode": "Voice Node",
+    "allChannels": "All Channels",
+    "textual": "Textual",
+    "voice": "Voice",
+    "searchPlaceholder": "Search nodes...",
+    "table": {
+      "medium": "Medium",
+      "identity": "Identity",
+      "nodeId": "Node ID",
+      "ops": "Ops"
+    },
+    "loading": "Scanning network...",
+    "empty": "Zero nodes identified",
+    "voiceFrequency": "voice frequency",
+    "textFrequency": "text frequency",
+    "tooltips": {
+      "deleteChannel": "Delete Channel"
+    },
+    "confirmDelete": "Are you sure you want to terminate this node? All data streams within it will be purged.",
+    "toasts": {
+      "loadFailed": "Failed to load network nodes",
+      "nodeCreated": "Network node established",
+      "createFailed": "Failed to create node",
+      "nodeDeleted": "Node disconnected",
+      "deleteFailed": "Termination failed"
+    }
+  },
+  "storage": {
+    "title": "Media Repository",
+    "description": "MinIO asset orchestration and tracking.",
+    "totalObjects": "Total Objects",
+    "verifiedAssets": "Verified cluster assets",
+    "storageUsed": "Storage Used",
+    "binaryVolume": "Binary data volume",
+    "recentIngress": "Recent Ingress",
+    "table": {
+      "preview": "Preview",
+      "nodeIdentity": "Node Identity",
+      "size": "Size",
+      "accession": "Accession",
+      "ops": "Ops"
+    },
+    "loading": "Scanning network...",
+    "empty": "Registry Empty",
+    "pulseEntry": "Pulse Entry",
+    "deletePermanently": "Delete permanently",
+    "criticalNoticeTitle": "Critical Modification Notice",
+    "criticalNoticeDescription": "Object deletion bypasses temporary storage and is executed instantly. Confirm asset redundancy before termination.",
+    "cards": {
+      "automated": "Automated",
+      "automatedDescription": "Backups generated every 24h by infra-service",
+      "postgresql": "PostgreSQL",
+      "postgresqlDescription": "Native SQL dumps optimized for relational integrity",
+      "retention": "Retention",
+      "retentionDescription": "Only the latest 3 daily snapshots are kept"
+    },
+    "confirmDelete": "Confirm permanent termination of asset: {{key}}?",
+    "toasts": {
+      "syncFailed": "Failed to sync storage data",
+      "artifactPurged": "Artifact purged",
+      "purgeFailed": "Purge operation failed"
+    }
+  },
+  "audit": {
+    "title": "Action Ledger",
+    "description": "Historical trace of administrative operations.",
+    "purge": "Purge",
+    "export": "Export",
+    "table": {
+      "timestamp": "Timestamp",
+      "identity": "Identity",
+      "operation": "Operation",
+      "object": "Object"
+    },
+    "loading": "Syncing ledger...",
+    "empty": "Ledger Empty",
+    "confirmCleanup": "Confirm purging of operational logs older than 72 hours? This operation is irreversible.",
+    "toasts": {
+      "syncFailed": "Audit sync failed",
+      "exported": "Operational ledger exported",
+      "historyPurged": "History purged",
+      "cleanupFailed": "Cleanup operation failed"
+    }
+  },
+  "telemetry": {
+    "loading": "Analyzing Protocol Data...",
+    "title": "Call Protocol Telemetry",
+    "description": "Real-time monitoring of WebRTC quality and session health.",
+    "monitoringActive": "Live Monitoring Active",
+    "autoPurification": "Auto-purification active (72h policy)",
+    "cleanupNotice": "System Orchestration: Interaction streams older than 72 hours are automatically purged every 3 days to optimize database performance.",
+    "directCall": "Direct Call",
+    "channel": "Channel",
+    "privateSession": "Private Session",
+    "participants": "Participants",
+    "mosQuality": "MOS (Quality)",
+    "bitrate": "Bitrate",
+    "status": "Status",
+    "calculating": "CALCULATING...",
+    "noRecentTraffic": "No Recent Call Traffic Detected",
+    "statuses": {
+      "live": "Live",
+      "ringing": "Ringing",
+      "missed": "Missed",
+      "rejected": "Rejected",
+      "ended": "Ended"
+    },
+    "errors": {
+      "fetchFailed": "Failed to fetch call telemetry"
+    }
+  },
+  "backups": {
+    "title": "Data Resilience",
+    "description": "Infrastructure state orchestration and point-in-time recovery.",
+    "serviceStatus": "Service: {{status}}",
+    "serviceOperational": "Operational",
+    "serviceError": "Error",
+    "registry": "Backup Registry",
+    "table": {
+      "snapshot": "Snapshot",
+      "dimensions": "Dimensions",
+      "timestamp": "Timestamp",
+      "ops": "Ops"
+    },
+    "loading": "Scanning infrastructure...",
+    "empty": "No automated snapshots identified.",
+    "downloadLocal": "Download locally",
+    "noticeTitle": "Infrastructure Notice",
+    "noticeDescription": "Database snapshots are generated every 24 hours. Only the latest 3 daily backups are retained to keep local storage bounded.",
+    "cards": {
+      "automated": "Automated",
+      "automatedDescription": "Backups generated every 24h by infra-service",
+      "postgresql": "PostgreSQL",
+      "postgresqlDescription": "Native SQL dumps optimized for relational integrity",
+      "retention": "Retention",
+      "retentionDescription": "Only the latest 3 daily snapshots are kept"
+    },
+    "toasts": {
+      "syncFailed": "Failed to sync backup registry",
+      "downloading": "Downloading payload: {{filename}}",
+      "downloadFailed": "Failed to download backup"
+    }
+  },
+  "settings": {
+    "title": "Core Logic",
+    "description": "Platform-wide behavioral constants.",
+    "identityDesign": "Identity Design",
+    "platformAlias": "Platform Alias",
+    "syncing": "Syncing...",
+    "modify": "Modify",
+    "modifyAlias": "Modify Alias",
+    "modifyAliasDescription": "Input a new designation for your Sori platform.",
+    "placeholder": "e.g., Sori Sanctuary",
+    "abort": "Abort",
+    "commitChanges": "Commit Changes",
+    "helper": "This value overrides the \"Sori\" designation across system headers, metadata, and local broadcasts.",
+    "latestSyncSuccessful": "Latest sync operation successful",
+    "toasts": {
+      "saved": "Settings saved successfully!",
+      "saveFailed": "Failed to save settings"
+    }
+  }
+}

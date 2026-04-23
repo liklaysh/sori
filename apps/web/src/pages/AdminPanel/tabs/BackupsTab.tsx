@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useAdminApi } from "../../../hooks/useAdminApi";
 import http from "../../../lib/api";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ interface BackupFile {
 }
 
 export default function BackupsTab() {
+  const { t } = useTranslation(["admin"]);
   const [backups, setBackups] = useState<BackupFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [status, setStatus] = useState<string>("active");
@@ -35,7 +37,7 @@ export default function BackupsTab() {
         setStatus(res.data.status || "active");
       }
     } catch (e) {
-      toast.error("Failed to sync backup registry");
+      toast.error(t("admin:backups.toasts.syncFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -60,9 +62,9 @@ export default function BackupsTab() {
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
 
-      toast.success(`Downloading payload: ${filename}`);
+      toast.success(t("admin:backups.toasts.downloading", { filename }));
     } catch (error) {
-      toast.error("Failed to download backup");
+      toast.error(t("admin:backups.toasts.downloadFailed"));
     }
   };
 
@@ -83,14 +85,14 @@ export default function BackupsTab() {
             <div className="p-1.5 bg-sori-accent-danger rounded-lg">
               <ShieldCheck className="h-5 w-5 text-sori-text-on-accent" />
             </div>
-            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">Data Resilience</h1>
+            <h1 className="text-2xl font-black tracking-tighter text-sori-text-strong uppercase">{t("admin:backups.title")}</h1>
           </div>
-          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">Infrastructure state orchestration and point-in-time recovery.</p>
+          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">{t("admin:backups.description")}</p>
         </div>
         <div className="flex items-center gap-3 bg-sori-surface-main border border-sori-border-subtle px-4 py-2 rounded-xl shrink-0">
           <div className={`w-2 h-2 rounded-full ${status === 'active' ? 'bg-sori-accent-secondary' : 'bg-sori-accent-danger'} animate-pulse shadow-lg`}></div>
           <div className={`w-2 h-2 rounded-full ${status === 'active' ? 'bg-sori-accent-success' : 'bg-sori-accent-danger'} animate-pulse shadow-lg`}></div>
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-strong">Service: {status === 'active' ? 'Operational' : 'Error'}</span>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-strong">{t("admin:backups.serviceStatus", { status: status === 'active' ? t("admin:backups.serviceOperational") : t("admin:backups.serviceError") })}</span>
         </div>
       </div>
 
@@ -99,7 +101,7 @@ export default function BackupsTab() {
          <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
               <Clock className="h-3 w-3 text-sori-accent-danger" />
-              <h2 className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.3em]">Backup Registry</h2>
+              <h2 className="text-[9px] font-black uppercase text-sori-text-muted tracking-[0.3em]">{t("admin:backups.registry")}</h2>
             </div>
             <button 
               onClick={fetchBackups} 
@@ -115,10 +117,10 @@ export default function BackupsTab() {
             <table className="w-full text-left font-sans">
               <thead>
                 <tr className="bg-sori-surface-active border-b border-sori-border-subtle text-[9px] font-black uppercase tracking-widest text-sori-text-muted">
-                  <th className="px-6 py-4">Snapshot</th>
-                  <th className="px-6 py-4">Dimensions</th>
-                  <th className="px-6 py-4">Timestamp</th>
-                  <th className="px-6 py-4 text-right">Ops</th>
+                  <th className="px-6 py-4">{t("admin:backups.table.snapshot")}</th>
+                  <th className="px-6 py-4">{t("admin:backups.table.dimensions")}</th>
+                  <th className="px-6 py-4">{t("admin:backups.table.timestamp")}</th>
+                  <th className="px-6 py-4 text-right">{t("admin:backups.table.ops")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-sori-border-subtle">
@@ -126,13 +128,13 @@ export default function BackupsTab() {
                   <tr>
                     <td colSpan={4} className="px-6 py-16 text-center">
                        <RefreshCw className="h-6 w-6 animate-spin text-sori-accent-danger mx-auto mb-2" />
-                       <p className="text-[10px] font-bold text-sori-text-muted uppercase tracking-widest">Scanning infrastructure...</p>
+                       <p className="text-[10px] font-bold text-sori-text-muted uppercase tracking-widest">{t("admin:backups.loading")}</p>
                     </td>
                   </tr>
                 ) : backups.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-16 text-center text-sori-text-dim font-bold uppercase tracking-widest text-[10px]">
-                      No automated snapshots identified.
+                      {t("admin:backups.empty")}
                     </td>
                   </tr>
                 ) : backups.map((b) => (
@@ -155,7 +157,7 @@ export default function BackupsTab() {
                       <button 
                         onClick={() => handleDownload(b.filename)}
                         className="p-2.5 rounded-lg bg-sori-surface-danger-subtle text-sori-accent-danger hover:bg-sori-accent-danger hover:text-sori-text-on-accent transition-all shadow-md active:scale-95"
-                        title="Download locally"
+                        title={t("admin:backups.downloadLocal")}
                       >
                         <Download className="h-3.5 w-3.5" />
                       </button>
@@ -177,9 +179,9 @@ export default function BackupsTab() {
            <AlertTriangle className="h-5 w-5 text-sori-accent-danger animate-pulse" />
         </div>
         <div className="relative z-10">
-           <h3 className="text-[9px] font-black text-sori-text-strong uppercase tracking-[0.2em] mb-1">Infrastructure Notice</h3>
+           <h3 className="text-[9px] font-black text-sori-text-strong uppercase tracking-[0.2em] mb-1">{t("admin:backups.noticeTitle")}</h3>
            <p className="text-[10px] text-sori-text-dim font-medium leading-relaxed max-w-2xl">
-              Database snapshots are generated every 24 hours. Only the latest 3 daily backups are retained to keep local storage bounded.
+              {t("admin:backups.noticeDescription")}
            </p>
         </div>
       </div>
@@ -187,9 +189,9 @@ export default function BackupsTab() {
       {/* Informative Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { icon: ShieldCheck, title: "Automated", desc: "Backups generated every 24h by infra-service" },
-          { icon: Database, title: "PostgreSQL", desc: "Native SQL dumps optimized for relational integrity" },
-          { icon: Info, title: "Retention", desc: "Only the latest 3 daily snapshots are kept" }
+          { icon: ShieldCheck, title: t("admin:backups.cards.automated"), desc: t("admin:backups.cards.automatedDescription") },
+          { icon: Database, title: t("admin:backups.cards.postgresql"), desc: t("admin:backups.cards.postgresqlDescription") },
+          { icon: Info, title: t("admin:backups.cards.retention"), desc: t("admin:backups.cards.retentionDescription") }
         ].map((item, i) => (
           <div key={i} className="bg-sori-surface-main border border-sori-border-subtle rounded-2xl p-4 flex gap-3 items-center">
             <item.icon className="h-4 w-4 text-sori-accent-danger shrink-0" />

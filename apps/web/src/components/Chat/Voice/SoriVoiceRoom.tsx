@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@sori/ui";
 import { 
   useTracks,
@@ -88,6 +89,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
   outputDevices, activeOutputId, setActiveOutput,
   setMicGain, setOutputVolume
 }) => {
+  const { t } = useTranslation(["voice"]);
   const { getSyncedDate } = useServerTime();
   const [duration, setDuration] = useState("00:00");
   const { localParticipant } = useLocalParticipant();
@@ -255,7 +257,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
                  <div className="absolute inset-0 hidden group-hover:flex items-center justify-center pointer-events-none">
                   <div className="bg-sori-surface-overlay px-4 py-2 rounded-xl border border-sori-accent-primary flex items-center gap-2">
                      <Maximize2 className="h-4 w-4 text-sori-accent-primary" />
-                     <span className="text-[10px] font-black uppercase text-sori-text-strong tracking-widest">Expand</span>
+                     <span className="text-[10px] font-black uppercase text-sori-text-strong tracking-widest">{t("voice:room.expand")}</span>
                   </div>
                </div>
               )}
@@ -278,7 +280,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
             <div>
               <h2 className="text-sm font-black text-sori-text-strong uppercase tracking-widest">{channelName}</h2>
               <p className="text-[10px] font-bold text-sori-text-muted uppercase flex items-center gap-1">
-                <span>Call Protocol Active •</span>
+                <span>{t("voice:room.callProtocolActive")}</span>
                 <span className="font-mono tabular-nums tracking-normal">{duration}</span>
               </p>
             </div>
@@ -289,7 +291,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
               <button 
                 onClick={onMinimize}
                 className="w-10 h-10 rounded-xl bg-sori-surface-hover border border-sori-border-subtle hover:bg-sori-surface-panel text-sori-text-muted flex items-center justify-center transition-all"
-                title="Minimize Call"
+                title={t("voice:room.minimizeCall")}
               >
                 <Minimize2 className="h-5 w-5" />
               </button>
@@ -298,7 +300,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
               <button 
                 onClick={onOpenFindFriend}
                 className="w-10 h-10 rounded-xl bg-sori-surface-hover border border-sori-border-subtle hover:bg-sori-surface-panel text-sori-text-muted flex items-center justify-center transition-all"
-                title="Add to call"
+                title={t("voice:room.addToCall")}
               >
                 <UserPlus className="h-5 w-5" />
               </button>
@@ -309,7 +311,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
                 "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
                 isChatOpen ? "bg-sori-accent-primary text-black shadow-lg" : "bg-sori-surface-hover border border-sori-border-subtle text-sori-text-muted hover:bg-sori-surface-panel hover:text-sori-text-strong"
               )}
-              title="Toggle Chat"
+              title={t("voice:room.toggleChat")}
             >
               <MessageSquare className="h-5 w-5" />
             </button>
@@ -370,7 +372,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
                     <ChevronLeft className="h-6 w-6" />
                   </button>
                   <span className="text-[11px] font-black uppercase text-sori-text-muted tracking-widest">
-                    Page {currentPage + 1} / {totalPages}
+                    {t("voice:room.page", { current: currentPage + 1, total: totalPages })}
                   </span>
                   <button 
                     disabled={currentPage === totalPages - 1}

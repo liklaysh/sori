@@ -1,19 +1,25 @@
 import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@sori/ui";
+import { useTranslation } from "react-i18next";
 import { useUserStore } from "./store/useUserStore";
 
 const Login = lazy(() => import("./pages/Login"));
 const Chat = lazy(() => import("./pages/Chat"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel/AdminPanel"));
 
-const RouteLoader = () => (
-  <div className="bg-sori-surface-base min-h-screen flex items-center justify-center">
-    <div className="animate-pulse text-sori-accent-primary font-headline text-2xl">Synchronizing Sori...</div>
-  </div>
-);
+const RouteLoader = () => {
+  const { t } = useTranslation("common");
+
+  return (
+    <div className="bg-sori-surface-base min-h-screen flex items-center justify-center">
+      <div className="animate-pulse text-sori-accent-primary font-headline text-2xl">{t("loading.sync")}</div>
+    </div>
+  );
+};
 
 function App() {
+  const { t } = useTranslation("common");
   const { fetchMe, isLoading, isAuthenticated, user } = useUserStore();
 
   useEffect(() => {
@@ -25,7 +31,7 @@ function App() {
   if (isLoading) {
     return (
       <div className="bg-sori-surface-base min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-sori-accent-primary font-headline text-2xl">Synchronizing Sori...</div>
+        <div className="animate-pulse text-sori-accent-primary font-headline text-2xl">{t("loading.sync")}</div>
       </div>
     );
   }

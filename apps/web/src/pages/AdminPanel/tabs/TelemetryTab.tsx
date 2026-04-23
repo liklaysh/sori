@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useAdminApi } from "../../../hooks/useAdminApi";
 import { 
   Activity, 
@@ -35,6 +36,7 @@ interface CallLog {
 }
 
 export default function TelemetryTab() {
+  const { t } = useTranslation(["admin"]);
   const [calls, setCalls] = useState<CallLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function TelemetryTab() {
         setError(res.error);
       }
     } catch (err) {
-      setError("Failed to fetch call telemetry");
+      setError(t("admin:telemetry.errors.fetchFailed"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -90,15 +92,15 @@ export default function TelemetryTab() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "active":
-        return "Live";
+        return t("admin:telemetry.statuses.live");
       case "ringing":
-        return "Ringing";
+        return t("admin:telemetry.statuses.ringing");
       case "missed":
-        return "Missed";
+        return t("admin:telemetry.statuses.missed");
       case "rejected":
-        return "Rejected";
+        return t("admin:telemetry.statuses.rejected");
       case "ended":
-        return "Ended";
+        return t("admin:telemetry.statuses.ended");
       default:
         return status;
     }
@@ -116,7 +118,7 @@ export default function TelemetryTab() {
     return (
       <div className="flex flex-col items-center justify-center p-20 text-sori-text-muted">
         <Activity className="h-10 w-10 animate-pulse mb-4 text-sori-accent-danger" />
-        <p className="font-bold uppercase tracking-widest text-[10px]">Analyzing Protocol Data...</p>
+        <p className="font-bold uppercase tracking-widest text-[10px]">{t("admin:telemetry.loading")}</p>
       </div>
     );
   }
@@ -125,17 +127,17 @@ export default function TelemetryTab() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-sori-accent-danger pl-6 py-1">
         <div>
-          <h2 className="text-2xl font-black text-sori-text-strong uppercase tracking-tight">Call Protocol Telemetry</h2>
-          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">Real-time monitoring of WebRTC quality and session health.</p>
+          <h2 className="text-2xl font-black text-sori-text-strong uppercase tracking-tight">{t("admin:telemetry.title")}</h2>
+          <p className="text-sori-text-muted text-[10px] font-medium tracking-wide uppercase">{t("admin:telemetry.description")}</p>
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="px-4 py-2 rounded-xl bg-sori-accent-danger-subtle border border-sori-accent-danger flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-sori-accent-danger animate-pulse" />
-            <span className="text-[10px] font-black text-sori-accent-danger uppercase tracking-widest">Live Monitoring Active</span>
+            <span className="text-[10px] font-black text-sori-accent-danger uppercase tracking-widest">{t("admin:telemetry.monitoringActive")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Clock className="h-3 w-3 text-sori-text-dim" />
-            <span className="text-[8px] font-bold text-sori-text-dim uppercase tracking-widest">Auto-purification active (72h policy)</span>
+            <span className="text-[8px] font-bold text-sori-text-dim uppercase tracking-widest">{t("admin:telemetry.autoPurification")}</span>
           </div>
         </div>
       </div>
@@ -144,7 +146,7 @@ export default function TelemetryTab() {
       <div className="bg-sori-accent-danger-subtle border border-sori-accent-danger rounded-2xl p-4 flex items-center gap-3 shadow-inner">
         <AlertCircle className="h-4 w-4 text-sori-accent-danger" />
         <p className="text-[10px] text-sori-text-dim font-bold uppercase tracking-wider">
-          System Orchestration: Interaction streams older than 72 hours are automatically purged every 3 days to optimize database performance.
+          {t("admin:telemetry.cleanupNotice")}
         </p>
       </div>
 
@@ -176,9 +178,9 @@ export default function TelemetryTab() {
                     {call.type === 'direct' ? <Users className="h-6 w-6" /> : <Activity className="h-6 w-6" />}
                   </div>
                   <div>
-                     <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-0.5">{call.type === 'direct' ? 'Direct Call' : 'Channel'}</p>
+                     <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-0.5">{call.type === 'direct' ? t("admin:telemetry.directCall") : t("admin:telemetry.channel")}</p>
                      <div className="flex items-center gap-2">
-                       <h4 className="font-bold text-sm text-sori-text-strong">{call.channel?.name || "Private Session"}</h4>
+                       <h4 className="font-bold text-sm text-sori-text-strong">{call.channel?.name || t("admin:telemetry.privateSession")}</h4>
                        {call.status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-sori-accent-danger animate-pulse" />}
                      </div>
                   </div>
@@ -186,7 +188,7 @@ export default function TelemetryTab() {
 
                 {/* Participants */}
                 <div className="flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-2">Participants</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-2">{t("admin:telemetry.participants")}</p>
                   <div className="flex items-center gap-2">
                     {call.type === 'direct' ? (
                       <div className="flex items-center gap-3">
@@ -214,19 +216,19 @@ export default function TelemetryTab() {
                 {/* Quality Metrics */}
                 <div className="grid grid-cols-3 gap-6 lg:border-l lg:border-sori-border-subtle lg:pl-6 min-w-[280px]">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">MOS (Quality)</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">{t("admin:telemetry.mosQuality")}</p>
                     <p className={cn("text-sm font-black italic", getMOSColor(call.mos))}>
-                      {call.mos || (call.status === 'active' ? "CALCULATING..." : "N/A")}
+                      {call.mos || (call.status === 'active' ? t("admin:telemetry.calculating") : "N/A")}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">Bitrate</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">{t("admin:telemetry.bitrate")}</p>
                     <p className="text-sm font-bold text-sori-text-strong">
                       {call.avgBitrate ? `${(call.avgBitrate / 1000).toFixed(1)} kbps` : "—"}
                     </p>
                   </div>
                   <div className="flex flex-col">
-                    <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest leading-none">Status</p>
+                    <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest leading-none">{t("admin:telemetry.status")}</p>
                     <p className={cn("text-sm font-bold", getStatusTone(call.status))}>
                       {getStatusLabel(call.status)}
                     </p>
@@ -250,7 +252,7 @@ export default function TelemetryTab() {
           {calls.length === 0 && (
             <div className="p-12 border-2 border-dashed border-sori-border-subtle rounded-3xl flex flex-col items-center justify-center text-center">
               <Signal className="h-10 w-10 mb-4 text-sori-text-dim" />
-              <p className="font-bold uppercase tracking-widest text-xs text-sori-text-dim">No Recent Call Traffic Detected</p>
+              <p className="font-bold uppercase tracking-widest text-xs text-sori-text-dim">{t("admin:telemetry.noRecentTraffic")}</p>
             </div>
           )}
         </div>

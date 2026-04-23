@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Channel, User, DMConversation, ChatItem, Message } from "../../types/chat";
 import { 
   cn, 
@@ -45,6 +46,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onInitiateCall, callStatus, isVoiceChatOpen, setIsVoiceChatOpen, onlineUsersSet, livekitToken,
   searchResults = [], onResultClick
 }) => {
+  const { t } = useTranslation(["chat", "common", "voice"]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const otherUser = activeModule === 'dm' 
@@ -88,7 +90,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                    isOnline ? "bg-sori-accent-success" : "bg-sori-surface-disabled"
                 )} />
                 <p className="text-[9px] font-black uppercase tracking-wider text-sori-text-muted">
-                  {isOnline ? 'Online' : 'Offline'}
+                  {isOnline ? t("common:status.online") : t("common:status.offline")}
                 </p>
               </div>
             </div>
@@ -125,14 +127,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <PopoverContent className="w-[400px] p-0 bg-sori-surface-panel border-sori-border-subtle shadow-2xl rounded-2xl overflow-hidden mr-8" align="end">
               <Command shouldFilter={false} className="bg-transparent">
                 <CommandInput 
-                  placeholder="Search in conversation..." 
+                  placeholder={t("chat:searchConversation")}
                   value={searchQuery}
                   onValueChange={(val: string) => setSearchQuery(val)}
                   className="py-6 border-none focus:ring-0"
                 />
                 <CommandList className="max-h-[300px] no-scrollbar">
                   {searchResults.length > 0 && (
-                    <CommandGroup heading="Search Results" className="px-2 pb-2">
+                    <CommandGroup heading={t("common:search.results")} className="px-2 pb-2">
                       {searchResults.map((msg) => (
                         <CommandItem
                           key={msg.id}
@@ -154,7 +156,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                                   )}
                                </div>
                                <span className="font-bold text-xs text-white group-hover:text-sori-accent-primary transition-colors">
-                                 {('username' in msg ? msg.username : ('author' in msg ? msg.author?.username : undefined)) || 'System'}
+                                 {('username' in msg ? msg.username : ('author' in msg ? msg.author?.username : undefined)) || t("common:system")}
                                </span>
                             </div>
                              <span className="text-[9px] font-bold text-sori-text-muted uppercase">
@@ -191,7 +193,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               "w-10 h-10 rounded-2xl flex items-center justify-center transition-all bg-sori-surface-accent-subtle text-sori-accent-primary hover:bg-sori-accent-primary hover:text-black border border-sori-border-accent",
                callStatus !== 'idle' && "bg-sori-surface-disabled text-sori-text-disabled border-sori-border-subtle grayscale cursor-not-allowed"
             )}
-            title="Initiate Call"
+            title={t("voice:initiateCall")}
           >
             <Phone className="h-[14px] w-[14px]" strokeWidth={2.5} />
           </button>
@@ -204,7 +206,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
               isVoiceChatOpen ? 'bg-sori-accent-primary text-black' : 'bg-sori-surface-elevated text-sori-text-muted'
             )}
-            title="Voice Chat"
+            title={t("voice:voiceChat")}
           >
             <MessageSquare className="h-4 w-4 fill-current" />
           </button>
