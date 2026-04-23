@@ -5,127 +5,123 @@
 <h1 align="center">Sori</h1>
 
 <p align="center">
-  <b>Self-hosted communication platform you actually control.</b><br/>
-  Chat • Voice • Calls • Media • Admin — in one system
+  <b>Самостоятельно платформа общения под полным вашим контролем.</b><br/>
+  Чат • Голос • Звонки • Медиа • Администрирование — в одной системе
 </p>
 
 <p align="center">
-  🇬🇧 English | <a href="./README.ru.md">🇷🇺 Русский</a>
+  🇷🇺 Русский | <a href="./README.en.md">🇬🇧 English</a>
 </p>
 
 ---
 
-## ✨ What is SORI
+## ✨ Что такое SORI
 
-SORI is a self-hosted communication platform that brings messaging, voice, calls, media, and administration into a single unified system.
+SORI — это self-hosted платформа общения, которая объединяет чаты, голосовые каналы, звонки, медиа и администрирование в единую систему.
 
-It is designed to replace fragmented tools with one controlled environment:
+Она создана, чтобы заменить разрозненные инструменты одной контролируемой средой:
 
-💬 real-time messaging  
-🔊 voice channels  
-📞 direct and group calls  
-📎 file and media sharing  
-🛠 built-in admin panel  
+💬 сообщения в реальном времени  
+🔊 голосовые каналы  
+📞 личные и групповые звонки  
+📎 обмен файлами и медиа  
+🛠 встроенная админ-панель  
 
-No external services. No vendor lock-in.  
-Just your infrastructure, fully under your control.
+Никаких внешних сервисов. Никакой зависимости от вендоров.  
+Только ваша инфраструктура и полный контроль.
 
 ---
 
-## 📸 Preview
+## 📸 Превью
 
 <p align="center">
   <img src="./docs/images/login.png" width="800"/>
   <br/>
-  <i>Login</i>
+  <i>Авторизация</i>
 </p>
 
 <p align="center">
   <img src="./docs/images/chat.png" width="800"/>
   <br/>
-  <i>Chat</i>
+  <i>Чат</i>
 </p>
 
 <p align="center">
   <img src="./docs/images/call.png" width="800"/>
   <br/>
-  <i>Calls</i>
+  <i>Звонки</i>
 </p>
 
 <p align="center">
   <img src="./docs/images/admin.png" width="800"/>
   <br/>
-  <i>Admin</i>
+  <i>Админ-панель</i>
 </p>
 
 ---
 
-## ⚡ Features
+## ⚡ Возможности
 
-- Real-time chat — fast messaging, reactions, live updates  
-- Voice & calls — powered by LiveKit for low-latency communication  
-- Media uploads — S3-compatible storage via MinIO  
-- Channels & direct messages — structured communication model  
-- Admin panel — manage users, channels, storage, and system state  
-- Self-hosted — full ownership of data and infrastructure  
-
----
-
-## 🧠 Architecture
-
-SORI is built as a modular, production-ready system where each component has a clear responsibility:
-
-## 🧠 Architecture
-
-| Layer | Stack | Role |
-|------|------|------|
-| **Frontend** | React 18 + Vite + Zustand | Interface & real-time UI |
-| **Backend** | Node.js + Hono | API & core logic |
-| **Database** | PostgreSQL + Drizzle | Data persistence |
-| **Realtime** | Socket.IO + Valkey | Events & presence |
-| **Voice** | LiveKit | Calls & voice channels |
-| **Storage** | MinIO | Media & files |
-| **Gateway** | Caddy | Routing & TLS |
-
-👉 Docker-based unified system.
+- Чат в реальном времени — быстрые сообщения, реакции, live-обновления  
+- Голос и звонки — на базе LiveKit с низкой задержкой  
+- Загрузка медиа — S3-совместимое хранилище (MinIO)  
+- Каналы и личные сообщения — структурированная коммуникация  
+- Админ-панель — управление пользователями, каналами и системой  
+- Self-hosted — полный контроль над данными и инфраструктурой  
 
 ---
 
-## 🏗 Deployment Model
+## 🧠 Архитектура
 
-SORI is designed around simplicity and predictability:
+| Слой | Технологии | Роль |
+|------|-----------|------|
+| **Frontend** | React 18 + Vite + Zustand | Интерфейс и real-time UI |
+| **Backend** | Node.js + Hono | API и бизнес-логика |
+| **Database** | PostgreSQL + Drizzle | Хранение данных |
+| **Realtime** | Socket.IO + Valkey | События и presence |
+| **Voice** | LiveKit | Звонки и голосовые каналы |
+| **Storage** | MinIO | Файлы и медиа |
+| **Gateway** | Caddy | Роутинг и TLS |
 
-- 🖥 Single-server deployment  
-- 🌐 One domain → full system access  
-- 🔐 Automatic HTTPS via Caddy  
-- ⚙️ Minimal infrastructure requirements  
-
-Everything runs as a unified stack, making it easy to deploy, maintain, and scale when needed.
-
----
-
-## 🧑‍💻 Who It’s For
-
-- Private communities  
-- Teams and small organizations  
-- Self-hosting enthusiasts  
-- Developers building internal communication systems  
+👉 Вся система работает в Docker-контейнерах.
 
 ---
 
-## 💡 Summary
+## 🏗 Модель развертывания
 
-SORI is not just a chat app.
+SORI спроектирован максимально просто:
 
-It’s a complete, self-hosted communication platform that gives you full control over your data, infrastructure, and user experience.
+- 🖥 Один сервер  
+- 🌐 Один домен → доступ ко всей системе  
+- 🔐 Автоматический HTTPS (Caddy)  
+- ⚙️ Минимальные требования к инфраструктуре  
+
+Все компоненты работают как единый стек — легко развернуть и поддерживать.
+
+---
+
+## 🧑‍💻 Для кого это
+
+- Приватные сообщества  
+- Команды и небольшие организации  
+- Любители self-host решений  
+- Разработчики внутренних коммуникационных систем  
+
+---
+
+## 💡 Итог
+
+SORI — это не просто чат.
+
+Это полноценная платформа общения, которую вы полностью контролируете — от данных до инфраструктуры.
 
 ____
 
-## 📄 License
+## 📄 Лицензия
 
-This project is licensed under the **GNU AGPL v3**.
+Проект распространяется под лицензией **GNU AGPL v3**.
 
-You are free to use, modify, and deploy this software.  
-If you run a modified version as a service, you must make the source code available.
+Вы можете использовать, изменять и разворачивать систему.  
+Если вы запускаете модифицированную версию как сервис — исходный код должен быть открыт.
 
-See the [LICENSE](LICENSE) file for details.
+Подробнее в файле [LICENSE](LICENSE).
