@@ -9,6 +9,10 @@
   Chat • Voice • Calls • Media • Admin — in one system
 </p>
 
+<p align="center">
+  🇬🇧 English | <a href="./README.ru.md">🇷🇺 Русский</a>
+</p>
+
 ---
 
 ## ✨ What is SORI
@@ -124,4 +128,4 @@ This project is licensed under the **GNU AGPL v3**.
 You are free to use, modify, and deploy this software.  
 If you run a modified version as a service, you must make the source code available.
 
-See the `[LICENSE](LICENSE)` file for details.
+See the [LICENSE](LICENSE) file for details.
