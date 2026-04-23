@@ -91,6 +91,17 @@ SORI is built as a modular, production-ready system where each component has a c
 
 ---
 
+## 🌍 Localization
+
+SORI supports multiple languages out of the box:
+
+- 🇬🇧 English  
+- 🇷🇺 Russian  
+
+The interface is fully localized and can be extended with additional languages.
+
+---
+
 ## 🏗 Deployment Model
 
 SORI is designed around simplicity and predictability:
