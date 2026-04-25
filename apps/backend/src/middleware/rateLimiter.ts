@@ -1,6 +1,7 @@
 import { Context, Next } from "hono";
 import { redis } from "../utils/redis.js";
 import { logger } from "../utils/logger.js";
+import { config } from "../config.js";
 
 interface RateLimitConfig {
   windowMs: number;
@@ -10,13 +11,31 @@ interface RateLimitConfig {
 
 const memoryStore = new Map<string, { count: number, resetTime: number }>();
 
+function normalizeIp(rawIp: string | null | undefined) {
+  if (!rawIp) {
+    return "unknown";
+  }
+
+  const first = rawIp.split(",").map((part) => part.trim()).find(Boolean) || "unknown";
+  return first.replace(/^\[|\]$/g, "").slice(0, 128);
+}
+
+function getClientIp(c: Context) {
+  return normalizeIp(
+    c.req.header("cf-connecting-ip")
+      || c.req.header("x-real-ip")
+      || c.req.header("x-forwarded-for")
+      || "unknown",
+  );
+}
+
 /**
  * Generic Rate Limiter Middleware
  * Uses Valkey/Redis by default, falls back to in-memory Map
  */
 export const rateLimiter = (options: RateLimitConfig) => {
   return async (c: Context, next: Next) => {
-    const ip = c.req.header("x-forwarded-for") || "unknown";
+    const ip = getClientIp(c);
     const key = `rl:${options.keyPrefix}:${ip}`;
     
     let current: number;
@@ -70,7 +89,7 @@ export const rateLimiter = (options: RateLimitConfig) => {
 
 export const authLimiter = rateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // Increased for dev testing
+  max: config.security.isProduction ? 30 : 300,
   keyPrefix: "auth"
 });
 

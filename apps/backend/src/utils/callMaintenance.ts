@@ -1,7 +1,7 @@
-import { and, eq, isNull, lt } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { calls } from "../db/schema.js";
-import { redisCalls, redisVoice } from "./redis.js";
+import { callParticipants, calls, directMessages } from "../db/schema.js";
+import { redisCalls, redisVoice, redisCallTelemetry } from "./redis.js";
 import { logger } from "./logger.js";
 
 const TELEMETRY_RETENTION_HOURS = 72;
@@ -13,7 +13,19 @@ export async function cleanupCallTelemetry() {
   const staleChannelCallThreshold = new Date(Date.now() - STALE_DIRECT_CALL_HOURS * 60 * 60 * 1000);
 
   try {
-    await db.delete(calls).where(lt(calls.startedAt, seventyTwoHoursAgo));
+    const expiredCalls = await db.select({ id: calls.id })
+      .from(calls)
+      .where(lt(calls.startedAt, seventyTwoHoursAgo))
+      .limit(500);
+    const expiredCallIds = expiredCalls.map((call) => call.id);
+
+    if (expiredCallIds.length > 0) {
+      await db.delete(callParticipants).where(inArray(callParticipants.callId, expiredCallIds));
+      await db.update(directMessages)
+        .set({ callId: null })
+        .where(inArray(directMessages.callId, expiredCallIds));
+      await db.delete(calls).where(inArray(calls.id, expiredCallIds));
+    }
   } catch (error) {
     logger.warn("[CallMaintenance] Failed to purge old call telemetry", { error: error as Error });
   }
@@ -41,6 +53,7 @@ export async function cleanupCallTelemetry() {
           endedAt: call.startedAt || new Date(),
         })
         .where(eq(calls.id, call.id));
+      await redisCallTelemetry.removeTelemetry(call.id);
     }
   } catch (error) {
     logger.warn("[CallMaintenance] Failed to close stale direct calls", { error: error as Error });
@@ -65,6 +78,7 @@ export async function cleanupCallTelemetry() {
             endedAt: call.startedAt || new Date(),
           })
           .where(eq(calls.id, call.id));
+        await redisCallTelemetry.removeTelemetry(call.id);
         continue;
       }
 
@@ -80,6 +94,7 @@ export async function cleanupCallTelemetry() {
           endedAt: call.startedAt || new Date(),
         })
         .where(eq(calls.id, call.id));
+      await redisCallTelemetry.removeTelemetry(call.id);
     }
   } catch (error) {
     logger.warn("[CallMaintenance] Failed to close stale channel calls", { error: error as Error });

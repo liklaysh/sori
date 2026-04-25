@@ -30,6 +30,7 @@ RUN npm ci --omit=dev -w @sori/backend
 
 # Copy built artifacts from builder
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY apps/backend/drizzle ./apps/backend/drizzle
 
 # Expose port
 EXPOSE 3000

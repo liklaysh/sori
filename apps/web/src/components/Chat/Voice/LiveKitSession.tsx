@@ -15,6 +15,7 @@ import { MessageList } from "../MessageList";
 import { ParticipantsVolumeManager } from "./ParticipantsVolumeManager";
 import { SoriVoiceRoom } from "./SoriVoiceRoom";
 import { StreamingTracker } from "./StreamingTracker";
+import { CallTelemetryReporter } from "./CallTelemetryReporter";
 
 interface LiveKitSessionProps {
   socket: any;
@@ -162,6 +163,11 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
         activeOutputId={props.activeOutputId}
       />
       <StreamingTracker socket={props.socket} channelId={props.connectedChannelId ?? undefined} />
+      <CallTelemetryReporter
+        socket={props.socket}
+        callId={props.callId}
+        channelId={props.connectedChannelId ?? props.activeChannelId}
+      />
       <ParticipantsVolumeManager volumes={{}} />
       {props.showFullVoiceUI ? (
         <div className="flex-1 flex flex-col min-w-0 h-full">

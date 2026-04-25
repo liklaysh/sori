@@ -12,6 +12,7 @@ import { markConversationRead } from "../utils/dmRead.js";
 import { extractAttachments, serializeMessage } from "../utils/messageContract.js";
 import { getLinkPreviews } from "../utils/linkPreview.js";
 import { sanitizeUser } from "../utils/publicUser.js";
+import { validateAttachmentsBelongToUser } from "../utils/attachmentRegistry.js";
 
 const app = new Hono();
 
@@ -233,6 +234,7 @@ app.post("/conversations/:id/messages", authMiddleware, safe(async (c) => {
     }
 
     const attachments = extractAttachments(parsed.data);
+    await validateAttachmentsBelongToUser(attachments, userId);
     const firstAttachment = attachments[0] || null;
     const content = parsed.data.content?.trim() || "";
     const type = attachments.length > 0 ? "file" : "text";

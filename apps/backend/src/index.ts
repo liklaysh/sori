@@ -22,6 +22,7 @@ declare module "hono" {
 import { ensureDefaultStructure } from "./bootstrap/defaultSetup.js";
 import { ensureBucket } from "./utils/s3.js";
 import { cleanupCallTelemetry } from "./utils/callMaintenance.js";
+import { runDbMigrations } from "./db/migrations.js";
 
 // Routes
 import authRoutes from "./routes/auth.js";
@@ -37,6 +38,7 @@ import utilsRoutes from "./routes/utils.js";
 import healthRoutes from "./routes/health.js";
 import clientRoutes from "./routes/client.js";
 import { authLimiter, uploadLimiter, generalLimiter } from "./middleware/rateLimiter.js";
+import { csrfMiddleware, originCheckMiddleware } from "./middleware/security.js";
 
 // Sockets
 import { initSocket } from "./socket.js";
@@ -197,6 +199,9 @@ app.use("*", cors({
   ],
 }));
 
+app.use("*", originCheckMiddleware);
+app.use("*", csrfMiddleware);
+
 // Health check
 app.route("/health", healthRoutes);
 app.get("/", (c) => c.json({ status: "online", service: "Sori API" }));
@@ -230,6 +235,14 @@ async function startServer() {
     logger.info("📡 [Lifecycle] DB connected");
   } catch (err) {
     logger.error("❌ [Lifecycle] DB connection failed", { error: err as Error });
+    if (config.security.isProduction) process.exit(1);
+  }
+
+  try {
+    await runDbMigrations();
+    logger.info("📡 [Lifecycle] Database migrations complete");
+  } catch (err) {
+    logger.error("❌ [Lifecycle] Database migrations failed", { error: err as Error });
     if (config.security.isProduction) process.exit(1);
   }
 

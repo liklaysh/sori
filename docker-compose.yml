@@ -53,7 +53,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "${POSTGRES_BIND_ADDRESS:-0.0.0.0}:${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -157,7 +157,7 @@ services:
   valkey:
     image: valkey/valkey:latest
     ports:
-      - "${VALKEY_BIND_ADDRESS:-0.0.0.0}:${VALKEY_PORT:-6379}:6379"
+      - "${VALKEY_BIND_ADDRESS:-127.0.0.1}:${VALKEY_PORT:-6379}:6379"
     volumes:
       - valkey_data:/data
     networks:
@@ -171,8 +171,8 @@ services:
   sori-media:
     image: minio/minio:latest
     ports:
-      - "${MINIO_BIND_ADDRESS:-0.0.0.0}:${MINIO_PORT:-9000}:9000"
-      - "${MINIO_BIND_ADDRESS:-0.0.0.0}:${MINIO_CONSOLE_PORT:-9001}:9001"
+      - "${MINIO_BIND_ADDRESS:-127.0.0.1}:${MINIO_PORT:-9000}:9000"
+      - "${MINIO_BIND_ADDRESS:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
@@ -213,7 +213,7 @@ services:
       context: .
       dockerfile: apps/backend/Dockerfile
       target: builder
-    command: npm run db:push -w @sori/backend
+    command: npm run db:migrate -w @sori/backend
     environment:
       - NODE_ENV=${NODE_ENV}
       - JWT_SECRET=${JWT_SECRET}

@@ -1,7 +1,6 @@
 import { Hono } from "hono";
-import { nanoid } from "nanoid";
 import { db } from "../db/index.js";
-import { calls, users } from "../db/schema.js";
+import { calls, channels, users } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import { authMiddleware } from "../middleware/auth.js";
 import { safe } from "../utils/safe.js";
@@ -24,21 +23,23 @@ router.post("/token", authMiddleware, safe(async (c) => {
     let startTime = Date.now();
 
     if (channelId) {
-      const activeCall = await db.query.calls.findFirst({
-        where: and(eq(calls.channelId, channelId), eq(calls.isActive, true)),
+      const channel = await db.query.channels.findFirst({
+        where: eq(channels.id, channelId),
+        columns: {
+          id: true,
+          type: true,
+        },
       });
 
-      if (!activeCall) {
-        const id = nanoid();
-        const now = new Date();
-        await db.insert(calls).values({
-          id,
-          channelId,
-          isActive: true,
-          startedAt: now,
-        });
-        startTime = now.getTime();
-      } else {
+      if (!channel || channel.type !== "voice") {
+        return c.json({ error: "Voice channel not found" }, 404);
+      }
+
+      const activeCall = await db.query.calls.findFirst({
+        where: and(eq(calls.type, "channel"), eq(calls.channelId, channelId), eq(calls.isActive, true)),
+      });
+
+      if (activeCall) {
         startTime = activeCall.startedAt?.getTime() || Date.now();
       }
     } else if (callId) {

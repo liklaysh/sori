@@ -6,7 +6,7 @@ import { config } from "../config.js";
 const connectionString = config.db.url;
 
 // For migrations and long-running queries
-const migrationClient = postgres(connectionString, { max: 1 });
+export const migrationClient = postgres(connectionString, { max: 1 });
 
 // For the application logic
 const queryClient = postgres(connectionString);

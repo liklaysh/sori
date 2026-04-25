@@ -19,6 +19,34 @@ const api = axios.create({
 
 let isRefreshing = false;
 let failedQueue: any[] = [];
+let csrfToken: string | null = null;
+
+const unsafeMethods = new Set(["post", "put", "patch", "delete"]);
+const csrfExemptEndpoints = ["/auth/login", "/auth/register", "/auth/csrf"];
+
+const isUnsafeRequest = (method?: string) => unsafeMethods.has((method || "get").toLowerCase());
+const isCsrfExempt = (url?: string) => csrfExemptEndpoints.some((endpoint) => url?.includes(endpoint));
+
+const rememberCsrfToken = (data: unknown) => {
+  if (data && typeof data === "object" && "csrfToken" in data && typeof (data as { csrfToken?: unknown }).csrfToken === "string") {
+    csrfToken = (data as { csrfToken: string }).csrfToken;
+  }
+};
+
+const ensureCsrfToken = async () => {
+  if (csrfToken) {
+    return csrfToken;
+  }
+
+  const response = await axios.get(`${API_URL}/auth/csrf`, {
+    withCredentials: true,
+    headers: {
+      "X-Request-ID": createRequestId(),
+    },
+  });
+  rememberCsrfToken(response.data);
+  return csrfToken;
+};
 
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((prom) => {
@@ -31,11 +59,18 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   config.headers = config.headers || {};
 
   if (!config.headers["X-Request-ID"] && !config.headers["x-request-id"]) {
     config.headers["X-Request-ID"] = createRequestId();
+  }
+
+  if (isUnsafeRequest(config.method) && !isCsrfExempt(config.url)) {
+    const token = await ensureCsrfToken();
+    if (token) {
+      config.headers["X-CSRF-Token"] = token;
+    }
   }
 
   return config;
@@ -43,7 +78,10 @@ api.interceptors.request.use((config) => {
 
 // Response Interceptor for Silent Refresh
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    rememberCsrfToken(response.data);
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
@@ -68,7 +106,8 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await api.get("/auth/refresh"); // Backend updates the cookie
+        const refreshResponse = await api.get("/auth/refresh"); // Backend updates the cookie
+        rememberCsrfToken(refreshResponse.data);
         processQueue(null);
         return api(originalRequest);
       } catch (refreshError) {

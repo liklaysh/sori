@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { sign, verify } from "hono/jwt";
+import { verify } from "hono/jwt";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import { db } from "../db/index.js";
@@ -10,6 +10,8 @@ import { normalizeS3Url } from "../utils/url.js";
 import { loginSchema } from "../validation/schemas.js";
 import { safe } from "../utils/safe.js";
 import { config } from "../config.js";
+import { resolveActiveSessionUser } from "../utils/authSession.js";
+import { createSessionToken } from "../utils/sessionToken.js";
 
 const auth = new Hono();
 
@@ -33,13 +35,12 @@ function getCookieOptions(c: any, maxAge: number) {
   const publicApiOrigin = getOriginHost(config.public.apiUrl);
   const publicWebOrigin = getOriginHost(config.public.webUrl);
   const isKnownOrigin = requestOrigin === publicApiOrigin || requestOrigin === publicWebOrigin;
-  const isCrossOrigin = isKnownOrigin && requestOrigin !== publicApiOrigin;
   const isSecureOrigin = (isKnownOrigin && requestOrigin.startsWith("https://")) || publicApiOrigin.startsWith("https://");
 
   return {
     path: "/",
     httpOnly: true,
-    sameSite: isCrossOrigin ? "None" as const : "Lax" as const,
+    sameSite: "Lax" as const,
     secure: isSecureOrigin || config.security.isProduction,
     maxAge,
   };
@@ -70,19 +71,12 @@ auth.post("/login", safe(async (c) => {
     ? Math.floor(Date.now() / 1000) + (12 * 60 * 60) 
     : Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
 
-  const payload = { 
-    id: user.id, 
-    username: user.username,
-    role: user.role,
-    exp: expTime 
-  };
-
-  const token = await sign(payload, JWT_SECRET);
-
   const maxAge = user.role === 'adminpanel' ? 12 * 60 * 60 : 7 * 24 * 60 * 60;
+  const { token, csrfToken } = await createSessionToken(user, expTime);
   setCookie(c, "sori_auth", token, getCookieOptions(c, maxAge));
 
   return c.json({ 
+    csrfToken,
     user: { 
       id: user.id, 
       username: user.username, 
@@ -110,13 +104,30 @@ auth.get("/me", safe(async (c) => {
     return c.json({ user: null });
   }
 
-  const user = await db.query.users.findFirst({ where: eq(users.id, payload.id) });
+  const sessionUser = await resolveActiveSessionUser(payload);
+  if (!sessionUser) {
+    deleteCookie(c, "sori_auth", getCookieOptions(c, 0));
+    return c.json({ user: null });
+  }
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, sessionUser.id) });
   if (!user) {
     deleteCookie(c, "sori_auth", getCookieOptions(c, 0));
     return c.json({ user: null });
   }
+
+  let csrfToken = sessionUser.csrfToken;
+  if (!csrfToken) {
+    const expTime = typeof payload.exp === "number"
+      ? payload.exp
+      : Math.floor(Date.now() / 1000) + (user.role === "adminpanel" ? 12 * 60 * 60 : 7 * 24 * 60 * 60);
+    const rotated = await createSessionToken(user, expTime);
+    csrfToken = rotated.csrfToken;
+    setCookie(c, "sori_auth", rotated.token, getCookieOptions(c, Math.max(expTime - Math.floor(Date.now() / 1000), 0)));
+  }
   
   return c.json({ 
+    csrfToken,
     user: { 
       id: user.id, 
       username: user.username, 
@@ -135,6 +146,15 @@ auth.post("/logout", safe(async (c) => {
   return c.json({ success: true });
 }));
 
+auth.get("/csrf", authMiddleware, safe(async (c) => {
+  const userPayload = (c.get("jwtPayload") || {}) as any;
+  if (!userPayload.csrfToken) {
+    return c.json({ error: "CSRF token is missing from session" }, 401);
+  }
+
+  return c.json({ csrfToken: userPayload.csrfToken });
+}));
+
 auth.get("/refresh", authMiddleware, safe(async (c) => {
   const userPayload = (c.get("jwtPayload") || {}) as any;
   
@@ -143,13 +163,12 @@ auth.get("/refresh", authMiddleware, safe(async (c) => {
   }
 
   const expTime = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
-  const payload = { ...userPayload, exp: expTime };
-  const token = await sign(payload, JWT_SECRET);
+  const { token, csrfToken } = await createSessionToken(userPayload, expTime, userPayload.csrfToken);
   
   const maxAge = 7 * 24 * 60 * 60;
   setCookie(c, "sori_auth", token, getCookieOptions(c, maxAge));
 
-  return c.json({ success: true });
+  return c.json({ success: true, csrfToken });
 }));
 
 export default auth;

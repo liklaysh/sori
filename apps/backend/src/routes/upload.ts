@@ -10,6 +10,7 @@ import { config } from "../config.js";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client, BUCKET_NAME } from "../utils/s3.js";
 import { logger } from "../utils/logger.js";
+import { registerUploadedAttachment } from "../utils/attachmentRegistry.js";
 
 const app = new Hono();
 
@@ -142,6 +143,13 @@ app.post("/", authMiddleware, safe(async (c) => {
   
   // 1. Upload
   const fileUrl = await uploadFile(key, fileStream, contentType, file.size, file.name);
+  await registerUploadedAttachment({
+    key,
+    ownerId: user.id,
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: contentType,
+  });
 
   // 2. Immediate Verification (HeadObject)
   try {

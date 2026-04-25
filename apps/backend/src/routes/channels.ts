@@ -10,6 +10,7 @@ import { getGlobalIo } from "../globals.js";
 import { createChannelMessageSchema } from "../validation/schemas.js";
 import { extractAttachments, serializeMessage } from "../utils/messageContract.js";
 import { getLinkPreviews } from "../utils/linkPreview.js";
+import { validateAttachmentsBelongToUser } from "../utils/attachmentRegistry.js";
 
 const router = new Hono();
 
@@ -84,6 +85,7 @@ router.post("/:channelId/messages", safe(async (c) => {
     }
 
     const attachments = extractAttachments(parsed.data);
+    await validateAttachmentsBelongToUser(attachments, user.id);
     const firstAttachment = attachments[0] || null;
     const parentId = parsed.data.parentId || null;
     const content = parsed.data.content?.trim() || "";

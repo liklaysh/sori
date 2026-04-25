@@ -44,6 +44,7 @@ interface Session {
   client: ReturnType<typeof axios.create>;
   cookie: string;
   token: string;
+  csrfToken: string;
   user: {
     id: string;
     username: string;
@@ -64,8 +65,8 @@ interface ChannelInfo {
   type: "text" | "voice";
 }
 
-function createHttpClient(cookie?: string) {
-  return axios.create({
+function createHttpClient(cookie?: string, csrfToken?: string) {
+  const client = axios.create({
     baseURL: BACKEND_URL,
     httpsAgent,
     validateStatus: () => true,
@@ -74,6 +75,18 @@ function createHttpClient(cookie?: string) {
       ...(cookie ? { Cookie: cookie } : {}),
     },
   } as any);
+
+  client.interceptors.request.use((config) => {
+    const method = (config.method || "get").toLowerCase();
+    if (csrfToken && ["post", "put", "patch", "delete"].includes(method) && !config.url?.includes("/auth/login")) {
+      config.headers = config.headers || {};
+      config.headers["X-CSRF-Token"] = csrfToken;
+    }
+
+    return config;
+  });
+
+  return client;
 }
 
 function extractCookie(setCookieHeader: string[] | undefined) {
@@ -192,10 +205,11 @@ async function login(loginName: string, password: string): Promise<Session> {
   expect(response.status).toBe(200);
   const loginData = response.data as any;
   expect(loginData?.user?.id).toBeTruthy();
+  expect(typeof loginData?.csrfToken).toBe("string");
 
   const cookie = extractCookie(response.headers["set-cookie"] as string[] | undefined);
   const token = extractToken(cookie);
-  const authenticatedClient = createHttpClient(cookie);
+  const authenticatedClient = createHttpClient(cookie, loginData.csrfToken);
 
   const meResponse = await authenticatedClient.get("/auth/me");
   expect(meResponse.status).toBe(200);
@@ -205,6 +219,7 @@ async function login(loginName: string, password: string): Promise<Session> {
     client: authenticatedClient,
     cookie,
     token,
+    csrfToken: loginData.csrfToken,
     user: meData.user,
   };
 }

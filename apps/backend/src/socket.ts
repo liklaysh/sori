@@ -16,6 +16,7 @@ import { handleVoice } from "./socket/handlers/voice.js";
 import { handleMessages } from "./socket/handlers/messages.js";
 import { handleCalls } from "./socket/handlers/calls.js";
 import { rateLimiter } from "./middleware/rateLimiter.js";
+import { resolveActiveSessionUser } from "./utils/authSession.js";
 
 import { Socket, UserProfile } from "./types/socket.js";
 
@@ -82,7 +83,12 @@ export function initSocket(server: any) {
     
     try {
       const payload = await verify(token, config.jwt.secret, "HS256");
-      (socket as Socket).user = payload as unknown as UserProfile;
+      const sessionUser = await resolveActiveSessionUser(payload);
+      if (!sessionUser) {
+        return next(new Error("Authentication error"));
+      }
+
+      (socket as Socket).user = sessionUser as UserProfile;
       
       // Request Tracking for Sockets
       const requestId = socket.handshake.auth.requestId || nanoid();
@@ -218,7 +224,7 @@ export function initSocket(server: any) {
     socket.emit("socket_ready", { userId: user.id });
     
     // Leak Detection & Listener Audit
-    const monitoredEvents = ["join_channel", "typing", "get_voice_state", "disconnect"];
+    const monitoredEvents = ["join_channel", "typing", "get_voice_state"];
     monitoredEvents.forEach(event => {
       const count = socket.listenerCount(event);
       if (count > 1) {

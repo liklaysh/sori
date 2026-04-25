@@ -5,6 +5,8 @@ import { sql, ne } from "drizzle-orm";
 import { logAudit } from "../../utils/audit.js";
 import { s3Client, BUCKET_NAME } from "../../utils/s3.js";
 import { HeadBucketCommand } from "@aws-sdk/client-s3";
+import { redisCallTelemetry } from "../../utils/redis.js";
+import { sanitizeUser } from "../../utils/publicUser.js";
 
 const system = new Hono();
 
@@ -57,17 +59,72 @@ system.get("/calls", async (c) => {
     limit: 50,
     with: {
       channel: true,
-      caller: true,
-      callee: true,
+      caller: {
+        columns: {
+          id: true,
+          username: true,
+          avatarUrl: true,
+          status: true,
+          role: true,
+        },
+      },
+      callee: {
+        columns: {
+          id: true,
+          username: true,
+          avatarUrl: true,
+          status: true,
+          role: true,
+        },
+      },
       participants: {
         with: {
-          user: true
+          user: {
+            columns: {
+              id: true,
+              username: true,
+              avatarUrl: true,
+              status: true,
+              role: true,
+            },
+          }
         }
       }
     }
   });
 
-  return c.json(callLogs);
+  const liveTelemetry = await redisCallTelemetry.getAllTelemetry();
+
+  return c.json(callLogs.map((call) => {
+    const runtime = liveTelemetry[call.id];
+    const sanitizedCall = {
+      ...call,
+      caller: sanitizeUser(call.caller),
+      callee: sanitizeUser(call.callee),
+      participants: call.participants.map((participant) => ({
+        ...participant,
+        user: sanitizeUser(participant.user),
+      })),
+    };
+
+    if (!runtime || !call.isActive) {
+      return sanitizedCall;
+    }
+
+    return {
+      ...sanitizedCall,
+      mos: runtime.qualityScore !== null ? runtime.qualityScore.toFixed(1) : call.mos,
+      avgBitrate: runtime.avgBitrate ?? call.avgBitrate,
+      packetLoss: runtime.avgPacketLoss !== null ? runtime.avgPacketLoss.toFixed(1) : call.packetLoss,
+      avgJitterMs: runtime.avgJitterMs ?? call.avgJitterMs,
+      avgRttMs: runtime.avgRttMs ?? call.avgRttMs,
+      reconnectCount: runtime.reconnectCount ?? call.reconnectCount,
+      telemetrySamples: runtime.sampleCount ?? call.telemetrySamples,
+      connectionQuality: runtime.connectionQuality !== "unknown" ? runtime.connectionQuality : call.connectionQuality,
+      participantCount: runtime.participantCount || call.participants.length || undefined,
+      lastTelemetryAt: runtime.updatedAt,
+    };
+  }));
 });
 
 export default system;

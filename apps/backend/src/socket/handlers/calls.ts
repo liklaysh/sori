@@ -2,11 +2,16 @@ import { Server } from "socket.io";
 import { Socket } from "../../types/socket.js";
 import { nanoid } from "nanoid";
 import { db } from "../../db/index.js";
-import { calls, directMessages, dmConversations, callLogs, users } from "../../db/schema.js";
+import { calls, dmConversations, callLogs, users } from "../../db/schema.js";
 import { eq, or, and } from "drizzle-orm";
-import { redisPresence, redisCalls } from "../../utils/redis.js";
+import { redisPresence, redisCalls, redisCallTelemetry, redisVoice } from "../../utils/redis.js";
 import { logger } from "../../utils/logger.js";
 import { normalizeS3Url } from "../../utils/url.js";
+import { telemetryAggregateToCallUpdate, type CallTelemetrySample } from "../../utils/callTelemetry.js";
+
+function isUniqueViolation(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "23505";
+}
 
 export function handleCalls(io: Server, socket: Socket, user: any) {
   const getCallRuntime = async (callId: string) => {
@@ -37,7 +42,10 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
       return;
     }
 
-    await endCall(callId, status, metrics);
+    const didClose = await endCall(callId, status, metrics);
+    if (!didClose) {
+      return;
+    }
 
     if (status === "missed") {
       io.to(`user:${callData.calleeId}`).emit("call_missed", { callId });
@@ -47,6 +55,32 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
 
     io.to(`user:${callData.callerId}`).emit("call_ended", { callId });
     io.to(`user:${callData.calleeId}`).emit("call_ended", { callId });
+  };
+
+  const resolveCallIdFromTelemetry = async (data: { callId?: string; channelId?: string }) => {
+    if (data.callId) {
+      const runtimeCall = await getCallRuntime(data.callId);
+      if (!runtimeCall || (runtimeCall.callerId !== user.id && runtimeCall.calleeId !== user.id)) {
+        return null;
+      }
+
+      return data.callId;
+    }
+
+    if (!data.channelId) {
+      return null;
+    }
+
+    const isOccupant = await redisVoice.isUserInChannel(data.channelId, user.id);
+    if (!isOccupant) {
+      return null;
+    }
+
+    const activeChannelCall = await db.query.calls.findFirst({
+      where: and(eq(calls.type, "channel"), eq(calls.channelId, data.channelId), eq(calls.isActive, true)),
+    });
+
+    return activeChannelCall?.id || null;
   };
   
   // Initiate a call
@@ -96,14 +130,22 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
       const callId = nanoid();
       
       // Create call record
-      await db.insert(calls).values({
-        id: callId,
-        type: "direct",
-        status: "ringing",
-        callerId: user.id,
-        calleeId: targetUserId,
-        isActive: true,
-      });
+      try {
+        await db.insert(calls).values({
+          id: callId,
+          type: "direct",
+          status: "ringing",
+          callerId: user.id,
+          calleeId: targetUserId,
+          isActive: true,
+        });
+      } catch (err) {
+        if (isUniqueViolation(err)) {
+          return socket.emit("direct_call_error", { message: "Call already in progress" });
+        }
+
+        throw err;
+      }
 
       // Store in Redis
       await redisCalls.setCall(callId, {
@@ -155,10 +197,15 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
         return socket.emit("direct_call_error", { message: "Call is no longer ringing" });
       }
 
-      // Update DB
-      await db.update(calls)
+      const [acceptedCall] = await db.update(calls)
         .set({ status: "active", startedAt: new Date() })
-        .where(eq(calls.id, callId));
+        .where(and(eq(calls.id, callId), eq(calls.isActive, true), eq(calls.status, "ringing")))
+        .returning();
+
+      if (!acceptedCall) {
+        await redisCalls.removeCall(callId);
+        return socket.emit("direct_call_error", { message: "Call is no longer ringing" });
+      }
 
       callData.status = "active";
       await redisCalls.setCall(callId, callData);
@@ -182,8 +229,10 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
       if (!callData) return;
       if (callData.callerId !== user.id && callData.calleeId !== user.id) return;
 
-      await endCall(callId, "rejected");
-      io.to(`user:${callData.callerId}`).emit("call_rejected", { callId });
+      const didClose = await endCall(callId, "rejected");
+      if (didClose) {
+        io.to(`user:${callData.callerId}`).emit("call_rejected", { callId });
+      }
     } catch (err) {
       logger.error("[Calls] Reject Error:", { error: err });
     }
@@ -201,6 +250,22 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
       logger.error("[Calls] End Error:", { error: err });
     }
   });
+
+  socket.on(
+    "call_telemetry_update",
+    async (data: { callId?: string; channelId?: string } & CallTelemetrySample) => {
+      try {
+        const resolvedCallId = await resolveCallIdFromTelemetry(data);
+        if (!resolvedCallId) {
+          return;
+        }
+
+        await redisCallTelemetry.mergeTelemetry(resolvedCallId, data);
+      } catch (err) {
+        logger.warn("[Calls] Telemetry update failed", { error: err as Error, userId: user.id });
+      }
+    },
+  );
 
   socket.on("disconnect", () => {
     setTimeout(async () => {
@@ -228,7 +293,7 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
     }, 15000);
   });
 
-  async function endCall(callId: string, status: string, metrics?: any) {
+  async function endCall(callId: string, status: string, metrics?: any): Promise<boolean> {
     try {
       logger.debug(`[Calls] >>> Starting endCall for ID: ${callId}, status: ${status}`);
       const endedAt = new Date();
@@ -238,40 +303,54 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
 
       if (!existingCall) {
         await redisCalls.removeCall(callId);
-        return;
+        await redisCallTelemetry.removeTelemetry(callId);
+        return false;
       }
 
       if (existingCall.type !== "direct") {
         await redisCalls.removeCall(callId);
-        return;
+        await redisCallTelemetry.removeTelemetry(callId);
+        return false;
       }
 
       if (!existingCall.isActive && existingCall.endedAt) {
         await redisCalls.removeCall(callId);
-        return;
+        await redisCallTelemetry.removeTelemetry(callId);
+        return false;
       }
 
+      const runtimeTelemetry = await redisCallTelemetry.getTelemetry(callId);
+      const persistedTelemetry = telemetryAggregateToCallUpdate(runtimeTelemetry);
+
       // Update DB record for the call itself
-      await db.update(calls)
+      const [callData] = await db.update(calls)
         .set({ 
           status, 
           isActive: false, 
           endedAt,
-          mos: metrics?.mos?.toString(),
-          avgBitrate: metrics?.bitrate,
-          packetLoss: metrics?.packetLoss?.toString()
+          mos: persistedTelemetry.mos ?? null,
+          avgBitrate: persistedTelemetry.avgBitrate ?? null,
+          packetLoss: persistedTelemetry.packetLoss ?? null,
+          avgJitterMs: persistedTelemetry.avgJitterMs ?? null,
+          avgRttMs: persistedTelemetry.avgRttMs ?? null,
+          reconnectCount: persistedTelemetry.reconnectCount ?? 0,
+          telemetrySamples: persistedTelemetry.telemetrySamples ?? 0,
+          connectionQuality: persistedTelemetry.connectionQuality ?? null,
         })
-        .where(eq(calls.id, callId));
+        .where(and(eq(calls.id, callId), eq(calls.isActive, true)))
+        .returning();
 
-      // Fetch call data for logging
-      const callData = await db.query.calls.findFirst({
-        where: eq(calls.id, callId)
-      });
+      if (!callData) {
+        await redisCalls.removeCall(callId);
+        await redisCallTelemetry.removeTelemetry(callId);
+        return false;
+      }
       
       if (!callData || callData.type !== "direct") {
         logger.warn("[Calls] callData not found or not direct. Removing from Redis.", { callId });
         await redisCalls.removeCall(callId);
-        return;
+        await redisCallTelemetry.removeTelemetry(callId);
+        return false;
       }
 
       const [u1, u2] = [callData.callerId!, callData.calleeId!].sort();
@@ -288,9 +367,9 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
           id: convId,
           user1Id: u1,
           user2Id: u2,
-        });
+        }).onConflictDoNothing();
         conversation = await db.query.dmConversations.findFirst({
-          where: eq(dmConversations.id, convId)
+          where: and(eq(dmConversations.user1Id, u1), eq(dmConversations.user2Id, u2))
         });
       }
 
@@ -333,9 +412,12 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
       }
 
       await redisCalls.removeCall(callId);
+      await redisCallTelemetry.removeTelemetry(callId);
       logger.debug(`[Calls] <<< Call ${callId} finished processing.`);
+      return true;
     } catch (err) {
       logger.error("[Calls] endCall Internal Error:", { error: err });
+      return false;
     }
   }
 }

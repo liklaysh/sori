@@ -1,10 +1,14 @@
 import { Redis } from "ioredis";
+import { randomUUID } from "node:crypto";
 import { config } from "../config.js";
 import { logger } from "./logger.js";
+import { mergeTelemetryAggregate, type CallTelemetryAggregate, type CallTelemetrySample } from "./callTelemetry.js";
 
 const REDIS_URL = config.redis.url;
 const DIRECT_CALL_PREFIX = "active_direct_call:";
 const DIRECT_CALL_TTL_SECONDS = 3600;
+const CALL_TELEMETRY_PREFIX = "call_telemetry:";
+const CALL_TELEMETRY_TTL_SECONDS = 4 * 60 * 60;
 
 export const redis = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
@@ -20,6 +24,43 @@ export const subClient = new Redis(REDIS_URL, {
 
 redis.on("error", (err: any) => logger.error("[Redis] Error:", { error: err }));
 redis.on("connect", () => logger.info("[Redis] Connected to Valkey/Redis"));
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function withRedisLock<T>(
+  lockKey: string,
+  ttlMs: number,
+  operation: () => Promise<T>,
+  options: { retries?: number; retryDelayMs?: number } = {},
+): Promise<T> {
+  const token = randomUUID();
+  const retries = options.retries ?? 5;
+  const retryDelayMs = options.retryDelayMs ?? 25;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const acquired = await redis.set(lockKey, token, "PX", ttlMs, "NX");
+    if (acquired === "OK") {
+      try {
+        return await operation();
+      } finally {
+        await redis.eval(
+          "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+          1,
+          lockKey,
+          token,
+        );
+      }
+    }
+
+    if (attempt < retries) {
+      await sleep(retryDelayMs);
+    }
+  }
+
+  throw new Error(`Failed to acquire Redis lock: ${lockKey}`);
+}
 
 /**
  * Helper to manage online users in Redis
@@ -191,6 +232,24 @@ export const redisVoice = {
   },
   removeChannel: async (channelId: string) => {
     await redis.hdel("voice_occupants", channelId);
+  },
+  updateOccupants: async <T>(channelId: string, updater: (occupants: any[]) => Promise<{ occupants: any[]; result: T }>) => {
+    return withRedisLock(`lock:voice:${channelId}`, 1500, async () => {
+      const occupants = await redisVoice.getOccupants(channelId);
+      const { occupants: nextOccupants, result } = await updater(occupants);
+
+      if (nextOccupants.length === 0) {
+        await redisVoice.removeChannel(channelId);
+      } else {
+        await redisVoice.setOccupants(channelId, nextOccupants);
+      }
+
+      return result;
+    });
+  },
+  isUserInChannel: async (channelId: string, userId: string) => {
+    const occupants = await redisVoice.getOccupants(channelId);
+    return occupants.some((occupant: { userId?: string }) => occupant.userId === userId);
   }
 };
 
@@ -238,4 +297,55 @@ export const redisCalls = {
       await redis.expire(key, DIRECT_CALL_TTL_SECONDS);
     }
   }
+};
+
+export const redisCallTelemetry = {
+  setTelemetry: async (callId: string, details: CallTelemetryAggregate) => {
+    await redis.set(`${CALL_TELEMETRY_PREFIX}${callId}`, JSON.stringify(details), "EX", CALL_TELEMETRY_TTL_SECONDS);
+  },
+  getTelemetry: async (callId: string): Promise<CallTelemetryAggregate | null> => {
+    const data = await redis.get(`${CALL_TELEMETRY_PREFIX}${callId}`);
+    return data ? (JSON.parse(data) as CallTelemetryAggregate) : null;
+  },
+  getAllTelemetry: async (): Promise<Record<string, CallTelemetryAggregate>> => {
+    const result: Record<string, CallTelemetryAggregate> = {};
+    let cursor = "0";
+
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, "MATCH", `${CALL_TELEMETRY_PREFIX}*`, "COUNT", 100);
+      cursor = nextCursor;
+
+      if (keys.length === 0) {
+        continue;
+      }
+
+      const values = await redis.mget(...keys);
+      keys.forEach((key, index) => {
+        const value = values[index];
+        if (typeof value === "string") {
+          result[key.replace(CALL_TELEMETRY_PREFIX, "")] = JSON.parse(value) as CallTelemetryAggregate;
+        }
+      });
+    } while (cursor !== "0");
+
+    return result;
+  },
+  removeTelemetry: async (callId: string) => {
+    await redis.del(`${CALL_TELEMETRY_PREFIX}${callId}`);
+  },
+  mergeTelemetry: async (callId: string, sample: CallTelemetrySample) => {
+    return withRedisLock(`lock:call_telemetry:${callId}`, 1500, async () => {
+      const existingAggregate = await redisCallTelemetry.getTelemetry(callId);
+      const nextAggregate = mergeTelemetryAggregate(existingAggregate, sample);
+      await redisCallTelemetry.setTelemetry(callId, nextAggregate);
+      return nextAggregate;
+    }, { retries: 3, retryDelayMs: 20 });
+  },
+  refreshTelemetry: async (callId: string) => {
+    const key = `${CALL_TELEMETRY_PREFIX}${callId}`;
+    const exists = await redis.exists(key);
+    if (exists) {
+      await redis.expire(key, CALL_TELEMETRY_TTL_SECONDS);
+    }
+  },
 };

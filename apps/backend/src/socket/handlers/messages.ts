@@ -7,6 +7,7 @@ import { sendMessageSchema, sendDirectMessageSchema } from "../../validation/sch
 import { getLinkPreviews } from "../../utils/linkPreview.js";
 import { logger } from "../../utils/logger.js";
 import { extractAttachments, serializeMessage } from "../../utils/messageContract.js";
+import { validateAttachmentsBelongToUser } from "../../utils/attachmentRegistry.js";
 
 export function handleMessages(io: Server, socket: Socket, user: { id: string, username: string }, isAdminPanel: boolean) {
 
@@ -21,6 +22,7 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       const content = result.data.content?.trim() || "";
       const parentId = result.data.parentId || null;
       const attachments = extractAttachments(result.data);
+      await validateAttachmentsBelongToUser(attachments, user.id);
       const firstAttachment = attachments[0] || null;
       const requestId = result.data.requestId || socket.data.requestId;
 
@@ -138,6 +140,7 @@ export function handleMessages(io: Server, socket: Socket, user: { id: string, u
       const { conversationId } = result.data;
       const content = result.data.content?.trim() || "";
       const attachments = extractAttachments(result.data);
+      await validateAttachmentsBelongToUser(attachments, user.id);
       const firstAttachment = attachments[0] || null;
       const requestId = result.data.requestId || socket.data.requestId;
 

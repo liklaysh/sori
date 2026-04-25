@@ -9,7 +9,6 @@ import {
   AlertCircle,
   ArrowRight
 } from "lucide-react";
-import { API_URL } from "../../../config";
 import { cn } from "@sori/ui";
 import { getAvatarUrl } from "../../../utils/avatar";
 
@@ -27,6 +26,13 @@ interface CallLog {
   mos: string | null;
   avgBitrate: number | null;
   packetLoss: string | null;
+  avgJitterMs?: number | null;
+  avgRttMs?: number | null;
+  reconnectCount?: number | null;
+  telemetrySamples?: number | null;
+  connectionQuality?: "excellent" | "good" | "poor" | "lost" | "unknown" | null;
+  participantCount?: number | null;
+  lastTelemetryAt?: number | null;
   startedAt: string;
   endedAt: string | null;
   channel?: { name: string };
@@ -114,6 +120,47 @@ export default function TelemetryTab() {
     return "text-sori-accent-danger";
   };
 
+  const getQualityLabel = (quality?: CallLog["connectionQuality"]) => {
+    switch (quality) {
+      case "excellent":
+        return t("admin:telemetry.qualities.excellent");
+      case "good":
+        return t("admin:telemetry.qualities.good");
+      case "poor":
+        return t("admin:telemetry.qualities.poor");
+      case "lost":
+        return t("admin:telemetry.qualities.lost");
+      case "unknown":
+      default:
+        return t("admin:telemetry.qualities.unknown");
+    }
+  };
+
+  const formatQualityValue = (call: CallLog) => {
+    if (call.mos) {
+      return call.connectionQuality ? `${call.mos} • ${getQualityLabel(call.connectionQuality)}` : call.mos;
+    }
+
+    if (call.connectionQuality && call.connectionQuality !== "unknown") {
+      return getQualityLabel(call.connectionQuality);
+    }
+
+    return call.status === "active" ? t("admin:telemetry.calculating") : t("admin:telemetry.notAvailable");
+  };
+
+  const formatPacketLoss = (value: string | null) => {
+    if (!value) {
+      return "—";
+    }
+
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      return value;
+    }
+
+    return `${parsed.toFixed(1)}%`;
+  };
+
   if (loading && calls.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-20 text-sori-text-muted">
@@ -161,7 +208,7 @@ export default function TelemetryTab() {
         <div className="grid gap-4">
           {calls.map((call) => (
             <div key={call.id} className="group relative bg-sori-surface-main border border-sori-border-subtle rounded-2xl p-5 hover:bg-sori-surface-hover transition-all overflow-hidden font-sans">
-              {/* MOS Indicator Line */}
+              {/* Quality Indicator Line */}
               <div className={cn(
                 "absolute left-0 top-0 bottom-0 w-1",
                 call.status === 'active' ? "bg-sori-accent-danger" : 
@@ -210,21 +257,32 @@ export default function TelemetryTab() {
                         )}
                       </div>
                     )}
+                    {typeof call.participantCount === "number" && call.participantCount > call.participants.length && (
+                      <span className="text-[10px] font-bold text-sori-text-dim">
+                        {call.participantCount}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 {/* Quality Metrics */}
-                <div className="grid grid-cols-3 gap-6 lg:border-l lg:border-sori-border-subtle lg:pl-6 min-w-[280px]">
+                <div className="grid grid-cols-4 gap-6 lg:border-l lg:border-sori-border-subtle lg:pl-6 min-w-[360px]">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">{t("admin:telemetry.mosQuality")}</p>
                     <p className={cn("text-sm font-black italic", getMOSColor(call.mos))}>
-                      {call.mos || (call.status === 'active' ? t("admin:telemetry.calculating") : "N/A")}
+                      {formatQualityValue(call)}
                     </p>
                   </div>
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">{t("admin:telemetry.bitrate")}</p>
                     <p className="text-sm font-bold text-sori-text-strong">
                       {call.avgBitrate ? `${(call.avgBitrate / 1000).toFixed(1)} kbps` : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">{t("admin:telemetry.packetLoss")}</p>
+                    <p className="text-sm font-bold text-sori-text-strong">
+                      {formatPacketLoss(call.packetLoss)}
                     </p>
                   </div>
                   <div className="flex flex-col">
