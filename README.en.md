@@ -140,3 +140,9 @@ You are free to use, modify, and deploy this software.
 If you run a modified version as a service, you must make the source code available.
 
 See the [LICENSE](LICENSE) file for details.
+
+____
+
+## 🤝 Contributors
+
+- [@EchoRiteMusic](https://github.com/EchoRiteMusic) — Sound Design (notifications, call events, UI feedback)
