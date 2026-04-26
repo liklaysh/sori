@@ -141,14 +141,4 @@ ____
 
 ## 🤝 Вклад в проект
 
-<p>
-
-  <a href="[EchoRiteMusic](https://github.com/EchoRiteMusic)">
-
-    <img src="(https://avatars.githubusercontent.com/u/98710164?v=4)" width="60" style="border-radius:50%" />
-
-  </a>
-
-</p>
-
-— Sound Design (voice join/leave, notifications, call events)
+- [@EchoRiteMusic](https://github.com/EchoRiteMusic) — Sound Design (notifications, call events, UI feedback)
