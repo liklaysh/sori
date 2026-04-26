@@ -196,6 +196,8 @@ app.use("*", cors({
     "X-Requested-With",
     "X-Request-ID",
     "x-request-id",
+    "X-CSRF-Token",
+    "x-csrf-token",
   ],
 }));
 

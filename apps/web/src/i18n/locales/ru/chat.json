@@ -67,7 +67,7 @@
   "messages": {
     "missedCall": "Пропущенный звонок",
     "callEnded": "Звонок завершён",
-    "declinedCall": "Звонок отклонён",
+    "declinedCall": "ЗВОНОК ОТКЛОНЕН",
     "duration": "Длительность: {{duration}}",
     "fullscreenPreview": "Полноэкранный просмотр",
     "you": "ВЫ",
@@ -88,8 +88,9 @@
   "systemCallToast": {
     "missedCall_one": "Пропущенный звонок",
     "missedCall_other": "{{count}} пропущенных звонков",
-    "declinedCall_one": "Звонок отклонён",
-    "declinedCall_other": "{{count}} отклонённых звонков",
+    "declinedCall": "ЗВОНОК ОТКЛОНЕН",
+    "declinedCall_one": "ЗВОНОК ОТКЛОНЕН",
+    "declinedCall_other": "{{count}} ЗВОНКОВ ОТКЛОНЕНО",
     "callAccepted": "Звонок принят",
     "callEnded": "Звонок завершён",
     "callEndedWithDuration": "Звонок завершён • {{duration}}",

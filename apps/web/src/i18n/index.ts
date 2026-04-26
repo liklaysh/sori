@@ -120,6 +120,14 @@ if (typeof document !== "undefined") {
 
 export async function changeAppLanguage(language: AppLanguage) {
   const normalizedLanguage = normalizeLanguage(language);
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, normalizedLanguage);
+    } catch {
+      // Ignore localStorage errors in restricted environments.
+    }
+  }
+
   await i18n.changeLanguage(normalizedLanguage);
 }
 

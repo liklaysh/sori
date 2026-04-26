@@ -195,13 +195,13 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                 </div>
               </div>
             ) : msg.type === 'call_rejected' ? (
-              <div className="flex items-center gap-3 py-3 px-5 bg-sori-surface-panel border border-sori-border-subtle rounded-2xl animate-in fade-in zoom-in-95 duration-500 my-1">
-                <div className="w-10 h-10 rounded-xl bg-sori-surface-main flex items-center justify-center text-sori-text-dim">
+              <div className="flex items-center gap-3 py-3 px-5 bg-sori-accent-warning border border-sori-accent-warning rounded-2xl animate-in fade-in zoom-in-95 duration-500 my-1">
+                <div className="w-10 h-10 rounded-xl bg-black/10 flex items-center justify-center text-black">
                   <PhoneOff className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sori-text-dim text-xs font-black tracking-tight uppercase">{t("chat:messages.declinedCall")}</p>
-                  <p className="text-[10px] text-sori-text-muted font-bold">{formatMessageTime(msg.createdAt)}</p>
+                  <p className="text-black text-xs font-black tracking-tight uppercase">{t("chat:messages.declinedCall")}</p>
+                  <p className="text-[10px] text-black/70 font-bold">{formatMessageTime(msg.createdAt)}</p>
                 </div>
               </div>
             ) : (msg.content && (msg.type !== 'file' || msg.content.trim() !== "")) && (

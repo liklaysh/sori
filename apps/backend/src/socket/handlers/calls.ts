@@ -397,11 +397,16 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
           where: eq(callLogs.id, logId)
         });
 
+        const callLogEvent = newLog ? {
+          ...newLog,
+          type: "system_call",
+        } : null;
+
         // 3. Notify participants via socket
         const callerRoom = `user:${callData.callerId}`;
         const calleeRoom = `user:${callData.calleeId}`;
-        io.to(callerRoom).emit("new_call_log", newLog);
-        io.to(calleeRoom).emit("new_call_log", newLog);
+        io.to(callerRoom).emit("new_call_log", callLogEvent);
+        io.to(calleeRoom).emit("new_call_log", callLogEvent);
 
         // 4. Update conversation timestamp for sorting
         await db.update(dmConversations)

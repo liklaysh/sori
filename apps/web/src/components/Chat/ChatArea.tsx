@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, RefObject, useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ChatHeader } from "./ChatHeader";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
@@ -13,6 +14,7 @@ import { cn } from "@sori/ui";
 import { UploadCloud, ShieldAlert } from "lucide-react";
 import api from "../../lib/api";
 import { getChannelContextKey, getConversationContextKey } from "../../utils/chatMessages";
+import { playNotificationSound } from "../../utils/notificationSounds";
 
 const EMPTY_CHAT_ITEMS: ChatItem[] = [];
 const LiveKitSession = lazy(() => import("./Voice/LiveKitSession"));
@@ -52,6 +54,7 @@ interface ChatAreaProps {
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = (props) => {
+  const { t } = useTranslation(["voice"]);
   const { user } = useUserStore();
   const { 
     activeModule, activeChannelId, activeConversationId, 
@@ -204,6 +207,10 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
 
   const handleJoinVoice = async () => {
     if (!activeChannelId) return;
+    if (connectedChannelId === activeChannelId && livekitToken) {
+      props.setIsVoiceChatOpen(true);
+      return;
+    }
     
     // Check for Secure Context
     if (!window.isSecureContext || !navigator.mediaDevices) {
@@ -217,6 +224,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
       await getChannelToken(activeChannelId);
       props.socket?.emit("join_voice_channel", activeChannelId);
       props.setIsVoiceChatOpen(true);
+      playNotificationSound("voiceJoin");
     } catch (err) {
       console.error("Join voice failed:", err);
     }
@@ -253,7 +261,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   const renderMainChatLayout = () => {
     const isVoice = isVoiceChannelContext;
     const isExpandedDirectCallSession = Boolean(isDirectCallSession && props.isVoiceChatOpen);
-    const showFullVoiceUI = isVoice || isExpandedDirectCallSession;
+    const showFullVoiceUI = isDirectCallSession ? isExpandedDirectCallSession : isVoice;
     
     if (activeModule === "dm" && !activeConversationId) {
       return <DMEmptyState onShowSidebar={() => setChannelSidebarOpen(true)} />;
@@ -374,6 +382,9 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
                     endCall();
                     return;
                   }
+                  if (connectedChannelId) {
+                    playNotificationSound("voiceLeave");
+                  }
                   props.socket?.emit("leave_voice_channel", connectedChannelId);
                   resetCall();
                   setIsDisconnecting(true);
@@ -409,7 +420,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
                 ) : null}
 
                 {window.isSecureContext && navigator.mediaDevices && (
-                  <button onClick={handleJoinVoice} className="bg-sori-accent-primary text-black px-10 py-4 rounded-2xl font-bold active:scale-95 transition-transform">Join Voice Channel</button>
+                  <button onClick={handleJoinVoice} className="bg-sori-accent-primary text-black px-10 py-4 rounded-2xl font-bold active:scale-95 transition-transform">{t("voice:room.joinVoiceChannel")}</button>
                 )}
               </div>
             ) : (

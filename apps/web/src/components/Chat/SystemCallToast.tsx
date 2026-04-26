@@ -21,21 +21,26 @@ export const SystemCallToast: React.FC<SystemCallToastProps> = ({ log, count = 1
           label: t("chat:systemCallToast.missedCall", { count }),
           icon: <PhoneMissed className="h-3 w-3" />,
           bgColor: "bg-sori-accent-danger",
-          textColor: "text-sori-text-on-accent"
+          textColor: "text-sori-text-on-accent",
+          timeColor: "text-sori-text-on-accent/70",
         };
       case 'rejected':
         return {
-          label: t("chat:systemCallToast.declinedCall", { count }),
+          label: count > 1
+            ? t("chat:systemCallToast.declinedCall", { count })
+            : t("chat:messages.declinedCall"),
           icon: <PhoneOff className="h-3 w-3" />,
           bgColor: "bg-sori-accent-warning",
-          textColor: "text-sori-text-on-accent"
+          textColor: "text-black",
+          timeColor: "text-black/70",
         };
       case 'accepted':
         return {
           label: t("chat:systemCallToast.callAccepted"),
           icon: isCaller ? <PhoneOutgoing className="h-3 w-3" /> : <PhoneIncoming className="h-3 w-3" />,
           bgColor: "bg-sori-accent-secondary",
-          textColor: "text-sori-text-on-accent"
+          textColor: "text-sori-text-on-accent",
+          timeColor: "text-sori-text-on-accent/70",
         };
       case 'ended':
         const durationStr = log.duration 
@@ -47,21 +52,24 @@ export const SystemCallToast: React.FC<SystemCallToastProps> = ({ log, count = 1
             : t("chat:systemCallToast.callEnded"),
           icon: <Clock className="h-3 w-3" />,
           bgColor: "bg-sori-surface-base",
-          textColor: "text-sori-text-muted"
+          textColor: "text-sori-text-muted",
+          timeColor: "text-sori-text-dim",
         };
       case 'timeout':
         return {
           label: t("chat:systemCallToast.noAnswer"),
           icon: <AlertCircle className="h-3 w-3" />,
           bgColor: "bg-sori-surface-base",
-          textColor: "text-sori-text-muted"
+          textColor: "text-sori-text-muted",
+          timeColor: "text-sori-text-dim",
         };
       default:
         return {
           label: t("chat:systemCallToast.voiceEvent"),
           icon: <PhoneIncoming className="h-3 w-3" />,
           bgColor: "bg-sori-surface-base",
-          textColor: "text-sori-text-muted"
+          textColor: "text-sori-text-muted",
+          timeColor: "text-sori-text-dim",
         };
     }
   };
@@ -83,7 +91,7 @@ export const SystemCallToast: React.FC<SystemCallToastProps> = ({ log, count = 1
           <span className="text-[10px] font-black uppercase tracking-wider">
             {config.label}
           </span>
-          <span className="text-[9px] font-bold text-sori-text-dim">
+          <span className={cn("text-[9px] font-bold", config.timeColor)}>
             {timeStr}
           </span>
         </div>

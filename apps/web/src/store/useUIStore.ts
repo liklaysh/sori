@@ -3,6 +3,26 @@ import { persist } from "zustand/middleware";
 
 type ModuleType = "community" | "dm";
 
+export interface NotificationSettings {
+  channelMessagePopups: boolean;
+  directMessagePopups: boolean;
+  voiceJoinSound: boolean;
+  voiceLeaveSound: boolean;
+  newMessageSound: boolean;
+  directCallSound: boolean;
+}
+
+export type NotificationSettingKey = keyof NotificationSettings;
+
+export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  channelMessagePopups: true,
+  directMessagePopups: true,
+  voiceJoinSound: true,
+  voiceLeaveSound: true,
+  newMessageSound: true,
+  directCallSound: true,
+};
+
 interface UIState {
   // Persistence
   collapsedCategories: Set<string>;
@@ -18,6 +38,7 @@ interface UIState {
   isVoiceChatOpen: boolean;
   isMuted: boolean;
   isDeafened: boolean;
+  notificationSettings: NotificationSettings;
   isCreateChannelModalOpen: boolean;
   createChannelCategoryId: string | null;
   
@@ -33,6 +54,8 @@ interface UIState {
   setIsVoiceChatOpen: (open: boolean) => void;
   setIsMuted: (muted: boolean) => void;
   setIsDeafened: (deafened: boolean) => void;
+  setNotificationSetting: (key: NotificationSettingKey, value: boolean) => void;
+  setNotificationSettings: (settings: Partial<NotificationSettings>) => void;
   setCreateChannelModalOpen: (open: boolean, categoryId?: string | null) => void;
   
   // Context Menus
@@ -55,6 +78,7 @@ export const useUIStore = create<UIState>()(
       isVoiceChatOpen: false,
       isMuted: false,
       isDeafened: false,
+      notificationSettings: DEFAULT_NOTIFICATION_SETTINGS,
       isCreateChannelModalOpen: false,
       createChannelCategoryId: null,
 
@@ -75,6 +99,18 @@ export const useUIStore = create<UIState>()(
       setIsVoiceChatOpen: (isVoiceChatOpen) => set({ isVoiceChatOpen }),
       setIsMuted: (isMuted) => set({ isMuted }),
       setIsDeafened: (isDeafened) => set({ isDeafened }),
+      setNotificationSetting: (key, value) => set((state) => ({
+        notificationSettings: {
+          ...state.notificationSettings,
+          [key]: value,
+        },
+      })),
+      setNotificationSettings: (settings) => set((state) => ({
+        notificationSettings: {
+          ...state.notificationSettings,
+          ...settings,
+        },
+      })),
       setCreateChannelModalOpen: (isCreateChannelModalOpen, createChannelCategoryId = null) => 
         set({ isCreateChannelModalOpen, createChannelCategoryId }),
 
@@ -91,6 +127,7 @@ export const useUIStore = create<UIState>()(
         activeConversationId: state.activeConversationId,
         isMuted: state.isMuted,
         isDeafened: state.isDeafened,
+        notificationSettings: state.notificationSettings,
       }),
       storage: {
         getItem: (name) => {
@@ -101,6 +138,10 @@ export const useUIStore = create<UIState>()(
             state: {
               ...state,
               collapsedCategories: new Set(state.collapsedCategories),
+              notificationSettings: {
+                ...DEFAULT_NOTIFICATION_SETTINGS,
+                ...(state.notificationSettings || {}),
+              },
             },
           };
         },

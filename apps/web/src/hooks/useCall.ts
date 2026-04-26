@@ -3,6 +3,7 @@ import { Socket } from "socket.io-client";
 import api from "../lib/api";
 import { toast } from "sonner";
 import { useVoiceStore } from "../store/useVoiceStore";
+import { startNotificationSoundLoop, stopNotificationSoundLoop } from "../utils/notificationSounds";
 import i18n from "../i18n";
 
 interface CallMetrics {
@@ -32,6 +33,7 @@ export function useCall({ socket }: UseCallProps) {
   const callIdRef = useRef(callId);
   const connectedChannelIdRef = useRef(connectedChannelId);
   const statusRef = useRef(status);
+  const notifiedIncomingCallIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { socketRef.current = socket; }, [socket]);
   useEffect(() => { callIdRef.current = callId; }, [callId]);
@@ -49,10 +51,15 @@ export function useCall({ socket }: UseCallProps) {
 
   const acceptCall = useCallback(() => {
     if (!socket || !callId) return;
+    stopNotificationSoundLoop("directCall");
     socket.emit("direct_call_accept", { callId });
   }, [socket, callId]);
 
   const rejectCall = useCallback(() => {
+    stopNotificationSoundLoop("directCall");
+    if (callId) {
+      notifiedIncomingCallIdsRef.current.delete(callId);
+    }
     if (socket && callId) {
       socket.emit("direct_call_reject", { callId });
     }
@@ -60,6 +67,10 @@ export function useCall({ socket }: UseCallProps) {
   }, [socket, callId, reset]);
 
   const endCall = useCallback((metrics?: CallMetrics) => {
+    stopNotificationSoundLoop("directCall");
+    if (callId) {
+      notifiedIncomingCallIdsRef.current.delete(callId);
+    }
     if (socket && callId) {
       const cleanMetrics = (metrics && typeof metrics === 'object' && !(metrics instanceof Event) && !('nativeEvent' in metrics)) 
         ? metrics 
@@ -79,6 +90,10 @@ export function useCall({ socket }: UseCallProps) {
       if (currentStatus !== "idle") {
         socket.emit("direct_call_reject", { callId: data.callId });
         return;
+      }
+      if (!notifiedIncomingCallIdsRef.current.has(data.callId)) {
+        notifiedIncomingCallIdsRef.current.add(data.callId);
+        startNotificationSoundLoop("directCall");
       }
       setStatus("ringing");
       setCallData({ callId: data.callId, partner: data.caller });
@@ -102,6 +117,11 @@ export function useCall({ socket }: UseCallProps) {
     };
 
     const safeReset = (_reason?: string) => {
+      stopNotificationSoundLoop("directCall");
+      const activeCallId = useVoiceStore.getState().callId;
+      if (activeCallId) {
+        notifiedIncomingCallIdsRef.current.delete(activeCallId);
+      }
       reset();
     };
 
@@ -186,6 +206,7 @@ export function useCall({ socket }: UseCallProps) {
       }
 
       if (activeCallId && currentStatus !== "idle") {
+        stopNotificationSoundLoop("directCall");
         activeSocket.emit("direct_call_end", { callId: activeCallId });
       }
     };

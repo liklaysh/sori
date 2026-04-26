@@ -30,6 +30,7 @@ The system is not currently designed around granular role/ACL enforcement or mul
 - Production override: [`docker-compose.production.yml`](docker-compose.production.yml)
 - Caddy migration validator: [`scripts/validate-caddy-migration.sh`](scripts/validate-caddy-migration.sh)
 - Installer: [`install.sh`](install.sh)
+- Install guide: [`install.md`](install.md)
 - Updater: [`update.sh`](update.sh)
 
 ## Runtime Stack
@@ -84,12 +85,27 @@ The system is not currently designed around granular role/ACL enforcement or mul
 - Voice channels and direct calls both use LiveKit, but they are different product flows
 - Voice channel UX is persistent and community-scoped
 - Direct call UX is overlay-first and can be expanded into a full call workspace
+- Accepted direct calls remain in the compact overlay until the user explicitly expands them
 - Voice occupant state includes:
   - speaking status
   - streaming status
   - mute status
   - deafen status
 - Voice/disconnect cleanup is handled both client-side and server-side to reduce stale occupants and zombie sessions
+
+### Notifications and Sound Model
+
+- Notification preferences are stored client-side in the persisted UI store
+- Visual message popup preferences and unread/badge state are intentionally separate
+- Disabling DM popups must not disable DM unread badges
+- Sound effects are served as public static assets from [`apps/web/public/sounds`](apps/web/public/sounds)
+- Sound assets are not embedded as base64 and are not imported into the JS bundle
+- Current sound events:
+  - voice channel join
+  - voice channel leave
+  - new incoming message
+  - incoming direct call ringtone
+- Direct call ringtone loops while the incoming call is pending and stops on accept, reject, missed, timeout, end, disconnect, or page hide
 
 ### Admin Model
 
@@ -131,37 +147,26 @@ The system intentionally uses a Caddy-only scheme.
 
 ### Install and Update System
 
-The repo now contains an install-oriented deployment flow for Ubuntu 22.04+ servers.
+The repo contains a single-command install-oriented deployment flow for Ubuntu 22.04+ servers.
 
 Primary files:
 - [`install.sh`](install.sh)
+- [`install.md`](install.md)
 - [`update.sh`](update.sh)
 - [`docker-compose.production.yml`](docker-compose.production.yml)
 - [`infrastructure/caddy/Caddyfile.production`](infrastructure/caddy/Caddyfile.production)
 - [`infrastructure/livekit.production.yaml`](infrastructure/livekit.production.yaml)
 - [`.env.example`](.env.example)
 
-The install flow is intentionally:
+Operational installation instructions live in [`install.md`](install.md). Keep detailed install steps there so this file remains a system reference rather than a runbook.
+
+The install flow remains:
 - single-command
 - env-driven
 - idempotent
 - release-friendly
-
-Installer responsibilities:
-- install Docker Engine + Compose plugin + Git
-- validate DNS for root/api/livekit/media hosts
-- generate strong runtime secrets
-- generate a hidden `adminpanel` account
-- write `.env`
-- run DB migrations and install bootstrap
-- start the stack
-- print a final operational summary
-
-Updater responsibilities:
-- fetch git refs/tags
-- update to a branch or release tag
-- rerun migrations/bootstrap
-- rebuild and restart the stack
+- Caddy-only
+- discovery-ready for future native clients
 
 ### Discovery Layer for Future Native Clients
 
@@ -189,6 +194,8 @@ The payload currently includes:
 - basic feature flags
 
 This lets a future native client accept one server URL, fetch bootstrap metadata, and derive the correct API/socket/media/livekit endpoints without hardcoding them.
+
+The production installer now also validates this discovery endpoint before reporting a successful install.
 
 The contract is now additionally documented as a versioned spec:
 - [`docs/CLIENT_BOOTSTRAP_SPEC_V1.md`](docs/CLIENT_BOOTSTRAP_SPEC_V1.md)
@@ -229,6 +236,19 @@ The contract is now additionally documented as a versioned spec:
 Critical backend config is now treated as required. The system should not silently fall back to weak defaults for secrets or external endpoints.
 
 Production installs additionally bind internal infra ports through env so PostgreSQL, Valkey, and MinIO do not need to be exposed publicly.
+
+## Localization
+
+- Primary source language: `en`
+- Supported locales: `en`, `ru`
+- Fallback locale: `en`
+- The default language follows the browser/client language when no explicit user choice is stored
+- User language selection is persisted client-side
+
+Definition of done for UI changes:
+- add/update `en` keys
+- add/update matching `ru` keys
+- remove stale keys from both locales when UI strings are removed
 
 ## Backups
 
@@ -315,17 +335,25 @@ The following work has already been integrated into the repository:
 - Caddy-only gateway/runtime migration
 - removal of weak backend config fallbacks
 - stricter CORS behavior
+- SameSite=Lax cookie posture with origin/CSRF hardening for mutating browser requests
 - stable cookie/logout behavior
+- current-user DB validation for cookie/socket auth
 - link preview SSRF hardening
 - streaming uploads instead of full in-memory reads
+- attachment ownership validation before message send
+- reproducible Drizzle migration path for fresh installs
 - cleanup of stale call telemetry paths
+- atomic Redis helpers for call telemetry and voice occupant state
 - reduced realtime noise in chat/presence refresh
 - direct-call lifecycle hardening
+- LiveKit token guardrails for voice channels and direct calls
 - removal of legacy frontend dead hooks
 - bundle splitting and lazy loading for major frontend surfaces
 - removal of hardcoded seeded admin credentials from runtime boot
 - install bootstrap for hidden adminpanel provisioning
 - production-ready Caddy automatic HTTPS path
+- installer DNS/firewall/bootstrap validation
+- notification sound settings and user-controlled visual notification preferences
 - GitHub-ready release metadata and build workflow
 
 ## Current Constraints

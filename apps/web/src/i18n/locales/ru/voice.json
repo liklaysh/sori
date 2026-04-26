@@ -26,7 +26,8 @@
   },
   "room": {
     "expand": "Развернуть",
-    "callProtocolActive": "Протокол звонка активен •",
+    "callProtocolActive": "АКТИВНЫЙ ЗВОНОК •",
+    "joinVoiceChannel": "Подключиться к голосовому каналу",
     "minimizeCall": "Свернуть звонок",
     "addToCall": "Добавить в звонок",
     "toggleChat": "Открыть чат",

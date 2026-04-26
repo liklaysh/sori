@@ -56,6 +56,16 @@ prompt_if_empty() {
   printf -v "${var_name}" '%s' "${current_value}"
 }
 
+prompt_yes_no() {
+  local prompt="$1"
+  local default_value="${2:-N}"
+  local answer
+
+  read -r -p "${prompt} [y/N]: " answer
+  answer="${answer:-$default_value}"
+  [[ "${answer}" =~ ^[Yy]$ ]]
+}
+
 generate_hex() {
   openssl rand -hex "${1:-32}"
 }
@@ -219,6 +229,24 @@ collect_install_inputs() {
   MEDIA_HOST="media.${DOMAIN}"
 }
 
+print_dns_requirements() {
+  printf '\n'
+  log "Required DNS records for this install:"
+  if [[ -n "${PUBLIC_IP:-}" ]]; then
+    printf '  A  %-28s -> %s\n' "${WEB_HOST}" "${PUBLIC_IP}"
+    printf '  A  %-28s -> %s\n' "${API_HOST}" "${PUBLIC_IP}"
+    printf '  A  %-28s -> %s\n' "${LIVEKIT_HOST}" "${PUBLIC_IP}"
+    printf '  A  %-28s -> %s\n' "${MEDIA_HOST}" "${PUBLIC_IP}"
+  else
+    printf '  A  %s -> this server public IPv4\n' "${WEB_HOST}"
+    printf '  A  %s -> this server public IPv4\n' "${API_HOST}"
+    printf '  A  %s -> this server public IPv4\n' "${LIVEKIT_HOST}"
+    printf '  A  %s -> this server public IPv4\n' "${MEDIA_HOST}"
+  fi
+  printf '\n'
+  log "Cloud firewall / provider security group must allow: 22/tcp, 80/tcp, 443/tcp, 7881/tcp, 7882/udp."
+}
+
 fetch_public_ip() {
   PUBLIC_IP="$(curl -4fsSL https://api.ipify.org || true)"
 }
@@ -241,6 +269,7 @@ confirm_dns_or_exit() {
 
 check_dns() {
   fetch_public_ip
+  print_dns_requirements
   confirm_dns_or_exit "${WEB_HOST}"
   confirm_dns_or_exit "${API_HOST}"
   confirm_dns_or_exit "${LIVEKIT_HOST}"
@@ -255,10 +284,25 @@ configure_firewall() {
 
   log "Ensuring firewall rules exist for SSH, HTTP(S), and LiveKit..."
   ufw allow OpenSSH >/dev/null 2>&1 || true
+  ufw allow 22/tcp >/dev/null 2>&1 || true
   ufw allow 80/tcp >/dev/null 2>&1 || true
   ufw allow 443/tcp >/dev/null 2>&1 || true
   ufw allow 7881/tcp >/dev/null 2>&1 || true
   ufw allow 7882/udp >/dev/null 2>&1 || true
+
+  if ufw status | grep -qi "^Status: active$"; then
+    log "ufw is already active."
+    return
+  fi
+
+  warn "ufw is not active. Rules were added, including OpenSSH and 22/tcp to keep SSH reachable."
+  warn "If this server also has a cloud firewall, make sure the same ports are open there."
+  if prompt_yes_no "Enable ufw now?" "N"; then
+    ufw --force enable >/dev/null
+    log "ufw enabled."
+  else
+    warn "ufw left disabled. Enable it later with: ufw enable"
+  fi
 }
 
 prepare_runtime_directories() {
@@ -359,6 +403,8 @@ write_install_summary() {
 SORI installation completed on $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 URL: https://${WEB_HOST}
 Admin: https://${WEB_HOST}/admin
+Client server address: https://${WEB_HOST}
+Client bootstrap: https://${WEB_HOST}/.well-known/sori/client.json
 Admin login: ${ADMIN_PANEL_LOGIN}
 Admin password: ${ADMIN_PANEL_PASSWORD}
 Admin email: ${ADMIN_PANEL_EMAIL}
@@ -417,6 +463,31 @@ wait_for_health() {
   die "Health check failed for ${health_url}"
 }
 
+validate_client_bootstrap() {
+  log "Validating client bootstrap discovery endpoint..."
+  local bootstrap_url payload
+  bootstrap_url="https://${WEB_HOST}/.well-known/sori/client.json"
+
+  payload="$(curl -fsS "${bootstrap_url}")" || die "Client bootstrap check failed for ${bootstrap_url}"
+
+  printf '%s' "${payload}" | jq -e '
+    (.version | type == "number")
+    and ([
+      .server.installMode,
+      .server.defaultCommunityId,
+      .endpoints.web,
+      .endpoints.api,
+      .endpoints.ws,
+      .endpoints.livekit,
+      .endpoints.media,
+      .endpoints.health,
+      .auth.mode,
+      .auth.loginPath,
+      .realtime.socketPath
+    ] | all(type == "string" and length > 0))
+  ' >/dev/null || die "Client bootstrap payload is missing required fields at ${bootstrap_url}"
+}
+
 print_summary() {
   local services_status
   services_status="$(compose ps --format json 2>/dev/null || true)"
@@ -425,6 +496,8 @@ print_summary() {
   printf '✅ SORI installed successfully\n'
   printf '🌐 URL: https://%s\n' "${WEB_HOST}"
   printf '⚙️  Admin: https://%s/admin\n' "${WEB_HOST}"
+  printf '🖥️  Client server address: https://%s\n' "${WEB_HOST}"
+  printf '🧭 Client bootstrap: https://%s/.well-known/sori/client.json\n' "${WEB_HOST}"
   printf '🔐 Login: %s\n' "${ADMIN_PANEL_LOGIN}"
   printf '🔐 Password: %s\n' "${ADMIN_PANEL_PASSWORD}"
   printf '📄 Credentials file: %s\n' "${REPO_DIR}/.install/admin-credentials.txt"
@@ -448,11 +521,12 @@ main() {
   configure_firewall
   prepare_runtime_directories
   write_env_file
-  write_install_summary
 
   cd "${REPO_DIR}"
   deploy_stack
   wait_for_health
+  validate_client_bootstrap
+  write_install_summary
   print_summary
 }
 

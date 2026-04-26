@@ -10,6 +10,7 @@ import { useUserStore } from "../store/useUserStore";
 import { useUIStore } from "../store/useUIStore";
 import { useVoiceStore } from "../store/useVoiceStore";
 import { getConversationContextKey, getMessageAttachments, normalizeMessage } from "../utils/chatMessages";
+import { playNotificationSound } from "../utils/notificationSounds";
 import i18n from "../i18n";
 
 export function useChatSocket() {
@@ -33,6 +34,7 @@ export function useChatSocket() {
   const activeChannelIdRef = useRef(activeChannelId);
   const activeConversationIdRef = useRef(activeConversationId);
   const channelsRef = useRef(channels);
+  const notifiedMessageIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { userRef.current = user; }, [user]);
   useEffect(() => { activeModuleRef.current = activeModule; }, [activeModule]);
@@ -57,6 +59,20 @@ export function useChatSocket() {
       } catch (err) { console.error("Failed to update conversations:", err); }
     };
 
+    const shouldNotifyMessage = (messageId: string) => {
+      const seen = notifiedMessageIdsRef.current;
+      if (seen.has(messageId)) {
+        return false;
+      }
+
+      if (seen.size > 500) {
+        seen.clear();
+      }
+
+      seen.add(messageId);
+      return true;
+    };
+
     newSocket.on("connect", () => {
       setSocket(newSocket);
       refreshConversations();
@@ -79,8 +95,14 @@ export function useChatSocket() {
         && activeChannelIdRef.current === m.channelId;
 
       addMessage(m);
+      if (shouldNotifyMessage(m.id)) {
+        playNotificationSound("newMessage");
+      }
 
-      if (isEveryone || isMentioned || !isCurrentChannelOpen) {
+      if (
+        useUIStore.getState().notificationSettings.channelMessagePopups
+        && (isEveryone || isMentioned || !isCurrentChannelOpen)
+      ) {
         const channelName = channelsRef.current.find(c => c.id === m.channelId)?.name || "channel";
         const authorName = m.author?.username || m.username || "User";
         let displayContent = content;
@@ -101,32 +123,50 @@ export function useChatSocket() {
 
     newSocket.on("new_direct_message", (incoming: Message) => {
       const m = normalizeMessage(incoming);
+      const isMe = m.authorId === userRef.current?.id;
 
       addMessage(m);
+
+      if (isMe) {
+        refreshConversations();
+        return;
+      }
+
+      if (shouldNotifyMessage(m.id)) {
+        playNotificationSound("newMessage");
+      }
 
       if (activeModuleRef.current === 'dm' && activeConversationIdRef.current === m.conversationId) {
         api.post(`/dm/conversations/${m.conversationId}/read`).catch((err) => {
           console.error("Failed to mark DM as read:", err);
         });
-      } else {
+      } else if (useUIStore.getState().notificationSettings.directMessagePopups) {
         const authorName = m.author?.username || "User";
         toast(i18n.t("notifications:mentions.directFrom", { authorName }), { description: m.content });
       }
       refreshConversations();
     });
 
-    newSocket.on("new_call_log", (log: CallLog) => {
-      const conversationId = log.conversationId;
+    newSocket.on("new_call_log", (log: CallLog | null) => {
+      if (!log) {
+        return;
+      }
+
+      const normalizedLog: CallLog = {
+        ...log,
+        type: "system_call",
+      };
+      const conversationId = normalizedLog.conversationId;
       if (!conversationId) {
         return;
       }
 
       setContextMessages(getConversationContextKey(conversationId), (prev) => {
-        if (prev.some((item) => item.id === log.id)) {
+        if (prev.some((item) => item.id === normalizedLog.id)) {
           return prev;
         }
 
-        return [...prev, log];
+        return [...prev, normalizedLog];
       });
 
       refreshConversations();

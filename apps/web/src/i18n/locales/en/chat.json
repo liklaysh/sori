@@ -67,7 +67,7 @@
   "messages": {
     "missedCall": "Missed Call",
     "callEnded": "Call Ended",
-    "declinedCall": "Declined Call",
+    "declinedCall": "CALL DECLINED",
     "duration": "Duration: {{duration}}",
     "fullscreenPreview": "Fullscreen preview",
     "you": "You",
@@ -88,8 +88,9 @@
   "systemCallToast": {
     "missedCall_one": "Missed Call",
     "missedCall_other": "{{count}} Missed Calls",
-    "declinedCall_one": "Declined Call",
-    "declinedCall_other": "{{count}} Declined Calls",
+    "declinedCall": "CALL DECLINED",
+    "declinedCall_one": "CALL DECLINED",
+    "declinedCall_other": "{{count}} CALLS DECLINED",
     "callAccepted": "Call Accepted",
     "callEnded": "Call Ended",
     "callEndedWithDuration": "Call Ended • {{duration}}",

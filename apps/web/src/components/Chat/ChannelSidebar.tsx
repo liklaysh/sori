@@ -12,6 +12,7 @@ import { getAvatarUrl } from "../../utils/avatar";
 import { CreateChannelModal } from "./Modals/CreateChannelModal";
 import api from "../../lib/api";
 import { toast } from "sonner";
+import { playNotificationSound } from "../../utils/notificationSounds";
 
 interface ChannelSidebarProps {
   socket: any;
@@ -68,17 +69,26 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
     typeof window !== "undefined" && !window.matchMedia("(min-width: 768px)").matches;
   
   const handleJoinVoiceChannel = async (channelId: string) => {
+    if (connectedChannelId === channelId && livekitToken) {
+      setIsVoiceChatOpen(true);
+      return;
+    }
+
     try {
       setIsDisconnecting(false);
       await getChannelToken(channelId);
       socket?.emit("join_voice_channel", channelId);
       setIsVoiceChatOpen(true);
+      playNotificationSound("voiceJoin");
     } catch (err) {
       console.error("Join voice failed:", err);
     }
   };
 
   const handleLeaveVoiceChannel = () => {
+    if (connectedChannelId) {
+      playNotificationSound("voiceLeave");
+    }
     socket?.emit("leave_voice_channel", connectedChannelId);
     setIsVoiceChatOpen(false);
     resetCall();
@@ -141,14 +151,14 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                 ) : (
                   <ChevronDown className="h-3 w-3 text-sori-text-muted transition-all" />
                 )}
-                <span className="text-[11px] uppercase tracking-wider font-extrabold text-sori-text-muted hover:text-sori-text-strong transition-colors">{cat.name}</span>
+                <span className="text-[11px] uppercase tracking-wider font-extrabold text-sori-text-muted group-hover:text-sori-text-strong transition-colors">{cat.name}</span>
               </div>
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   setCreateChannelModalOpen(true, cat.id);
                 }}
-                className="hidden group-hover:block hover:text-sori-text-strong transition-all p-0.5 rounded hover:bg-sori-surface-hover"
+                className="invisible group-hover:visible hover:text-sori-text-strong transition-colors p-0.5 rounded hover:bg-sori-surface-hover"
               >
                 <Plus className="h-3.5 w-3.5 text-sori-text-muted" />
               </button>

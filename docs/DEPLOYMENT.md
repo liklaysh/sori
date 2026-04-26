@@ -20,6 +20,7 @@ The installer derives the full topology from one root domain and writes everythi
 ## Files
 
 - Installer: [`install.sh`](../install.sh)
+- Install guide: [`install.md`](../install.md)
 - Updater: [`update.sh`](../update.sh)
 - Base compose: [`docker-compose.yml`](../docker-compose.yml)
 - Production override: [`docker-compose.production.yml`](../docker-compose.production.yml)
@@ -29,35 +30,24 @@ The installer derives the full topology from one root domain and writes everythi
 
 ## Install Flow
 
-The installer performs:
+The detailed installation runbook lives in [`install.md`](../install.md).
 
-1. installs system dependencies:
-   - Docker Engine
-   - Docker Compose plugin
-   - Git
-   - `curl`, `openssl`, `ufw`, `jq`
+At a high level, the installer:
+
+1. installs Docker, Compose plugin, Git, `curl`, `openssl`, `ufw`, and `jq`
 2. clones or updates the repository
-3. asks for:
-   - root domain
-   - ACME contact email
-   - human-readable server name
-4. validates DNS for:
-   - `example.com`
-   - `api.example.com`
-   - `livekit.example.com`
-   - `media.example.com`
-5. generates secrets and hidden adminpanel credentials
-6. writes `.env`
-7. opens firewall rules for:
-   - `80/tcp`
-   - `443/tcp`
-   - `7881/tcp`
-   - `7882/udp`
-8. runs:
-   - DB migrations
-   - install bootstrap
-   - full compose deploy
-9. waits for health and prints the install summary
+3. asks for root domain, ACME contact email, and server name
+4. prints and validates DNS for root/api/livekit/media hosts
+5. adds firewall rules for SSH, HTTP(S), and LiveKit
+6. asks whether to enable `ufw`
+7. generates or preserves runtime secrets and hidden adminpanel credentials
+8. writes `.env`
+9. runs DB migrations and install bootstrap
+10. validates production Caddy config
+11. starts the production stack
+12. waits for health
+13. validates `/.well-known/sori/client.json`
+14. prints the install summary, admin credentials, and client bootstrap address
 
 ## One-command Install
 

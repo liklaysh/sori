@@ -26,7 +26,8 @@
   },
   "room": {
     "expand": "Expand",
-    "callProtocolActive": "Call Protocol Active •",
+    "callProtocolActive": "ACTIVE CALL •",
+    "joinVoiceChannel": "Join Voice Channel",
     "minimizeCall": "Minimize Call",
     "addToCall": "Add to call",
     "toggleChat": "Toggle Chat",

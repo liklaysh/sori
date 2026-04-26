@@ -7,12 +7,14 @@ import {
 import { 
   User as UserIcon, 
   Settings2, 
+  Bell,
   Menu,
   X 
 } from "lucide-react";
 
 import { ProfileTab } from "./Tabs/ProfileTab";
 import { VoiceVideoTab } from "./Tabs/VoiceVideoTab";
+import { NotificationsTab } from "./Tabs/NotificationsTab";
 import { LanguageSelector } from "../Chat/LanguageSelector";
 
 interface SettingsModalProps {
@@ -36,7 +38,7 @@ interface SettingsModalProps {
   toggleNoiseSuppression: () => void;
 }
 
-type Tab = "profile" | "equipment";
+type Tab = "profile" | "equipment" | "notifications";
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
   const { user } = useUserStore();
@@ -55,7 +57,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
           <button onClick={() => setIsNavOpen(true)} className="flex items-center gap-3">
             <Menu className="h-5 w-5 text-sori-accent-primary" />
             <span className="text-[10px] font-black uppercase tracking-widest text-sori-text-strong">
-              {activeTab === "profile" ? t("settings:profile") : t("settings:equipment")}
+              {activeTab === "profile"
+                ? t("settings:profile")
+                : activeTab === "equipment"
+                  ? t("settings:equipment")
+                  : t("settings:notifications.title")}
             </span>
           </button>
           <button onClick={props.onClose} className="w-8 h-8 rounded-full bg-sori-surface-hover flex items-center justify-center transition-all">
@@ -78,6 +84,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
           <nav className="space-y-1">
             <TabItem icon="profile" label={t("settings:profile")} active={activeTab === "profile"} onClick={() => { setActiveTab("profile"); setIsNavOpen(false); }} />
             <TabItem icon="equipment" label={t("settings:equipment")} active={activeTab === "equipment"} onClick={() => { setActiveTab("equipment"); setIsNavOpen(false); }} />
+            <TabItem icon="notifications" label={t("settings:notifications.title")} active={activeTab === "notifications"} onClick={() => { setActiveTab("notifications"); setIsNavOpen(false); }} />
           </nav>
 
           <div className="mt-auto pt-6">
@@ -103,7 +110,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
           <div className="max-w-3xl w-full mx-auto pb-20">
             {activeTab === "profile" ? (
               <ProfileTab />
-            ) : (
+            ) : activeTab === "equipment" ? (
               <VoiceVideoTab 
                 micGain={props.micGain} setMicGain={props.setMicGain}
                 outputVolume={props.outputVolume} setOutputVolume={props.setOutputVolume}
@@ -111,6 +118,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 outputDevices={props.outputDevices} activeOutputId={props.activeOutputId} setActiveOutput={props.setActiveOutput}
                 noiseSuppression={props.noiseSuppression} toggleNoiseSuppression={props.toggleNoiseSuppression}
               />
+            ) : (
+              <NotificationsTab />
             )}
           </div>
         </main>
@@ -119,8 +128,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
   );
 };
 
-const TabItem = ({ icon, label, active, onClick }: { icon: "profile" | "equipment", label: string, active: boolean, onClick: () => void }) => {
-  const Icon = icon === "profile" ? UserIcon : Settings2;
+const TabItem = ({ icon, label, active, onClick }: { icon: "profile" | "equipment" | "notifications", label: string, active: boolean, onClick: () => void }) => {
+  const Icon = icon === "profile" ? UserIcon : icon === "equipment" ? Settings2 : Bell;
   return (
     <div 
       onClick={onClick}

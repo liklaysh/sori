@@ -32,5 +32,39 @@
   "cameraPreview": "Camera Preview",
   "micLevel": "Mic Level",
   "permissionsHint": "Check permissions if no activity is shown.",
-  "languageSelectorLabel": "Language selector"
+  "languageSelectorLabel": "Language selector",
+  "notifications": {
+    "title": "Notifications",
+    "description": "Choose which alerts and sound effects Sori can use.",
+    "regular": {
+      "title": "Regular Notifications",
+      "channelPopups": {
+        "title": "Channel message popups",
+        "description": "Show popup notifications for new channel messages."
+      },
+      "directPopups": {
+        "title": "Direct message popups",
+        "description": "Show popup notifications for new direct messages. Badges remain enabled."
+      }
+    },
+    "sound": {
+      "title": "Sound Notifications",
+      "voiceJoin": {
+        "title": "Voice channel join",
+        "description": "Play a sound when you join a voice channel."
+      },
+      "voiceLeave": {
+        "title": "Voice channel leave",
+        "description": "Play a sound when you leave a voice channel."
+      },
+      "newMessage": {
+        "title": "New message",
+        "description": "Play a sound when a new message arrives."
+      },
+      "directCall": {
+        "title": "Direct call",
+        "description": "Play a sound for incoming direct calls."
+      }
+    }
+  }
 }

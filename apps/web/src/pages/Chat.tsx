@@ -10,6 +10,7 @@ import { Member } from "../types/chat";
 import { useChatSocket } from "../hooks/useChatSocket";
 import { useMediaSettings } from "../hooks/useMediaSettings";
 import { useCall } from "../hooks/useCall";
+import { preloadNotificationSounds } from "../utils/notificationSounds";
 
 // Components
 import { ServerSidebar } from "../components/Chat/ServerSidebar";
@@ -124,6 +125,7 @@ const Chat: React.FC = () => {
   // Initial Data Load
   useEffect(() => {
     if (isAuthenticated) {
+      preloadNotificationSounds();
       fetchInitialData("default-community");
       fetchConversations();
     }
