@@ -136,3 +136,19 @@ ____
 Если вы запускаете модифицированную версию как сервис — исходный код должен быть открыт.
 
 Подробнее в файле [LICENSE](LICENSE).
+
+____
+
+## 🤝 Вклад в проект
+
+<p>
+
+  <a href="[EchoRiteMusic](https://github.com/EchoRiteMusic)">
+
+    <img src="(https://avatars.githubusercontent.com/u/98710164?v=4)" width="60" style="border-radius:50%" />
+
+  </a>
+
+</p>
+
+— Sound Design (voice join/leave, notifications, call events)
