@@ -114,7 +114,7 @@ SORI спроектирован максимально просто:
 На чистом Ubuntu 22.04+ сервере:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/liklaysh/sori/HEAD/install.sh | sudo bash
+curl -fsSL https://github.com/liklaysh/sori/raw/main/install.sh | sudo bash
 ```
 
 Скрипт сам спросит домен, email для Let's Encrypt, имя сервера и настройку firewall.
