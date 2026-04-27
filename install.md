@@ -43,7 +43,7 @@ Replace `example.com` with your real domain.
 After the repository is published, the normal install command is:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/liklaysh/sori/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/liklaysh/sori/HEAD/install.sh | sudo bash
 ```
 
 The installer then asks for:

@@ -118,7 +118,7 @@ Everything runs as a unified stack, making it easy to deploy, maintain, and scal
 On a clean Ubuntu 22.04+ server:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/liklaysh/sori/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/liklaysh/sori/HEAD/install.sh | sudo bash
 ```
 
 The script asks for the domain, Let's Encrypt email, server name, and firewall settings.
