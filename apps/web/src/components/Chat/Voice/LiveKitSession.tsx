@@ -11,7 +11,6 @@ import { ConnectionState } from "livekit-client";
 import { LIVEKIT_URL } from "../../../config";
 import { ChatItem, User } from "../../../types/chat";
 import { useVoiceStore } from "../../../store/useVoiceStore";
-import { MessageList } from "../MessageList";
 import { ParticipantsVolumeManager } from "./ParticipantsVolumeManager";
 import { SoriVoiceRoom } from "./SoriVoiceRoom";
 import { StreamingTracker } from "./StreamingTracker";
@@ -25,6 +24,7 @@ interface LiveKitSessionProps {
   callId: string | null;
   partner: { id: string; username: string; avatarUrl?: string } | null;
   status: string;
+  startTime: number | null;
   showFullVoiceUI: boolean;
   activeModule: "community" | "dm";
   currentChannelName?: string;
@@ -136,10 +136,6 @@ const LiveKitMediaDeviceSync: React.FC<{
 };
 
 export default function LiveKitSession(props: LiveKitSessionProps) {
-  const filteredMessages = props.searchQuery
-    ? props.messages.filter((message) => "content" in message && message.content?.toLowerCase().includes(props.searchQuery.toLowerCase()))
-    : props.messages;
-
   return (
     <LiveKitRoom
       video={false}
@@ -149,7 +145,10 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
       connect={true}
       onConnected={props.onConnected}
       onDisconnected={props.onDisconnected}
-      className="flex-1 flex"
+      className={props.showFullVoiceUI
+        ? "absolute inset-0 z-20 flex bg-sori-surface-main"
+        : "absolute left-[-10000px] top-0 h-px w-px overflow-hidden opacity-0 pointer-events-none"
+      }
     >
       <VoiceSessionManager
         callId={props.callId}
@@ -190,7 +189,7 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
               isChatOpen={props.isInternalChatOpen}
               setIsChatOpen={props.setIsInternalChatOpen}
               channelName={props.activeModule === "dm" ? (props.partner?.username || "Direct Call") : (props.currentChannelName || "Voice Channel")}
-              startTime={null}
+              startTime={props.startTime}
               micDevices={props.micDevices}
               activeMicId={props.activeMicId}
               setActiveMic={props.setActiveMic}
@@ -203,17 +202,7 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
           </LayoutContextProvider>
         </div>
       ) : (
-        <MessageList
-          messages={filteredMessages}
-          onMessageContextMenu={() => {}}
-          isLoadingMessages={false}
-          scrollRef={props.scrollRef}
-          handleScroll={() => {}}
-          showScrollButton={props.showScrollButton}
-          scrollToBottom={props.scrollToBottom}
-          onLoadMore={props.onLoadMore}
-          onForward={() => {}}
-        />
+        <div aria-hidden="true" />
       )}
     </LiveKitRoom>
   );

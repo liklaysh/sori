@@ -174,14 +174,21 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
 
   // --- Duration Timer ---
   useEffect(() => {
-    if (!startTime) return;
-    const interval = setInterval(() => {
+    if (!startTime) {
+      setDuration("00:00");
+      return;
+    }
+
+    const updateDuration = () => {
       const now = getSyncedDate().getTime();
-      const diff = Math.floor((now - startTime) / 1000);
+      const diff = Math.max(0, Math.floor((now - startTime) / 1000));
       const mins = Math.floor(diff / 60).toString().padStart(2, "0");
       const secs = (diff % 60).toString().padStart(2, "0");
       setDuration(`${mins}:${secs}`);
-    }, 1000);
+    };
+
+    updateDuration();
+    const interval = setInterval(updateDuration, 1000);
     return () => clearInterval(interval);
   }, [startTime, getSyncedDate]);
 

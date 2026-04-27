@@ -37,6 +37,7 @@ interface ChatAreaProps {
   isDisconnecting: boolean;
   partner: { id: string, username: string, avatarUrl?: string } | null;
   callId: string | null;
+  startTime: number | null;
 
   // Media settings (from useMediaSettings)
   noiseSuppression: boolean;
@@ -72,7 +73,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   const { 
     initiateCall, endCall, getChannelToken, resetCall,
     setIsDisconnecting, isDisconnecting,
-    livekitToken, connectedChannelId, status, partner, callId,
+    livekitToken, connectedChannelId, status, partner, callId, startTime,
     setActiveOutput, setMicGain, setOutputVolume
   } = props;
 
@@ -259,7 +260,9 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   const renderMainChatLayout = () => {
     const isVoice = isVoiceChannelContext;
     const isExpandedDirectCallSession = Boolean(isDirectCallSession && props.isVoiceChatOpen);
-    const showFullVoiceUI = isDirectCallSession ? isExpandedDirectCallSession : isVoice;
+    const isActiveConnectedVoiceChannel = Boolean(isVoice && hasVoiceChannelSession && connectedChannelId === activeChannelId);
+    const showFullVoiceUI = isDirectCallSession ? isExpandedDirectCallSession : isActiveConnectedVoiceChannel;
+    const shouldMountLiveKitSession = (isDirectCallSession || hasVoiceChannelSession) && window.isSecureContext;
     
     if (activeModule === "dm" && !activeConversationId) {
       return <DMEmptyState onShowSidebar={() => setChannelSidebarOpen(true)} />;
@@ -320,7 +323,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
             </div>
           )}
 
-          {(isDirectCallSession || hasVoiceChannelSession) && window.isSecureContext ? (
+          {shouldMountLiveKitSession && (
             <Suspense fallback={<div className="flex-1 bg-sori-surface-main" />}>
               <LiveKitSession
                 socket={props.socket}
@@ -330,6 +333,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
                 callId={callId}
                 partner={partner}
                 status={status}
+                startTime={startTime}
                 showFullVoiceUI={showFullVoiceUI}
                 activeModule={activeModule}
                 currentChannelName={currentChannel?.name}
@@ -362,16 +366,10 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
                   setIsDisconnecting(false);
                 }}
                 onDisconnected={() => {
-                  props.setIsVoiceChatOpen(false);
                   if (callId && partner && !connectedChannelId) {
+                    props.setIsVoiceChatOpen(false);
                     setIsDisconnecting(false);
                     endCall();
-                    return;
-                  }
-                  if (connectedChannelId) {
-                    props.socket?.emit("leave_voice_channel", connectedChannelId);
-                    resetCall();
-                    setIsDisconnecting(true);
                   }
                 }}
                 onLeave={() => {
@@ -394,7 +392,9 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
                 }}
               />
             </Suspense>
-          ) : (
+          )}
+
+          {!showFullVoiceUI && (
             isVoice ? (
               <div className="flex-1 flex flex-col items-center justify-center space-y-6">
                 <h2 className="text-2xl font-bold text-sori-text-strong">Voice Channel: {currentChannel?.name}</h2>

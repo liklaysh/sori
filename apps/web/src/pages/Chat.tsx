@@ -239,6 +239,7 @@ const Chat: React.FC = () => {
           status={call.status}
           partner={call.partner}
           callId={call.callId}
+          startTime={call.startTime}
           livekitToken={call.livekitToken}
           connectedChannelId={call.connectedChannelId}
           {...media}

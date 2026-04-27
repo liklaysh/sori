@@ -168,6 +168,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                 {channels.filter(c => c.categoryId === cat.id).map(ch => {
                   const occupants = [...(voiceOccupants[ch.id] || [])].sort((a, b) => a.joinedAt - b.joinedAt);
                   const isActive = activeChannelId === ch.id;
+                  const canShowVoiceActivity = Boolean(livekitToken && connectedChannelId === ch.id);
                   return (
                     <div key={ch.id} className="mb-1">
                       <div 
@@ -199,7 +200,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                       {ch.type === 'voice' && occupants.length > 0 && (
                         <div className="ml-6 mt-1 space-y-0.5">
                           {occupants.map(occ => {
-                            const isSpeaking = occ.isSpeaking || false;
+                            const isSpeaking = canShowVoiceActivity && Boolean(occ.isSpeaking);
                             return (
                               <OccupantItem 
                                 key={occ.userId} 

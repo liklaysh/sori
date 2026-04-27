@@ -37,20 +37,23 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
   const [duration, setDuration] = useState("00:00");
 
   useEffect(() => {
-    let interval: any;
-    if (status === "connected" && startTime) {
-      interval = setInterval(() => {
-        const now = getSyncedDate().getTime();
-        const diff = Math.floor((now - startTime) / 1000);
-        const mins = Math.floor(diff / 60).toString().padStart(2, "0");
-        const secs = (diff % 60).toString().padStart(2, "0");
-        setDuration(`${mins}:${secs}`);
-      }, 1000);
-    } else {
+    if (status !== "connected" || !startTime) {
       setDuration("00:00");
+      return;
     }
+
+    const updateDuration = () => {
+      const now = getSyncedDate().getTime();
+      const diff = Math.max(0, Math.floor((now - startTime) / 1000));
+      const mins = Math.floor(diff / 60).toString().padStart(2, "0");
+      const secs = (diff % 60).toString().padStart(2, "0");
+      setDuration(`${mins}:${secs}`);
+    };
+
+    updateDuration();
+    const interval = setInterval(updateDuration, 1000);
     return () => clearInterval(interval);
-  }, [status]);
+  }, [status, startTime, getSyncedDate]);
 
   if (status === "idle" || status === "ended") return null;
   
