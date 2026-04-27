@@ -283,7 +283,7 @@ confirm_dns_or_exit() {
 
   if [[ -n "${PUBLIC_IP}" && ",${resolved}," != *",${PUBLIC_IP},"* ]]; then
     warn "DNS for ${host} resolves to ${resolved}, while the detected public IP is ${PUBLIC_IP}."
-    read -r -p "Continue anyway? [y/N]: " continue_anyway
+    continue_anyway="$(read_from_tty "Continue anyway? [y/N]: ")"
     [[ "${continue_anyway}" =~ ^[Yy]$ ]] || die "DNS validation aborted."
   fi
 }
