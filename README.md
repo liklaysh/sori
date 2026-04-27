@@ -109,6 +109,18 @@ SORI спроектирован максимально просто:
 
 Все компоненты работают как единый стек — легко развернуть и поддерживать.
 
+## 🚀 Установка
+
+На чистом Ubuntu 22.04+ сервере:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/liklaysh/sori/main/install.sh | sudo bash
+```
+
+Скрипт сам спросит домен, email для Let's Encrypt, имя сервера и настройку firewall.
+
+Подробная инструкция: [install.md](install.md).
+
 ---
 
 ## 🧑‍💻 Для кого это

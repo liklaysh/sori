@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  🇬🇧 English | <a href="./README.ru.md">🇷🇺 Русский</a>
+  🇬🇧 English | <a href="./README.md">🇷🇺 Русский</a>
 </p>
 
 ---
@@ -112,6 +112,18 @@ SORI is designed around simplicity and predictability:
 - ⚙️ Minimal infrastructure requirements  
 
 Everything runs as a unified stack, making it easy to deploy, maintain, and scale when needed.
+
+## 🚀 Install
+
+On a clean Ubuntu 22.04+ server:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/liklaysh/sori/main/install.sh | sudo bash
+```
+
+The script asks for the domain, Let's Encrypt email, server name, and firewall settings.
+
+Full guide: [install.md](install.md).
 
 ---
 
