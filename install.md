@@ -223,19 +223,25 @@ The current auth mode is cookie-based. A native client should keep a cookie jar 
 
 ## Updating
 
-Use:
+Use the one-command updater:
+
+```bash
+curl -fsSL https://github.com/liklaysh/sori/raw/main/update.sh | sudo bash
+```
+
+If you are already inside the installed checkout:
 
 ```bash
 sudo bash update.sh
 ```
 
-Or pin a branch/tag/ref:
+Pin a branch/tag/ref:
 
 ```bash
-sudo bash update.sh --ref v1.2.0
+curl -fsSL https://github.com/liklaysh/sori/raw/main/update.sh | sudo bash -s -- --ref v1.2.0
 ```
 
-The updater reapplies migrations/bootstrap, rebuilds services, restarts the stack, and waits for health.
+The updater pulls the selected ref, reapplies migrations/bootstrap, rebuilds services, restarts the stack, waits for health, validates client discovery, and prints the platform links again.
 
 ## Troubleshooting
 

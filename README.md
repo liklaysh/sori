@@ -119,6 +119,12 @@ curl -fsSL https://github.com/liklaysh/sori/raw/main/install.sh | sudo bash
 
 Скрипт сам спросит домен, email для Let's Encrypt, имя сервера и настройку firewall.
 
+Обновление установленного сервера:
+
+```bash
+curl -fsSL https://github.com/liklaysh/sori/raw/main/update.sh | sudo bash
+```
+
 Подробная инструкция: [install.md](install.md).
 
 ---

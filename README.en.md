@@ -123,6 +123,12 @@ curl -fsSL https://github.com/liklaysh/sori/raw/main/install.sh | sudo bash
 
 The script asks for the domain, Let's Encrypt email, server name, and firewall settings.
 
+Update an installed server:
+
+```bash
+curl -fsSL https://github.com/liklaysh/sori/raw/main/update.sh | sudo bash
+```
+
 Full guide: [install.md](install.md).
 
 ---
