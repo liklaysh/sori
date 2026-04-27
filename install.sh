@@ -23,10 +23,23 @@ die() {
 on_error() {
   local line="$1"
   local command="${2:-unknown}"
-  die "Installation failed near line ${line}: ${command}"
+  local exit_code="${3:-1}"
+
+  if [[ "${exit_code}" == "130" || "${exit_code}" == "143" ]]; then
+    warn "Installation interrupted by user."
+    exit "${exit_code}"
+  fi
+
+  die "Installation failed near line ${line} (exit ${exit_code}): ${command}"
 }
 
-trap 'on_error $LINENO "$BASH_COMMAND"' ERR
+on_interrupt() {
+  warn "Installation interrupted by user."
+  exit 130
+}
+
+trap 'on_error $LINENO "$BASH_COMMAND" "$?"' ERR
+trap 'on_interrupt' INT TERM
 
 require_root() {
   if [[ "${EUID}" -ne 0 ]]; then
