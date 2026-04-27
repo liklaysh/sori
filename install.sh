@@ -37,6 +37,19 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+read_from_tty() {
+  local prompt="$1"
+  local value
+
+  if [[ -r /dev/tty ]]; then
+    read -r -p "${prompt}" value </dev/tty || true
+  else
+    read -r -p "${prompt}" value || true
+  fi
+
+  printf '%s' "${value}"
+}
+
 prompt_if_empty() {
   local var_name="$1"
   local prompt="$2"
@@ -48,10 +61,10 @@ prompt_if_empty() {
   fi
 
   if [[ -n "${default_value}" ]]; then
-    read -r -p "${prompt} [${default_value}]: " current_value
+    current_value="$(read_from_tty "${prompt} [${default_value}]: ")"
     current_value="${current_value:-$default_value}"
   else
-    read -r -p "${prompt}: " current_value
+    current_value="$(read_from_tty "${prompt}: ")"
   fi
 
   [[ -n "${current_value}" ]] || die "${var_name} is required."
@@ -63,7 +76,7 @@ prompt_yes_no() {
   local default_value="${2:-N}"
   local answer
 
-  read -r -p "${prompt} [y/N]: " answer
+  answer="$(read_from_tty "${prompt} [y/N]: ")"
   answer="${answer:-$default_value}"
   [[ "${answer}" =~ ^[Yy]$ ]]
 }
@@ -513,8 +526,8 @@ print_summary() {
 }
 
 main() {
-  require_root
   parse_args "$@"
+  require_root
   ensure_supported_os
   install_system_dependencies
   resolve_repo_dir
