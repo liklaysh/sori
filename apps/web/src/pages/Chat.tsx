@@ -38,7 +38,7 @@ const Chat: React.FC = () => {
   
   const { 
     fetchInitialData, fetchConversations,
-    conversations, startDM, members
+    conversations, startDM, members, channels
   } = useChatStore();
   
   const { 
@@ -48,7 +48,8 @@ const Chat: React.FC = () => {
     isMemberSidebarOpen, setMemberSidebarOpen,
     isVoiceChatOpen, setIsVoiceChatOpen,
     memberContextMenu, setMemberContextMenu,
-    setActiveConversationId, activeConversationId
+    setActiveConversationId, activeConversationId,
+    activeChannelId
   } = useUIStore();
 
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -65,6 +66,10 @@ const Chat: React.FC = () => {
   // Call Orchestration (Source of Truth)
   const call = useCall({ socket });
   const isDirectCallOverlayVisible = !call.connectedChannelId && !!call.partner && call.status !== "idle";
+  const activeChannel = channels.find((channel) => channel.id === activeChannelId) || null;
+  const isActiveVoiceChannelView = activeModule === "community" && activeChannel?.type === "voice";
+  const isExpandedDirectCallSession = isDirectCallOverlayVisible && isVoiceChatOpen;
+  const shouldHideMemberSidebar = isActiveVoiceChannelView || isExpandedDirectCallSession;
 
   // Global Context Menu Closer
   useEffect(() => {
@@ -142,7 +147,7 @@ const Chat: React.FC = () => {
     const syncResponsiveLayout = () => {
       setChannelSidebarOpen(channelSidebarQuery.matches);
       setMemberSidebarOpen(
-        memberSidebarQuery.matches && (activeModule === "community" || activeModule === "dm") && !isVoiceChatOpen,
+        memberSidebarQuery.matches && (activeModule === "community" || activeModule === "dm") && !shouldHideMemberSidebar,
       );
     };
 
@@ -167,7 +172,7 @@ const Chat: React.FC = () => {
     };
   }, [
     activeModule,
-    isVoiceChatOpen,
+    shouldHideMemberSidebar,
     setChannelSidebarOpen,
     setMemberSidebarOpen,
   ]);
@@ -239,7 +244,7 @@ const Chat: React.FC = () => {
           {...media}
         />
 
-        {(activeModule === "community" || activeModule === "dm") && !isVoiceChatOpen && (
+        {(activeModule === "community" || activeModule === "dm") && !shouldHideMemberSidebar && (
           <div className={`fixed inset-0 z-40 xl:static xl:z-auto ${isMemberSidebarOpen ? "flex" : "hidden"}`}>
             <div className="absolute inset-0 bg-sori-surface-overlay xl:hidden" onClick={() => setMemberSidebarOpen(false)} />
             <MemberSidebar onlineUsersSet={onlineUsersSet} onMemberClick={handleMemberClick} />

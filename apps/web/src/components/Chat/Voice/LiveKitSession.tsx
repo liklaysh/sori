@@ -169,6 +169,7 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
         channelId={props.connectedChannelId ?? props.activeChannelId}
       />
       <ParticipantsVolumeManager volumes={{}} />
+      <RoomAudioRenderer volume={props.outputVolume / 100} />
       {props.showFullVoiceUI ? (
         <div className="flex-1 flex flex-col min-w-0 h-full">
           <LayoutContextProvider>
@@ -199,7 +200,6 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
               setMicGain={props.setMicGain}
               setOutputVolume={props.setOutputVolume}
             />
-            <RoomAudioRenderer volume={props.outputVolume / 100} />
           </LayoutContextProvider>
         </div>
       ) : (

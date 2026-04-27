@@ -178,6 +178,8 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                           }
                           if (ch.type === 'voice') {
                             handleJoinVoiceChannel(ch.id);
+                          } else {
+                            setIsVoiceChatOpen(false);
                           }
                         }} 
                         className={cn(

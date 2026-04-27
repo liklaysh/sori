@@ -80,9 +80,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   const activeConversation = conversations.find(c => c.id === activeConversationId) || null;
   const isVoiceChannelContext = activeModule === "community" && currentChannel?.type === "voice";
   const isDirectCallSession = Boolean(livekitToken && callId && partner && !connectedChannelId);
-  const isCurrentVoiceChannelSession = Boolean(
-    livekitToken && connectedChannelId && activeChannelId && connectedChannelId === activeChannelId,
-  );
+  const hasVoiceChannelSession = Boolean(livekitToken && connectedChannelId);
 
   const attachments = useChatAttachments();
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -322,7 +320,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
             </div>
           )}
 
-          {(isDirectCallSession || isCurrentVoiceChannelSession) && window.isSecureContext ? (
+          {(isDirectCallSession || hasVoiceChannelSession) && window.isSecureContext ? (
             <Suspense fallback={<div className="flex-1 bg-sori-surface-main" />}>
               <LiveKitSession
                 socket={props.socket}
