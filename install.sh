@@ -533,7 +533,22 @@ print_summary() {
   services_status="$(compose ps --format json 2>/dev/null || true)"
 
   printf '\n'
+  printf '📦 Service status\n'
+  if [[ -n "${services_status}" ]] && command_exists jq; then
+    printf '%-24s %s\n' "SERVICE" "STATE"
+    printf '%s\n' "${services_status}" | jq -r '
+      if type == "array" then .[] else . end
+      | [.Service, .State]
+      | @tsv
+    ' | awk -F '\t' '{ printf "%-24s %s\n", $1, $2 }'
+  else
+    compose ps
+  fi
+
+  printf '\n'
+  printf '========================================\n'
   printf '✅ SORI installed successfully\n'
+  printf '========================================\n'
   printf '🌐 URL: https://%s\n' "${WEB_HOST}"
   printf '⚙️  Admin: https://%s/admin\n' "${WEB_HOST}"
   printf '🖥️  Client server address: https://%s\n' "${WEB_HOST}"
@@ -541,13 +556,7 @@ print_summary() {
   printf '🔐 Login: %s\n' "${ADMIN_PANEL_LOGIN}"
   printf '🔐 Password: %s\n' "${ADMIN_PANEL_PASSWORD}"
   printf '📄 Credentials file: %s\n' "${REPO_DIR}/.install/admin-credentials.txt"
-  printf '\n'
-  printf '📦 Service status\n'
-  if [[ -n "${services_status}" ]]; then
-    printf '%s\n' "${services_status}"
-  else
-    compose ps
-  fi
+  printf '========================================\n'
 }
 
 main() {
