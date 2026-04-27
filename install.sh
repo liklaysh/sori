@@ -22,10 +22,11 @@ die() {
 
 on_error() {
   local line="$1"
-  die "Installation failed near line ${line}."
+  local command="${2:-unknown}"
+  die "Installation failed near line ${line}: ${command}"
 }
 
-trap 'on_error $LINENO' ERR
+trap 'on_error $LINENO "$BASH_COMMAND"' ERR
 
 require_root() {
   if [[ "${EUID}" -ne 0 ]]; then
@@ -51,10 +52,15 @@ read_from_tty() {
 }
 
 prompt_if_empty() {
-  local var_name="$1"
-  local prompt="$2"
+  local var_name="${1:-}"
+  local prompt="${2:-}"
   local default_value="${3:-}"
-  local current_value="${!var_name:-}"
+  local current_value
+
+  [[ -n "${var_name}" ]] || die "prompt_if_empty requires a variable name."
+  [[ -n "${prompt}" ]] || die "prompt_if_empty requires a prompt for ${var_name}."
+
+  current_value="${!var_name:-}"
 
   if [[ -n "${current_value}" ]]; then
     return 0
