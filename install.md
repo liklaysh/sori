@@ -38,22 +38,34 @@ media.example.com    -> server public IPv4
 
 Replace `example.com` with your real domain.
 
+## One-Command Install
+
+After the repository is published, the normal install command is:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/liklaysh/sori/main/install.sh | sudo bash
+```
+
+The installer then asks for:
+
+- root domain
+- ACME / Let's Encrypt contact email
+- server name
+- whether to enable `ufw`
+
 ## Install From an Existing Checkout
 
 If the repository is already on the server:
 
 ```bash
-sudo bash install.sh \
-  --domain example.com \
-  --email admin@example.com \
-  --server-name "My Sori"
+sudo bash install.sh
 ```
 
-The arguments are optional. If omitted, the installer asks for them interactively.
+The installer asks for required values interactively.
 
-## Install From Git
+## Advanced / Non-Interactive Install
 
-When installing onto a clean server from a Git repository:
+You can still pass values explicitly for automation:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/<ref>/install.sh | sudo bash -s -- \
@@ -65,6 +77,8 @@ curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/<ref>/install.sh | s
 ```
 
 Replace `<owner>`, `<repo>`, `<ref>`, and the domain values.
+
+If the installer script was downloaded from a build that does not have a default repository URL baked in, it asks for the Git repository URL interactively.
 
 ## What the Installer Does
 

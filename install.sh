@@ -3,6 +3,8 @@ set -Eeuo pipefail
 
 SCRIPT_VERSION="1.0.0"
 DEFAULT_INSTALL_DIR="/opt/sori"
+DEFAULT_REPO_URL="https://github.com/liklaysh/sori.git"
+DEFAULT_GIT_REF="main"
 COMPOSE_FILES=(-f docker-compose.yml -f docker-compose.production.yml)
 
 log() {
@@ -119,9 +121,9 @@ ensure_supported_os() {
 }
 
 parse_args() {
-  REPO_URL="${SORI_REPO_URL:-}"
+  REPO_URL="${SORI_REPO_URL:-$DEFAULT_REPO_URL}"
   INSTALL_DIR="${SORI_INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
-  GIT_REF="${SORI_GIT_REF:-main}"
+  GIT_REF="${SORI_GIT_REF:-$DEFAULT_GIT_REF}"
   DOMAIN="${SORI_DOMAIN:-}"
   ACME_EMAIL="${SORI_ACME_EMAIL:-}"
   SERVER_NAME="${SORI_SERVER_NAME:-}"
@@ -157,7 +159,7 @@ parse_args() {
 Usage: bash install.sh [options]
 
 Options:
-  --repo-url <url>      GitHub repository URL used for clone/update
+  --repo-url <url>      Git repository URL used for clone/update
   --install-dir <path>  Install directory (default: /opt/sori)
   --ref <ref>           Git ref or release tag to deploy (default: main)
   --domain <domain>     Public root domain (example.com)
@@ -183,7 +185,7 @@ resolve_repo_dir() {
     return 0
   fi
 
-  [[ -n "${REPO_URL}" ]] || die "REPO_URL is required when install.sh is not executed from a checked-out repository."
+  prompt_if_empty REPO_URL "Git repository URL" "${DEFAULT_REPO_URL}"
 
   mkdir -p "${INSTALL_DIR}"
 
