@@ -68,15 +68,15 @@ The installer asks for required values interactively.
 You can still pass values explicitly for automation:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/<ref>/install.sh | sudo bash -s -- \
-  --repo-url https://github.com/<owner>/<repo>.git \
+curl -fsSL https://github.com/liklaysh/sori/raw/main/install.sh | sudo bash -s -- \
+  --repo-url https://github.com/liklaysh/sori.git \
   --ref main \
   --domain example.com \
   --email admin@example.com \
   --server-name "My Sori"
 ```
 
-Replace `<owner>`, `<repo>`, `<ref>`, and the domain values.
+Replace the domain values with your real domain and email.
 
 If the installer script was downloaded from a build that does not have a default repository URL baked in, it asks for the Git repository URL interactively.
 
