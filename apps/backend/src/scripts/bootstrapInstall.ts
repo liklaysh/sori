@@ -76,7 +76,9 @@ async function main() {
   process.stdout.write("\n");
 }
 
-main().catch((error) => {
-  console.error("[bootstrapInstall] failed", error);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error("[bootstrapInstall] failed", error);
+    process.exit(1);
+  });

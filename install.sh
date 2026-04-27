@@ -437,6 +437,12 @@ compose() {
   docker compose --env-file "${REPO_DIR}/.env" "${COMPOSE_FILES[@]}" "$@"
 }
 
+compose_with_timeout() {
+  local seconds="$1"
+  shift
+  timeout "${seconds}" docker compose --env-file "${REPO_DIR}/.env" "${COMPOSE_FILES[@]}" "$@"
+}
+
 wait_for_postgres() {
   log "Waiting for PostgreSQL..."
   local attempt
@@ -463,7 +469,7 @@ deploy_stack() {
   compose run --rm sori-db-migrate
 
   log "Bootstrapping hidden adminpanel user and server metadata..."
-  compose run --rm sori-install-bootstrap >/dev/null
+  compose_with_timeout 180s run --rm sori-install-bootstrap
 
   validate_gateway_config
 
