@@ -479,10 +479,10 @@ deploy_stack() {
   wait_for_postgres
 
   log "Running database migrations..."
-  compose run --rm sori-db-migrate
+  compose run --rm --build sori-db-migrate
 
   log "Bootstrapping hidden adminpanel user and server metadata..."
-  compose_with_timeout 180s run --rm sori-install-bootstrap
+  compose_with_timeout 180s run --rm --build sori-install-bootstrap
 
   validate_gateway_config
 
