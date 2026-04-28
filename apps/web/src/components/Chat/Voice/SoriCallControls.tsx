@@ -87,30 +87,30 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
 
   return (
     <div className={cn(
-      "h-24 flex items-center justify-center gap-3 bg-sori-surface-base border-t border-muted shrink-0 px-8 w-full z-50",
+      "h-[4.5rem] flex items-center justify-center gap-2 bg-sori-surface-base border-t border-muted shrink-0 px-6 w-full z-50",
       className
     )}>
       {/* Mic & Audio Menu (Unified) */}
-      <div className="flex items-center gap-0.5 bg-sori-surface-panel rounded-2xl p-1 border border-muted relative">
+      <div className="flex items-center gap-0.5 bg-sori-surface-panel rounded-xl p-1 border border-muted relative">
         <button 
           onClick={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
           className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+            "w-10 h-10 rounded-lg flex items-center justify-center transition-all",
             !isMicrophoneEnabled ? 'bg-sori-accent-danger text-white' : 'text-on-surface-variant hover:bg-sori-surface-panel'
           )}
         >
-          {isMicrophoneEnabled ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
+          {isMicrophoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
         </button>
         
         <Popover>
           <PopoverTrigger asChild>
             <button 
-              className="w-5 h-12 text-on-surface-variant hover:text-primary transition-all flex items-center justify-center group"
+              className="w-5 h-10 text-on-surface-variant hover:text-primary transition-all flex items-center justify-center group"
             >
               <ChevronDown className="h-4 w-4 group-data-[state=open]:rotate-180 transition-transform" />
             </button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-64 p-4 border-muted shadow-2xl rounded-2xl mb-4">
+          <PopoverContent side="top" align="start" className="w-64 p-4 border-muted shadow-2xl rounded-2xl mb-2">
             <div className="space-y-4">
               {/* INPUT SECTION */}
               <div className="space-y-3">
@@ -187,26 +187,26 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
       </div>
 
       {/* Camera Menu */}
-      <div className="flex items-center gap-0.5 bg-sori-surface-panel rounded-2xl p-1 border border-muted relative">
+      <div className="flex items-center gap-0.5 bg-sori-surface-panel rounded-xl p-1 border border-muted relative">
         <button 
           onClick={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
           className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+            "w-10 h-10 rounded-lg flex items-center justify-center transition-all",
             isCameraEnabled ? 'bg-primary text-white shadow-lg shadow-primary' : 'text-on-surface-variant hover:bg-sori-surface-panel'
           )}
         >
-          {isCameraEnabled ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
+          {isCameraEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
         </button>
         
         <Popover>
           <PopoverTrigger asChild>
             <button 
-              className="w-5 h-12 text-on-surface-variant hover:text-primary transition-all flex items-center justify-center group"
+              className="w-5 h-10 text-on-surface-variant hover:text-primary transition-all flex items-center justify-center group"
             >
               <ChevronDown className="h-4 w-4 group-data-[state=open]:rotate-180 transition-transform" />
             </button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-64 p-4 border-muted shadow-2xl rounded-2xl mb-4">
+          <PopoverContent side="top" align="start" className="w-64 p-4 border-muted shadow-2xl rounded-2xl mb-2">
             <div className="space-y-4">
               <div>
                 <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-3 ml-1">{t("voice:controls.videoDevice")}</p>
@@ -239,37 +239,37 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
           }
         }}
         className={cn(
-          "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
+          "w-11 h-11 rounded-xl flex items-center justify-center transition-all",
           isScreenShareEnabled 
             ? 'bg-secondary text-black shadow-lg' 
             : 'bg-sori-surface-panel text-on-surface-variant hover:bg-sori-surface-base'
         )}
         title={t("voice:controls.presentScreen")}
       >
-        {isScreenShareEnabled ? <StopCircle className="h-7 w-7" /> : <ScreenShare className="h-7 w-7" />}
+        {isScreenShareEnabled ? <StopCircle className="h-5 w-5" /> : <ScreenShare className="h-5 w-5" />}
       </button>
 
       {/* Noise Suppression Popup */}
       <NoiseSuppressionPopup isEnabled={noiseSuppression} onToggle={toggleNoiseSuppression}>
         <button 
           className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
+            "w-11 h-11 rounded-xl flex items-center justify-center transition-all",
             noiseSuppression 
               ? 'bg-muted text-primary border border-primary' 
               : 'bg-sori-surface-panel text-on-surface-variant hover:bg-sori-surface-base border border-transparent'
           )}
           title={t("voice:noiseSuppression")}
         >
-          <Waves className="h-7 w-7" />
+          <Waves className="h-5 w-5" />
         </button>
       </NoiseSuppressionPopup>
 
       {/* Hang Up */}
       <button 
         onClick={onHangUp}
-        className="w-14 h-14 bg-sori-accent-danger text-white rounded-2xl flex items-center justify-center shadow-lg hover:brightness-110 active:scale-95 transition-all duration-300"
+        className="w-11 h-11 bg-sori-accent-danger text-white rounded-xl flex items-center justify-center shadow-lg hover:brightness-110 active:scale-95 transition-all duration-300"
       >
-        <PhoneOff className="h-7 w-7" />
+        <PhoneOff className="h-5 w-5" />
       </button>
     </div>
   );

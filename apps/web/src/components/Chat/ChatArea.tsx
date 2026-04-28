@@ -263,6 +263,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
     const isActiveConnectedVoiceChannel = Boolean(isVoice && hasVoiceChannelSession && connectedChannelId === activeChannelId);
     const showFullVoiceUI = isDirectCallSession ? isExpandedDirectCallSession : isActiveConnectedVoiceChannel;
     const shouldMountLiveKitSession = (isDirectCallSession || hasVoiceChannelSession) && window.isSecureContext;
+    const shouldShowChatInput = !showFullVoiceUI && !isVoice;
     
     if (activeModule === "dm" && !activeConversationId) {
       return <DMEmptyState onShowSidebar={() => setChannelSidebarOpen(true)} />;
@@ -433,7 +434,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
           )}
         </div>
 
-        {!showFullVoiceUI && (
+        {shouldShowChatInput && (
           <ChatInput 
             inputValue={inputValue} setInputValue={setInputValue} onSendMessage={handleSendMessage} 
             editingMessage={editingMessage} setEditingMessage={setEditingMessage} 

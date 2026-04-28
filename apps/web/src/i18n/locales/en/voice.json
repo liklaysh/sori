@@ -42,6 +42,11 @@
     "muteStreamAudio": "Mute Stream Audio",
     "unmuteStreamAudio": "Unmute Stream Audio"
   },
+  "occupantVolume": {
+    "title": "User volume",
+    "volume": "Volume",
+    "reset": "Reset to 100%"
+  },
   "overlay": {
     "incomingCall": "Incoming Call...",
     "contacting": "Contacting...",

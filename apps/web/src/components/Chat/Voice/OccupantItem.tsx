@@ -8,13 +8,22 @@ interface OccupantItemProps {
   occupant: VoiceOccupant;
   onContextMenu?: (e: React.MouseEvent, o: VoiceOccupant) => void;
   isSpeaking?: boolean;
+  isContextMenuEnabled?: boolean;
 }
 
-export const OccupantItem: React.FC<OccupantItemProps> = ({ occupant, onContextMenu, isSpeaking }) => {
+export const OccupantItem: React.FC<OccupantItemProps> = ({ occupant, onContextMenu, isSpeaking, isContextMenuEnabled }) => {
   return (
     <div 
-      onContextMenu={(e) => onContextMenu?.(e, occupant)}
-      className="flex items-center justify-between py-1 px-2 hover:bg-sori-surface-panel rounded-md cursor-pointer group transition-all"
+      onContextMenu={(e) => {
+        if (!isContextMenuEnabled || !onContextMenu) {
+          return;
+        }
+        onContextMenu(e, occupant);
+      }}
+      className={cn(
+        "flex items-center justify-between py-1 px-2 hover:bg-sori-surface-panel rounded-md group transition-all",
+        isContextMenuEnabled ? "cursor-pointer" : "cursor-default",
+      )}
     >
       <div className="flex items-center gap-2 min-w-0">
         <div className="relative shrink-0">

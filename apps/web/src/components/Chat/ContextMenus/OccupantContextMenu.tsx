@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { VoiceOccupant } from '../../../types/chat';
-import { MessageSquare, Volume2, VolumeX, UserMinus } from 'lucide-react';
+import { RotateCcw, Volume1, Volume2 } from 'lucide-react';
 import { useContextMenuPosition } from '../../../hooks/useContextMenuPosition';
+import { Slider } from '@sori/ui';
 
 interface OccupantContextMenuProps {
   visible: boolean;
@@ -10,79 +12,74 @@ interface OccupantContextMenuProps {
   occupant: VoiceOccupant | null;
   participantVolume: number;
   onVolumeChange: (val: number) => void;
-  onDirectMessage: () => void;
-  onMute?: () => void;
-  isMuted?: boolean;
-  onKick?: () => void;
   onClose: () => void;
 }
 
 export const OccupantContextMenu: React.FC<OccupantContextMenuProps> = ({ 
-  visible, x, y, occupant, participantVolume, onVolumeChange, onDirectMessage, onMute, isMuted, onKick, onClose
+  visible, x, y, occupant, participantVolume, onVolumeChange, onClose
 }) => {
+  const { t } = useTranslation(["voice"]);
   const menuStyles = useContextMenuPosition(x, y);
 
   if (!visible || !occupant) return null;
 
   return (
-    <div className="fixed z-[300] bg-sori-surface-panel border border-sori-border-subtle rounded-xl shadow-2xl p-2 min-w-[200px] animate-in zoom-in-95 shadow-black" style={menuStyles}>
-      <div className="p-1 px-1.5 border-b border-sori-border-subtle mb-1">
-        <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">{occupant.username}</p>
+    <div
+      className="fixed z-[450] bg-sori-surface-panel border border-sori-border-subtle rounded-2xl shadow-2xl p-4 w-64 animate-in zoom-in-95 shadow-black ring-1 ring-sori-border-subtle"
+      style={menuStyles}
+      onClick={(e) => e.stopPropagation()}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <div className="flex items-start justify-between gap-3 border-b border-sori-border-subtle pb-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">{t("voice:occupantVolume.title")}</p>
+          <p className="text-sm font-black text-sori-text-strong truncate mt-1">{occupant.username}</p>
+        </div>
+        <div className="h-9 w-9 rounded-xl bg-sori-surface-base border border-sori-border-subtle flex items-center justify-center text-sori-accent-primary shrink-0">
+          {participantVolume === 0 ? <Volume1 className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        </div>
       </div>
 
-      <div className="px-2 py-2">
-        <p className="text-[9px] font-bold text-sori-text-muted mb-2 uppercase">Volume: {participantVolume}%</p>
-        <input 
-          type="range" min="0" max="200" 
-          value={participantVolume} 
-          onChange={(e) => onVolumeChange(parseInt(e.target.value))}
-          className="w-full h-1 bg-sori-surface-base rounded-lg appearance-none cursor-pointer accent-sori-accent-primary" 
+      <div className="pt-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">{t("voice:occupantVolume.volume")}</p>
+          <span className="text-sm font-black text-sori-accent-primary tabular-nums">{participantVolume}%</span>
+        </div>
+
+        <Slider
+          value={[participantVolume]}
+          min={0}
+          max={200}
+          step={1}
+          onValueChange={([value]: number[]) => onVolumeChange(value)}
+          className="py-2"
         />
-      </div>
 
-      <div className="p-1 px-1.5 border-b border-sori-border-subtle mb-1">
-        <p className="text-[10px] font-black uppercase text-sori-text-muted tracking-widest">Controls</p>
-      </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[0, 100, 200].map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onVolumeChange(value)}
+              className="h-8 rounded-lg bg-sori-surface-base border border-sori-border-subtle text-[10px] font-black text-sori-text-muted hover:text-sori-accent-primary hover:border-sori-border-accent transition-colors"
+            >
+              {value}%
+            </button>
+          ))}
+        </div>
 
-      <button
-        onClick={() => { onDirectMessage(); onClose(); }}
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-bold text-sori-text-strong hover:bg-sori-accent-primary hover:text-sori-text-on-primary transition-all rounded-lg group"
-      >
-        <MessageSquare className="h-3.5 w-3.5 text-sori-text-muted group-hover:text-sori-text-on-primary transition-colors" />
-        Message
-      </button>
-
-      {onMute && (
         <button
-          onClick={() => { onMute(); onClose(); }}
-          className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-bold text-sori-text-strong hover:bg-sori-accent-primary hover:text-sori-text-on-primary transition-all rounded-lg group"
+          type="button"
+          onClick={() => {
+            onVolumeChange(100);
+            onClose();
+          }}
+          className="w-full flex items-center justify-center gap-2 h-9 rounded-xl bg-sori-surface-hover text-sori-text-muted hover:text-sori-accent-primary transition-colors text-[10px] font-black uppercase tracking-widest"
         >
-          {isMuted ? (
-            <>
-              <Volume2 className="h-3.5 w-3.5 text-sori-accent-primary group-hover:text-sori-text-on-primary transition-colors" />
-              Unmute
-            </>
-          ) : (
-            <>
-              <VolumeX className="h-3.5 w-3.5 text-sori-text-muted group-hover:text-sori-text-on-primary transition-colors" />
-              Mute
-            </>
-          )}
+          <RotateCcw className="h-3.5 w-3.5" />
+          {t("voice:occupantVolume.reset")}
         </button>
-      )}
-
-      {onKick && (
-        <>
-          <div className="h-px bg-sori-border-subtle my-1 mx-2" />
-          <button
-            onClick={() => { onKick(); onClose(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-bold text-sori-accent-danger hover:bg-sori-accent-danger hover:text-sori-text-on-accent transition-all rounded-lg group"
-          >
-            <UserMinus className="h-3.5 w-3.5 text-sori-accent-danger group-hover:text-sori-text-on-accent transition-colors" />
-            Terminate Link
-          </button>
-        </>
-      )}
+      </div>
     </div>
   );
 };

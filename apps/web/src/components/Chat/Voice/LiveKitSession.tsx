@@ -10,6 +10,7 @@ import {
 import { ConnectionState } from "livekit-client";
 import { LIVEKIT_URL } from "../../../config";
 import { ChatItem, User } from "../../../types/chat";
+import { useUIStore } from "../../../store/useUIStore";
 import { useVoiceStore } from "../../../store/useVoiceStore";
 import { ParticipantsVolumeManager } from "./ParticipantsVolumeManager";
 import { SoriVoiceRoom } from "./SoriVoiceRoom";
@@ -136,10 +137,13 @@ const LiveKitMediaDeviceSync: React.FC<{
 };
 
 export default function LiveKitSession(props: LiveKitSessionProps) {
+  const participantVolumes = useUIStore((state) => state.participantVolumes);
+
   return (
     <LiveKitRoom
       video={false}
       audio={true}
+      options={{ webAudioMix: true }}
       token={props.livekitToken}
       serverUrl={LIVEKIT_URL}
       connect={true}
@@ -167,7 +171,7 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
         callId={props.callId}
         channelId={props.connectedChannelId ?? props.activeChannelId}
       />
-      <ParticipantsVolumeManager volumes={{}} />
+      <ParticipantsVolumeManager volumes={participantVolumes} />
       <RoomAudioRenderer volume={props.outputVolume / 100} />
       {props.showFullVoiceUI ? (
         <div className="flex-1 flex flex-col min-w-0 h-full">

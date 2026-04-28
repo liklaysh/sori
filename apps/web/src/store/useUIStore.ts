@@ -39,6 +39,7 @@ interface UIState {
   isMuted: boolean;
   isDeafened: boolean;
   notificationSettings: NotificationSettings;
+  participantVolumes: Record<string, number>;
   isCreateChannelModalOpen: boolean;
   createChannelCategoryId: string | null;
   
@@ -56,6 +57,7 @@ interface UIState {
   setIsDeafened: (deafened: boolean) => void;
   setNotificationSetting: (key: NotificationSettingKey, value: boolean) => void;
   setNotificationSettings: (settings: Partial<NotificationSettings>) => void;
+  setParticipantVolume: (userId: string, volume: number) => void;
   setCreateChannelModalOpen: (open: boolean, categoryId?: string | null) => void;
   
   // Context Menus
@@ -79,6 +81,7 @@ export const useUIStore = create<UIState>()(
       isMuted: false,
       isDeafened: false,
       notificationSettings: DEFAULT_NOTIFICATION_SETTINGS,
+      participantVolumes: {},
       isCreateChannelModalOpen: false,
       createChannelCategoryId: null,
 
@@ -111,6 +114,12 @@ export const useUIStore = create<UIState>()(
           ...settings,
         },
       })),
+      setParticipantVolume: (userId, volume) => set((state) => ({
+        participantVolumes: {
+          ...state.participantVolumes,
+          [userId]: Math.max(0, Math.min(200, Math.round(volume))),
+        },
+      })),
       setCreateChannelModalOpen: (isCreateChannelModalOpen, createChannelCategoryId = null) => 
         set({ isCreateChannelModalOpen, createChannelCategoryId }),
 
@@ -128,6 +137,7 @@ export const useUIStore = create<UIState>()(
         isMuted: state.isMuted,
         isDeafened: state.isDeafened,
         notificationSettings: state.notificationSettings,
+        participantVolumes: state.participantVolumes,
       }),
       storage: {
         getItem: (name) => {
@@ -142,6 +152,7 @@ export const useUIStore = create<UIState>()(
                 ...DEFAULT_NOTIFICATION_SETTINGS,
                 ...(state.notificationSettings || {}),
               },
+              participantVolumes: state.participantVolumes || {},
             },
           };
         },

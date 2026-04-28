@@ -42,6 +42,11 @@
     "muteStreamAudio": "Выключить звук трансляции",
     "unmuteStreamAudio": "Включить звук трансляции"
   },
+  "occupantVolume": {
+    "title": "Громкость пользователя",
+    "volume": "Громкость",
+    "reset": "Сбросить до 100%"
+  },
   "overlay": {
     "incomingCall": "Входящий звонок...",
     "contacting": "Соединяемся...",

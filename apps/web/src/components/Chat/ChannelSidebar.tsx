@@ -1,18 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useChatStore } from "../../store/useChatStore";
 import { useUserStore } from "../../store/useUserStore";
 import { useUIStore } from "../../store/useUIStore";
 import { OccupantItem } from "./Voice/OccupantItem";
+import { OccupantContextMenu } from "./ContextMenus/OccupantContextMenu";
 import { Skeleton, cn, Popover, PopoverTrigger, PopoverContent, Slider } from "@sori/ui";
 import { ChevronDown, Plus, ChevronRight, Hash, Volume2, Mic, MicOff, Headphones, Waves, PhoneOff } from "lucide-react";
 import { NoiseSuppressionPopup } from "./Modals/NoiseSuppressionPopup";
-import { API_URL } from "../../config";
 import { getAvatarUrl } from "../../utils/avatar";
 import { CreateChannelModal } from "./Modals/CreateChannelModal";
 import api from "../../lib/api";
 import { toast } from "sonner";
 import { playNotificationSound } from "../../utils/notificationSounds";
+import { VoiceOccupant } from "../../types/chat";
 
 interface ChannelSidebarProps {
   socket: any;
@@ -59,9 +60,15 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
     collapsedCategories, toggleCategory,
     setChannelSidebarOpen,
     isMuted, setIsMuted, isDeafened, setIsDeafened,
-    isCreateChannelModalOpen, setCreateChannelModalOpen, createChannelCategoryId
+    isCreateChannelModalOpen, setCreateChannelModalOpen, createChannelCategoryId,
+    participantVolumes, setParticipantVolume
   } = useUIStore();
   const { activeCommunityId, fetchInitialData } = useChatStore();
+  const [occupantMenu, setOccupantMenu] = useState<{
+    x: number;
+    y: number;
+    occupant: VoiceOccupant;
+  } | null>(null);
 
   const currentChannel = channels.find(c => c.id === activeChannelId) || null;
   const connectedChannel = channels.find(c => c.id === connectedChannelId) || null;
@@ -94,6 +101,34 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
     resetCall();
     setIsDisconnecting(true);
   };
+
+  const handleOccupantContextMenu = (e: React.MouseEvent, occupant: VoiceOccupant, channelId: string) => {
+    if (!livekitToken || connectedChannelId !== channelId || occupant.userId === user?.id) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    setOccupantMenu({
+      x: e.clientX,
+      y: e.clientY,
+      occupant,
+    });
+  };
+
+  useEffect(() => {
+    if (!occupantMenu) {
+      return;
+    }
+
+    const closeMenu = () => setOccupantMenu(null);
+    window.addEventListener("click", closeMenu);
+    window.addEventListener("keydown", closeMenu);
+    return () => {
+      window.removeEventListener("click", closeMenu);
+      window.removeEventListener("keydown", closeMenu);
+    };
+  }, [occupantMenu]);
 
   // Categorize channels
   const categories = Array.from(new Set(channels.map(c => c.categoryId))).map((id) => {
@@ -169,6 +204,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                   const occupants = [...(voiceOccupants[ch.id] || [])].sort((a, b) => a.joinedAt - b.joinedAt);
                   const isActive = activeChannelId === ch.id;
                   const canShowVoiceActivity = Boolean(livekitToken && connectedChannelId === ch.id);
+                  const canOpenOccupantMenu = Boolean(livekitToken && connectedChannelId === ch.id);
                   return (
                     <div key={ch.id} className="mb-1">
                       <div 
@@ -206,6 +242,8 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
                                 key={occ.userId} 
                                 occupant={occ} 
                                 isSpeaking={isSpeaking} 
+                                isContextMenuEnabled={canOpenOccupantMenu && occ.userId !== user.id}
+                                onContextMenu={(event, occupant) => handleOccupantContextMenu(event, occupant, ch.id)}
                               />
                             );
                           })}
@@ -219,6 +257,20 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
           </div>
         ))}
       </div>
+
+      <OccupantContextMenu
+        visible={!!occupantMenu}
+        x={occupantMenu?.x || 0}
+        y={occupantMenu?.y || 0}
+        occupant={occupantMenu?.occupant || null}
+        participantVolume={occupantMenu ? participantVolumes[occupantMenu.occupant.userId] ?? 100 : 100}
+        onVolumeChange={(volume) => {
+          if (occupantMenu) {
+            setParticipantVolume(occupantMenu.occupant.userId, volume);
+          }
+        }}
+        onClose={() => setOccupantMenu(null)}
+      />
 
       <div className="mt-auto flex flex-col">
         {socket?.connected && connectedChannelId && (
