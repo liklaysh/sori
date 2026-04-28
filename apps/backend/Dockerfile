@@ -5,6 +5,7 @@ WORKDIR /app
 
 # Copy root workspace configs
 COPY package.json package-lock.json ./
+COPY VERSION ./VERSION
 COPY apps/backend/package.json ./apps/backend/
 COPY packages/ui/package.json ./packages/ui/
 
@@ -22,9 +23,11 @@ RUN npm run build -w @sori/backend
 FROM node:20-bookworm-slim
 
 WORKDIR /app
+ARG SORI_COMMIT=unknown
 
 # Install production dependencies only
 COPY package.json package-lock.json ./
+COPY VERSION ./VERSION
 COPY apps/backend/package.json ./apps/backend/
 RUN npm ci --omit=dev -w @sori/backend
 
@@ -37,5 +40,6 @@ EXPOSE 3000
 
 # Env vars will be handled by Docker Compose
 ENV NODE_ENV=production
+ENV SORI_COMMIT=$SORI_COMMIT
 
 CMD ["node", "apps/backend/dist/index.js"]

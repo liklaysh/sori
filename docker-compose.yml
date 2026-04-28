@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
+      args:
+        - SORI_COMMIT=${SORI_COMMIT:-unknown}
     # Ports will be managed by gateway
     expose:
       - "3000"

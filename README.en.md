@@ -102,6 +102,16 @@ The interface is fully localized and can be extended with additional languages.
 
 ---
 
+## 🧭 Versioning
+
+SORI stores the product version in the root `VERSION` file. The backend exposes runtime version metadata at `/api/system/version`:
+
+- `version` — the product version of the system.
+- `apiVersion` — the API contract version for web, desktop, and future mobile clients.
+- `buildId` — the runtime backend build identifier used for diagnostics and update checks.
+
+---
+
 ## 🏗 Deployment Model
 
 SORI is designed around simplicity and predictability:

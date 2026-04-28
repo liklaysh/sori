@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUserStore } from "../../store/useUserStore";
 import { 
@@ -16,6 +16,7 @@ import { ProfileTab } from "./Tabs/ProfileTab";
 import { VoiceVideoTab } from "./Tabs/VoiceVideoTab";
 import { NotificationsTab } from "./Tabs/NotificationsTab";
 import { LanguageSelector } from "../Chat/LanguageSelector";
+import api from "../../lib/api";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -40,11 +41,42 @@ interface SettingsModalProps {
 
 type Tab = "profile" | "equipment" | "notifications";
 
+interface SystemVersion {
+  name: string;
+  version: string;
+  buildId: string;
+}
+
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
   const { user } = useUserStore();
   const { t } = useTranslation(["settings", "common"]);
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [systemVersion, setSystemVersion] = useState<SystemVersion | null>(null);
+
+  useEffect(() => {
+    if (!props.isOpen) {
+      return;
+    }
+
+    let isMounted = true;
+
+    api.get<SystemVersion>("/api/system/version")
+      .then((response) => {
+        if (isMounted) {
+          setSystemVersion(response.data);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setSystemVersion(null);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [props.isOpen]);
 
   if (!props.isOpen || !user) return null;
 
@@ -90,6 +122,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
           <div className="mt-auto pt-6">
             <div className="border-t border-sori-border-subtle pt-6">
               <LanguageSelector variant="panel" />
+              {systemVersion && (
+                <p className="mt-3 text-xs text-sori-text-dim">
+                  {systemVersion.name} {systemVersion.version} • build {systemVersion.buildId}
+                </p>
+              )}
             </div>
           </div>
         </aside>

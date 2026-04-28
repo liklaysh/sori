@@ -37,6 +37,7 @@ import timeRoutes from "./routes/time.js";
 import utilsRoutes from "./routes/utils.js";
 import healthRoutes from "./routes/health.js";
 import clientRoutes from "./routes/client.js";
+import systemRoutes from "./routes/system.js";
 import { authLimiter, uploadLimiter, generalLimiter } from "./middleware/rateLimiter.js";
 import { csrfMiddleware, originCheckMiddleware } from "./middleware/security.js";
 
@@ -225,6 +226,8 @@ app.route("/users", userRoutes);
 app.route("/admin", adminRoutes);
 app.route("/time", timeRoutes);
 app.route("/utils", utilsRoutes);
+app.route("/system", systemRoutes);
+app.route("/api/system", systemRoutes);
 app.route("/client", clientRoutes);
 app.route("/", clientRoutes);
 

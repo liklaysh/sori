@@ -112,6 +112,12 @@ update_git_checkout() {
   git pull --ff-only origin "${current_branch}"
 }
 
+set_build_metadata() {
+  cd "${REPO_DIR}"
+  SORI_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || true)"
+  export SORI_COMMIT="${SORI_COMMIT:-unknown}"
+}
+
 wait_for_postgres() {
   local attempt
   for attempt in $(seq 1 60); do
@@ -226,6 +232,7 @@ main() {
   parse_args "$@"
   require_root
   update_git_checkout
+  set_build_metadata
   run_update
   health_check
   validate_client_bootstrap
