@@ -216,6 +216,7 @@ The contract is now additionally documented as a versioned spec:
 - `LIVEKIT_API_KEY`
 - `LIVEKIT_API_SECRET`
 - `ALLOWED_ORIGINS`
+- `DESKTOP_APP_ORIGINS`
 - `MAX_UPLOAD_SIZE_MB`
 - `VITE_MAX_UPLOAD_SIZE_MB`
 - `PUBLIC_WEB_URL`

@@ -17,6 +17,7 @@ import { handleMessages } from "./socket/handlers/messages.js";
 import { handleCalls } from "./socket/handlers/calls.js";
 import { rateLimiter } from "./middleware/rateLimiter.js";
 import { resolveActiveSessionUser } from "./utils/authSession.js";
+import { isAllowedSoriOrigin } from "./utils/origin.js";
 
 import { Socket, UserProfile } from "./types/socket.js";
 
@@ -25,19 +26,7 @@ function isAllowedSocketOrigin(origin?: string) {
     return true;
   }
 
-  try {
-    const parsed = new URL(origin);
-    const hostname = parsed.hostname.toLowerCase();
-    const allowed = new Set(config.cors.allowedOrigins);
-
-    return allowed.has(origin)
-      || hostname === "localhost"
-      || hostname === "127.0.0.1"
-      || hostname === "sori.orb.local"
-      || hostname.endsWith(".sori.orb.local");
-  } catch {
-    return false;
-  }
+  return isAllowedSoriOrigin(origin);
 }
 
 export function initSocket(server: any) {

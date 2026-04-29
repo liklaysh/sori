@@ -1,8 +1,8 @@
 import { createMiddleware } from "hono/factory";
 import { getCookie } from "hono/cookie";
 import { verify } from "hono/jwt";
-import { config } from "../config.js";
 import { JWT_SECRET } from "./auth.js";
+import { isAllowedSoriOrigin } from "../utils/origin.js";
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const CSRF_EXEMPT_PATHS = new Set([
@@ -10,43 +10,6 @@ const CSRF_EXEMPT_PATHS = new Set([
   "/auth/register",
   "/auth/csrf",
 ]);
-
-function normalizeOrigin(value: string | undefined | null) {
-  if (!value) {
-    return "";
-  }
-
-  try {
-    return new URL(value).origin;
-  } catch {
-    return "";
-  }
-}
-
-function isAllowedSoriOrigin(origin: string) {
-  const normalized = normalizeOrigin(origin);
-  if (!normalized) {
-    return false;
-  }
-
-  try {
-    const parsed = new URL(normalized);
-    const hostname = parsed.hostname.toLowerCase();
-    const allowed = new Set([
-      ...config.cors.allowedOrigins.map(normalizeOrigin),
-      normalizeOrigin(config.public.webUrl),
-      normalizeOrigin(config.public.apiUrl),
-    ].filter(Boolean));
-
-    return allowed.has(normalized)
-      || hostname === "localhost"
-      || hostname === "127.0.0.1"
-      || hostname === "sori.orb.local"
-      || hostname.endsWith(".sori.orb.local");
-  } catch {
-    return false;
-  }
-}
 
 export const originCheckMiddleware = createMiddleware(async (c, next) => {
   if (!UNSAFE_METHODS.has(c.req.method)) {

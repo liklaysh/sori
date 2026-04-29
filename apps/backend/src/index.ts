@@ -40,28 +40,13 @@ import clientRoutes from "./routes/client.js";
 import systemRoutes from "./routes/system.js";
 import { authLimiter, uploadLimiter, generalLimiter } from "./middleware/rateLimiter.js";
 import { csrfMiddleware, originCheckMiddleware } from "./middleware/security.js";
+import { isAllowedSoriOrigin } from "./utils/origin.js";
 
 // Sockets
 import { initSocket } from "./socket.js";
 import { redis } from "./utils/redis.js";
 
 const app = new Hono();
-
-function isAllowedCorsOrigin(origin: string): boolean {
-  try {
-    const parsed = new URL(origin);
-    const hostname = parsed.hostname.toLowerCase();
-    const allowed = new Set(config.cors.allowedOrigins);
-
-    return allowed.has(origin)
-      || hostname === "localhost"
-      || hostname === "127.0.0.1"
-      || hostname === "sori.orb.local"
-      || hostname.endsWith(".sori.orb.local");
-  } catch {
-    return false;
-  }
-}
 
 // Global Fallbacks
 process.on("unhandledRejection", (reason, promise) => {
@@ -183,7 +168,7 @@ app.use("*", cors({
       return fallbackOrigin;
     }
 
-    if (isAllowedCorsOrigin(origin)) {
+    if (isAllowedSoriOrigin(origin)) {
       return origin;
     }
 

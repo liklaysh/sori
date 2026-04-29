@@ -12,6 +12,7 @@ import { safe } from "../utils/safe.js";
 import { config } from "../config.js";
 import { resolveActiveSessionUser } from "../utils/authSession.js";
 import { createSessionToken } from "../utils/sessionToken.js";
+import { isDesktopAppOrigin, normalizeOrigin } from "../utils/origin.js";
 
 const auth = new Hono();
 
@@ -21,27 +22,19 @@ auth.post("/register", safe(async (c) => {
 
 import { setCookie, deleteCookie, getCookie } from "hono/cookie";
 
-function getOriginHost(origin: string) {
-  try {
-    const parsed = new URL(origin);
-    return parsed.origin;
-  } catch {
-    return "";
-  }
-}
-
 function getCookieOptions(c: any, maxAge: number) {
-  const requestOrigin = getOriginHost(c.req.header("origin") || "");
-  const publicApiOrigin = getOriginHost(config.public.apiUrl);
-  const publicWebOrigin = getOriginHost(config.public.webUrl);
+  const requestOrigin = normalizeOrigin(c.req.header("origin") || "");
+  const publicApiOrigin = normalizeOrigin(config.public.apiUrl);
+  const publicWebOrigin = normalizeOrigin(config.public.webUrl);
   const isKnownOrigin = requestOrigin === publicApiOrigin || requestOrigin === publicWebOrigin;
+  const isDesktopOrigin = isDesktopAppOrigin(requestOrigin);
   const isSecureOrigin = (isKnownOrigin && requestOrigin.startsWith("https://")) || publicApiOrigin.startsWith("https://");
 
   return {
     path: "/",
     httpOnly: true,
-    sameSite: "Lax" as const,
-    secure: isSecureOrigin || config.security.isProduction,
+    sameSite: isDesktopOrigin ? "None" as const : "Lax" as const,
+    secure: isDesktopOrigin || isSecureOrigin || config.security.isProduction,
     maxAge,
   };
 }

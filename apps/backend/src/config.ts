@@ -14,6 +14,13 @@ function optional(key: string, fallback: string): string {
   return process.env[key] || fallback;
 }
 
+function optionalList(key: string, fallback: string): string[] {
+  return optional(key, fallback)
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 export const config = {
   env: process.env.NODE_ENV || "development",
   port: Number(optional("PORT", "3000")),
@@ -49,6 +56,12 @@ export const config = {
   },
   cors: {
     allowedOrigins: required("ALLOWED_ORIGINS").split(","),
+  },
+  desktop: {
+    allowedOrigins: optionalList(
+      "DESKTOP_APP_ORIGINS",
+      "tauri://localhost,http://tauri.localhost,https://tauri.localhost"
+    ),
   },
   storage: {
     logRetentionDays: Number(optional("LOG_RETENTION_DAYS", "3")),
