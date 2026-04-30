@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { redisVoice } from "../../utils/redis.js";
+import { redisPresence, redisVoice } from "../../utils/redis.js";
 import { db } from "../../db/index.js";
 import { callParticipants, calls, channels, users } from "../../db/schema.js";
 import { and, eq } from "drizzle-orm";
@@ -8,6 +8,8 @@ import { normalizeS3Url } from "../../utils/url.js";
 import { nanoid } from "nanoid";
 import { redisCallTelemetry } from "../../utils/redis.js";
 import { telemetryAggregateToCallUpdate } from "../../utils/callTelemetry.js";
+
+const VOICE_DISCONNECT_GRACE_MS = 5000;
 
 export function handleVoice(io: Server, socket: Socket, user: { id: string, username: string, role: string }, isAdminPanel: boolean) {
   const getActiveChannelCall = async (channelId: string) => {
@@ -194,12 +196,20 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
     }
   });
 
-  socket.on("disconnect", async () => {
-    try {
-      await removeUserFromVoiceChannels();
-    } catch (err) {
-      logger.error("[Voice] disconnect cleanup Error", { error: err as Error });
-    }
+  socket.on("disconnect", () => {
+    setTimeout(async () => {
+      try {
+        const isStillOnline = await redisPresence.isUserOnline(user.id);
+        if (isStillOnline) {
+          logger.debug("[Voice] Skipped disconnect cleanup after quick reconnect", { userId: user.id });
+          return;
+        }
+
+        await removeUserFromVoiceChannels();
+      } catch (err) {
+        logger.error("[Voice] disconnect cleanup Error", { error: err as Error });
+      }
+    }, VOICE_DISCONNECT_GRACE_MS);
   });
 
   socket.on("user_streaming_update", async ({ channelId, isStreaming }: { channelId: string, isStreaming: boolean }) => {

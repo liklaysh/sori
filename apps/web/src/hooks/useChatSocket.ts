@@ -48,8 +48,9 @@ export function useChatSocket() {
     const newSocket: Socket = io(socketUrl, { 
       withCredentials: true,
       transports: ["websocket"],
-      reconnectionAttempts: 5,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
     const refreshConversations = async () => {
@@ -75,6 +76,16 @@ export function useChatSocket() {
 
     newSocket.on("connect", () => {
       setSocket(newSocket);
+      const activeVoiceChannelId = useVoiceStore.getState().connectedChannelId;
+      if (activeVoiceChannelId) {
+        newSocket.emit("join_voice_channel", activeVoiceChannelId);
+        const { isMuted: muted, isDeafened: deafened } = useUIStore.getState();
+        newSocket.emit("user_audio_status_update", {
+          channelId: activeVoiceChannelId,
+          isMuted: muted,
+          isDeafened: deafened,
+        });
+      }
       refreshConversations();
     });
 

@@ -21,6 +21,14 @@ function optionalList(key: string, fallback: string): string[] {
     .filter(Boolean);
 }
 
+const defaultDesktopAppOrigins = [
+  "tauri://localhost",
+  "http://tauri.localhost",
+  "https://tauri.localhost",
+  "http://127.0.0.1:1420",
+  "http://localhost:1420",
+].join(",");
+
 export const config = {
   env: process.env.NODE_ENV || "development",
   port: Number(optional("PORT", "3000")),
@@ -60,7 +68,7 @@ export const config = {
   desktop: {
     allowedOrigins: optionalList(
       "DESKTOP_APP_ORIGINS",
-      "tauri://localhost,http://tauri.localhost,https://tauri.localhost"
+      defaultDesktopAppOrigins
     ),
   },
   storage: {

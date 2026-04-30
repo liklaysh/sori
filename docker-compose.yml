@@ -13,7 +13,7 @@ services:
       - PORT=${PORT}
       - NODE_ENV=${NODE_ENV}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
-      - DESKTOP_APP_ORIGINS=${DESKTOP_APP_ORIGINS:-tauri://localhost,http://tauri.localhost,https://tauri.localhost}
+      - DESKTOP_APP_ORIGINS=${DESKTOP_APP_ORIGINS:-tauri://localhost,http://tauri.localhost,https://tauri.localhost,http://127.0.0.1:1420,http://localhost:1420}
       - JWT_SECRET=${JWT_SECRET}
       - DATABASE_URL=${DATABASE_URL}
       - VALKEY_URL=${VALKEY_URL}

@@ -11,7 +11,6 @@ import { pubClient, subClient, redisPresence, redisVoice } from "./utils/redis.j
 import { logger } from "./utils/logger.js";
 import { nanoid } from "nanoid";
 
-import { handlePresence } from "./socket/handlers/presence.js";
 import { handleVoice } from "./socket/handlers/voice.js";
 import { handleMessages } from "./socket/handlers/messages.js";
 import { handleCalls } from "./socket/handlers/calls.js";
@@ -142,7 +141,6 @@ export function initSocket(server: any) {
     });
 
     // Register module listeners before async bootstrap so early emits after connect are not lost.
-    handlePresence(io, authSocket, user);
     handleVoice(io, authSocket, user, isAdminPanel);
     handleMessages(io, authSocket, user, isAdminPanel);
     handleCalls(io, authSocket, user);
