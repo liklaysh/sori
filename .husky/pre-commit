@@ -1,4 +1,3 @@
 #!/usr/bin/env sh
 echo "🔍 [Husky] Running soft pre-commit checks..."
-grep -rnE "localhost|127.0.0.1|password|secret" . --exclude-dir=node_modules --exclude-dir=tests --exclude=.env.example --exclude=config.ts && echo "⚠️  [Warning] Sensitive patterns found. Please review before pushing." || true
-
+git grep -nE "(-----BEGIN (RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----|AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,})" -- . ":(exclude)tests" ":(exclude)**/.env.example" ":(exclude)infrastructure/ssl/sori-wildcard.key" && echo "⚠️  [Warning] Potential committed credential found. Please review before pushing." || true

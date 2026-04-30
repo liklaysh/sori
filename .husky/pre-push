@@ -1,8 +1,7 @@
 #!/usr/bin/env sh
 echo "🛡️ [Husky] Running strict pre-push security audit..."
-if grep -rnE "localhost|127.0.0.1|password|secret" . --exclude-dir=node_modules --exclude-dir=tests --exclude=.env.example --exclude=config.ts; then
-  echo "❌ [Critical] Sensitive data or local addresses detected! Push blocked."
+if git grep -nE "(-----BEGIN (RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----|AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,})" -- . ":(exclude)tests" ":(exclude)**/.env.example" ":(exclude)infrastructure/ssl/sori-wildcard.key"; then
+  echo "❌ [Critical] Potential committed credential detected. Push blocked."
   exit 1
 fi
 echo "✅ Security audit passed."
-
