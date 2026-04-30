@@ -86,7 +86,7 @@ export interface Category {
 export interface Member {
   id: string;
   username: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
   status: "online" | "offline" | "idle" | "dnd";
   role: string;
 }
@@ -94,8 +94,9 @@ export interface Member {
 export interface VoiceOccupant {
   userId: string;
   username: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
   joinedAt: number;
+  heartbeatAt?: number;
   isStreaming?: boolean;
   isSpeaking?: boolean;
   isMuted?: boolean;

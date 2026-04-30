@@ -106,7 +106,7 @@ const Chat: React.FC = () => {
     call.initiateCall({
       id: member.id,
       username: member.username,
-      avatarUrl: member.avatarUrl
+      avatarUrl: member.avatarUrl ?? undefined
     });
     setMemberContextMenu(null);
   };

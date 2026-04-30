@@ -34,6 +34,7 @@ export function useChatSocket() {
   const activeChannelIdRef = useRef(activeChannelId);
   const activeConversationIdRef = useRef(activeConversationId);
   const channelsRef = useRef(channels);
+  const connectedChannelIdRef = useRef(connectedChannelId);
   const notifiedMessageIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { userRef.current = user; }, [user]);
@@ -41,6 +42,7 @@ export function useChatSocket() {
   useEffect(() => { activeChannelIdRef.current = activeChannelId; }, [activeChannelId]);
   useEffect(() => { activeConversationIdRef.current = activeConversationId; }, [activeConversationId]);
   useEffect(() => { channelsRef.current = channels; }, [channels]);
+  useEffect(() => { connectedChannelIdRef.current = connectedChannelId; }, [connectedChannelId]);
 
   useEffect(() => {
     // We use cookies for auth, so withCredentials: true is enough.
@@ -205,6 +207,16 @@ export function useChatSocket() {
 
     newSocket.on("voice_occupants_state", (state: Record<string, VoiceOccupant[]>) => setVoiceOccupants(state));
     newSocket.on("voice_occupants_update", (data: { channelId: string, occupants: VoiceOccupant[] }) => updateVoiceOccupants(data.channelId, data.occupants));
+    newSocket.on("voice_user_joined", (data: { channelId: string; userId: string }) => {
+      if (data.userId !== userRef.current?.id && data.channelId === connectedChannelIdRef.current) {
+        playNotificationSound("voiceJoin");
+      }
+    });
+    newSocket.on("voice_user_left", (data: { channelId: string; userId: string }) => {
+      if (data.userId !== userRef.current?.id && data.channelId === connectedChannelIdRef.current) {
+        playNotificationSound("voiceLeave");
+      }
+    });
     newSocket.on("user_speaking_status", (data: { channelId: string, userId: string, isSpeaking: boolean }) => {
       updateOccupantStatus(data.channelId, data.userId, { isSpeaking: data.isSpeaking });
     });
@@ -228,9 +240,26 @@ export function useChatSocket() {
       return;
     }
 
+    socket.emit("voice_heartbeat", { channelId: connectedChannelId });
     updateOccupantStatus(connectedChannelId, user.id, { isMuted, isDeafened });
     socket.emit("user_audio_status_update", { channelId: connectedChannelId, isMuted, isDeafened });
   }, [socket, connectedChannelId, user?.id, isMuted, isDeafened, updateOccupantStatus]);
+
+  useEffect(() => {
+    if (!socket || !connectedChannelId || !user?.id) {
+      return;
+    }
+
+    const sendHeartbeat = () => {
+      if (socket.connected) {
+        socket.emit("voice_heartbeat", { channelId: connectedChannelId });
+      }
+    };
+
+    sendHeartbeat();
+    const intervalId = window.setInterval(sendHeartbeat, 10000);
+    return () => window.clearInterval(intervalId);
+  }, [socket, connectedChannelId, user?.id]);
 
   return { socket, onlineUsersSet, voiceOccupants };
 }

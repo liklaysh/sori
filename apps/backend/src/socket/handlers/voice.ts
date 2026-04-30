@@ -9,9 +9,32 @@ import { nanoid } from "nanoid";
 import { redisCallTelemetry } from "../../utils/redis.js";
 import { telemetryAggregateToCallUpdate } from "../../utils/callTelemetry.js";
 
-const VOICE_DISCONNECT_GRACE_MS = 5000;
+const VOICE_DISCONNECT_GRACE_MS = 120_000;
+
+type VoiceOccupant = {
+  userId: string;
+  username: string;
+  avatarUrl?: string | null;
+  joinedAt?: number;
+  heartbeatAt?: number;
+  isMuted?: boolean;
+  isDeafened?: boolean;
+  isSpeaking?: boolean;
+  isStreaming?: boolean;
+};
 
 export function handleVoice(io: Server, socket: Socket, user: { id: string, username: string, role: string }, isAdminPanel: boolean) {
+  const emitVoiceEventToUsers = (
+    userIds: string[],
+    event: "voice_user_joined" | "voice_user_left",
+    payload: { channelId: string; userId: string; username: string; avatarUrl?: string | null },
+  ) => {
+    const recipients = new Set(userIds.filter((userId) => userId && userId !== payload.userId));
+    recipients.forEach((userId) => {
+      io.to(`user:${userId}`).emit(event, payload);
+    });
+  };
+
   const getActiveChannelCall = async (channelId: string) => {
     return db.query.calls.findFirst({
       where: and(eq(calls.type, "channel"), eq(calls.channelId, channelId), eq(calls.isActive, true)),
@@ -95,13 +118,20 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
       return;
     }
 
-    const { changed, occupants: filtered } = await redisVoice.updateOccupants(channelId, async (occupants) => {
-      const filteredOccupants = occupants.filter((occupant: { userId: string }) => occupant.userId !== user.id);
+    const { changed, occupants: filtered, remainingUserIds, leavingUser } = await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
+      const leavingOccupant = occupants.find((occupant) => occupant.userId === user.id);
+      const filteredOccupants = occupants.filter((occupant) => occupant.userId !== user.id);
       return {
         occupants: filteredOccupants,
         result: {
           changed: filteredOccupants.length !== occupants.length,
           occupants: filteredOccupants,
+          remainingUserIds: filteredOccupants.map((occupant) => occupant.userId),
+          leavingUser: {
+            userId: user.id,
+            username: leavingOccupant?.username || user.username,
+            avatarUrl: leavingOccupant?.avatarUrl || null,
+          },
         },
       };
     });
@@ -123,6 +153,12 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
 
     logger.info({ message: `🔌 [Voice] User left channel: ${user.username}`, userId: user.id, channelId });
     io.emit("voice_occupants_update", { channelId, occupants: filtered });
+    emitVoiceEventToUsers(remainingUserIds, "voice_user_left", {
+      channelId,
+      userId: leavingUser.userId,
+      username: leavingUser.username,
+      avatarUrl: leavingUser.avatarUrl,
+    });
   };
 
   const removeUserFromVoiceChannels = async () => {
@@ -164,28 +200,56 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
       }
     }
 
-    const currentOccupants = await redisVoice.updateOccupants(channelId, async (occupants) => {
-      const nextOccupants = occupants.some((occupant: { userId: string }) => occupant.userId === user.id)
-        ? occupants
+    const { occupants: currentOccupants, joined, previousUserIds } = await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
+      const now = Date.now();
+      const previousUserIds = occupants.map((occupant) => occupant.userId);
+      const existingOccupant = occupants.find((occupant) => occupant.userId === user.id);
+      const avatarUrl = normalizeS3Url(latestUser?.avatarUrl) || latestUser?.avatarUrl || null;
+      const nextOccupants = existingOccupant
+        ? occupants.map((occupant) => occupant.userId === user.id
+            ? {
+                ...occupant,
+                username: user.username,
+                avatarUrl,
+                heartbeatAt: now,
+              }
+            : occupant,
+          )
         : [
             ...occupants,
             {
               userId: user.id,
               username: user.username,
-              avatarUrl: normalizeS3Url(latestUser?.avatarUrl) || latestUser?.avatarUrl || null,
-              joinedAt: Date.now(),
+              avatarUrl,
+              joinedAt: now,
+              heartbeatAt: now,
               isMuted: false,
               isDeafened: false,
             },
           ];
 
-      return { occupants: nextOccupants, result: nextOccupants };
+      return {
+        occupants: nextOccupants,
+        result: {
+          occupants: nextOccupants,
+          joined: !existingOccupant,
+          previousUserIds,
+        },
+      };
     });
 
     await upsertParticipantJoin(channelId);
 
     logger.info({ message: `🎙️ [Voice] User joined channel: ${user.username}`, userId: user.id, channelId });
     io.emit("voice_occupants_update", { channelId, occupants: currentOccupants });
+    if (joined) {
+      emitVoiceEventToUsers(previousUserIds, "voice_user_joined", {
+        channelId,
+        userId: user.id,
+        username: user.username,
+        avatarUrl: normalizeS3Url(latestUser?.avatarUrl) || latestUser?.avatarUrl || null,
+      });
+    }
   });
 
   socket.on("leave_voice_channel", async (channelId: string) => {
@@ -212,12 +276,76 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
     }, VOICE_DISCONNECT_GRACE_MS);
   });
 
+  socket.on("voice_heartbeat", async ({ channelId }: { channelId: string }) => {
+    try {
+      if (!channelId || isAdminPanel) return;
+
+      const currentOccupants = await redisVoice.getOccupants(channelId) as VoiceOccupant[];
+      const isAlreadyOccupant = currentOccupants.some((occupant) => occupant.userId === user.id);
+      let recoveryAvatarUrl: string | null = null;
+
+      if (!isAlreadyOccupant) {
+        const channel = await db.query.channels.findFirst({
+          where: eq(channels.id, channelId),
+          columns: { id: true, type: true },
+        });
+
+        if (!channel || channel.type !== "voice") {
+          logger.warn("[Voice] Rejected heartbeat for non-voice or missing channel", { userId: user.id, channelId });
+          return;
+        }
+
+        const latestUser = await db.query.users.findFirst({
+          where: eq(users.id, user.id),
+          columns: { avatarUrl: true },
+        });
+        recoveryAvatarUrl = normalizeS3Url(latestUser?.avatarUrl) || latestUser?.avatarUrl || null;
+      }
+
+      const { recovered, occupants: updatedOccupants } = await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
+        const now = Date.now();
+        let recovered = false;
+        const existingOccupant = occupants.find((occupant) => occupant.userId === user.id);
+        const nextOccupants = existingOccupant
+          ? occupants.map((occupant) => occupant.userId === user.id ? { ...occupant, heartbeatAt: now } : occupant)
+          : [
+              ...occupants,
+              {
+                userId: user.id,
+                username: user.username,
+                avatarUrl: recoveryAvatarUrl,
+                joinedAt: now,
+                heartbeatAt: now,
+                isMuted: false,
+                isDeafened: false,
+              },
+            ];
+
+        if (!existingOccupant) {
+          recovered = true;
+        }
+
+        return {
+          occupants: nextOccupants,
+          result: { recovered, occupants: nextOccupants },
+        };
+      });
+
+      if (recovered) {
+        logger.warn("[Voice] Recovered missing voice occupant from heartbeat", { userId: user.id, channelId });
+        io.emit("voice_occupants_update", { channelId, occupants: updatedOccupants });
+      }
+    } catch (err) {
+      logger.error("[Voice] voice_heartbeat Error", { error: err as Error });
+    }
+  });
+
   socket.on("user_streaming_update", async ({ channelId, isStreaming }: { channelId: string, isStreaming: boolean }) => {
     try {
       if (!channelId) return;
-      const updated = await redisVoice.updateOccupants(channelId, async (occupants) => {
+      const updated = await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
         const nextOccupants = occupants.map((occupant: any) =>
-          occupant.userId === user.id ? { ...occupant, isStreaming } : occupant,
+          occupant.userId === user.id ? { ...occupant, isStreaming, heartbeatAt: Date.now() } : occupant,
         );
         return { occupants: nextOccupants, result: nextOccupants };
       });
@@ -230,9 +358,9 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
   socket.on("user_speaking_update", async ({ channelId, isSpeaking }: { channelId: string, isSpeaking: boolean }) => {
     try {
       if (!channelId) return;
-      await redisVoice.updateOccupants(channelId, async (occupants) => {
+      await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
         const updated = occupants.map((occupant: any) =>
-          occupant.userId === user.id ? { ...occupant, isSpeaking } : occupant,
+          occupant.userId === user.id ? { ...occupant, isSpeaking, heartbeatAt: Date.now() } : occupant,
         );
         return { occupants: updated, result: updated };
       });
@@ -250,9 +378,9 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
       try {
         if (!channelId) return;
 
-        await redisVoice.updateOccupants(channelId, async (occupants) => {
+        await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
           const updated = occupants.map((occupant: any) =>
-            occupant.userId === user.id ? { ...occupant, isMuted, isDeafened } : occupant,
+            occupant.userId === user.id ? { ...occupant, isMuted, isDeafened, heartbeatAt: Date.now() } : occupant,
           );
           return { occupants: updated, result: updated };
         });

@@ -389,7 +389,7 @@ SORI_GATEWAY_CADDYFILE=./infrastructure/caddy/Caddyfile.production
 SORI_LIVEKIT_CONFIG=./infrastructure/livekit.production.yaml
 CADDY_ACME_EMAIL=${ACME_EMAIL}
 ALLOWED_ORIGINS=https://${WEB_HOST}
-DESKTOP_APP_ORIGINS=tauri://localhost,http://tauri.localhost,https://tauri.localhost
+DESKTOP_APP_ORIGINS=tauri://localhost,http://tauri.localhost,https://tauri.localhost,http://127.0.0.1:1420,http://localhost:1420
 
 PORT=3000
 NODE_ENV=production

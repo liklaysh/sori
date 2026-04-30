@@ -224,7 +224,7 @@ The current auth mode is cookie-based. A native client should keep a cookie jar 
 Desktop clients are trusted through `DESKTOP_APP_ORIGINS`. The installer writes the default Tauri origins:
 
 ```env
-DESKTOP_APP_ORIGINS=tauri://localhost,http://tauri.localhost,https://tauri.localhost
+DESKTOP_APP_ORIGINS=tauri://localhost,http://tauri.localhost,https://tauri.localhost,http://127.0.0.1:1420,http://localhost:1420
 ```
 
 These origins are used only for the desktop client CORS/CSRF boundary. The web admin panel remains available only through the server web interface.

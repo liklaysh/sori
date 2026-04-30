@@ -118,6 +118,45 @@ set_build_metadata() {
   export SORI_COMMIT="${SORI_COMMIT:-unknown}"
 }
 
+ensure_desktop_app_origins() {
+  local env_file="${REPO_DIR}/.env"
+  local current
+  local origin
+  local tmp_file
+  local required_origins=(
+    "tauri://localhost"
+    "http://tauri.localhost"
+    "https://tauri.localhost"
+    "http://127.0.0.1:1420"
+    "http://localhost:1420"
+  )
+
+  current="$(env_value "DESKTOP_APP_ORIGINS")"
+  for origin in "${required_origins[@]}"; do
+    case ",${current}," in
+      *",${origin},"*) ;;
+      *) current="${current:+${current},}${origin}" ;;
+    esac
+  done
+
+  tmp_file="$(mktemp)"
+  awk -v value="${current}" '
+    BEGIN { updated = 0 }
+    /^DESKTOP_APP_ORIGINS=/ {
+      print "DESKTOP_APP_ORIGINS=" value
+      updated = 1
+      next
+    }
+    { print }
+    END {
+      if (updated == 0) {
+        print "DESKTOP_APP_ORIGINS=" value
+      }
+    }
+  ' "${env_file}" > "${tmp_file}"
+  mv "${tmp_file}" "${env_file}"
+}
+
 wait_for_postgres() {
   local attempt
   for attempt in $(seq 1 60); do
@@ -233,6 +272,7 @@ main() {
   require_root
   update_git_checkout
   set_build_metadata
+  ensure_desktop_app_origins
   run_update
   health_check
   validate_client_bootstrap
