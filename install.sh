@@ -457,6 +457,13 @@ compose_with_timeout() {
   timeout "${seconds}" docker compose --env-file "${REPO_DIR}/.env" "${COMPOSE_FILES[@]}" "$@"
 }
 
+set_build_metadata() {
+  cd "${REPO_DIR}"
+  SORI_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || true)"
+  export SORI_COMMIT="${SORI_COMMIT:-unknown}"
+  export SORI_BUILD_ID="${SORI_COMMIT}"
+}
+
 wait_for_postgres() {
   log "Waiting for PostgreSQL..."
   local attempt
@@ -573,6 +580,7 @@ main() {
   write_env_file
 
   cd "${REPO_DIR}"
+  set_build_metadata
   deploy_stack
   wait_for_health
   validate_client_bootstrap

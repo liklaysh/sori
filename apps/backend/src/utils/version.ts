@@ -5,7 +5,6 @@ import path from "path";
 import { config } from "../config.js";
 
 const API_VERSION = "v1";
-const BUILD_ID = process.env.SORI_BUILD_ID || randomBytes(4).toString("hex");
 
 function readProductVersion(): string {
   const candidates = [
@@ -43,12 +42,15 @@ function readGitCommit(): string {
   }
 }
 
+const COMMIT = readGitCommit();
+const BUILD_ID = (process.env.SORI_BUILD_ID || (COMMIT !== "unknown" ? COMMIT : "") || randomBytes(4).toString("hex")).slice(0, 12);
+
 const versionPayload = {
   name: "SORI",
   version: readProductVersion(),
   apiVersion: API_VERSION,
   buildId: BUILD_ID,
-  commit: readGitCommit(),
+  commit: COMMIT,
   environment: config.security.isProduction ? "production" : "development",
 };
 

@@ -108,7 +108,8 @@ SORI stores the product version in the root `VERSION` file. The backend exposes 
 
 - `version` — the product version of the system.
 - `apiVersion` — the API contract version for web, desktop, and future mobile clients.
-- `buildId` — the runtime backend build identifier used for diagnostics and update checks.
+- `buildId` — the build identifier. By default it matches the short git commit hash deployed through install/update/deploy.
+- `commit` — the short git commit hash of the backend build.
 
 ---
 

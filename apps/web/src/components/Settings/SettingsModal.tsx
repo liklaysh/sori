@@ -45,6 +45,7 @@ interface SystemVersion {
   name: string;
   version: string;
   buildId: string;
+  commit: string;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
@@ -61,7 +62,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
 
     let isMounted = true;
 
-    api.get<SystemVersion>("/api/system/version")
+    api.get<SystemVersion>(`/api/system/version?t=${Date.now()}`, {
+      headers: {
+        "Cache-Control": "no-cache",
+      },
+    })
       .then((response) => {
         if (isMounted) {
           setSystemVersion(response.data);

@@ -6,6 +6,7 @@ services:
       dockerfile: apps/backend/Dockerfile
       args:
         - SORI_COMMIT=${SORI_COMMIT:-unknown}
+        - SORI_BUILD_ID=${SORI_BUILD_ID:-}
     # Ports will be managed by gateway
     expose:
       - "3000"
@@ -33,6 +34,8 @@ services:
       - PUBLIC_MEDIA_URL=${PUBLIC_MEDIA_URL}
       - PUBLIC_DEFAULT_COMMUNITY_ID=${PUBLIC_DEFAULT_COMMUNITY_ID:-default-community}
       - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS}
+      - SORI_COMMIT=${SORI_COMMIT:-unknown}
+      - SORI_BUILD_ID=${SORI_BUILD_ID:-}
     depends_on:
       - valkey
       - sori-media

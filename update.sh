@@ -116,6 +116,7 @@ set_build_metadata() {
   cd "${REPO_DIR}"
   SORI_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || true)"
   export SORI_COMMIT="${SORI_COMMIT:-unknown}"
+  export SORI_BUILD_ID="${SORI_COMMIT}"
 }
 
 ensure_desktop_app_origins() {

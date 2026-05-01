@@ -12,8 +12,8 @@
     "dev:web": "npm run dev -w @sori/web",
     "build": "npm run build --workspaces",
     "deploy:web": "/usr/local/bin/docker compose build sori-web && /usr/local/bin/docker compose up -d sori-web",
-    "deploy:backend": "SORI_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || printf unknown) /usr/local/bin/docker compose build sori-backend && /usr/local/bin/docker compose up -d sori-backend",
-    "deploy:all": "SORI_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || printf unknown) /usr/local/bin/docker compose build && /usr/local/bin/docker compose up -d",
+    "deploy:backend": "SORI_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || printf unknown); SORI_BUILD_ID=$SORI_COMMIT; export SORI_COMMIT SORI_BUILD_ID; /usr/local/bin/docker compose build sori-backend && /usr/local/bin/docker compose up -d sori-backend",
+    "deploy:all": "SORI_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || printf unknown); SORI_BUILD_ID=$SORI_COMMIT; export SORI_COMMIT SORI_BUILD_ID; /usr/local/bin/docker compose build && /usr/local/bin/docker compose up -d",
     "test": "npm run test:smoke",
     "test:smoke": "npm run test:smoke -w @sori/backend",
     "prepare": "husky || true"

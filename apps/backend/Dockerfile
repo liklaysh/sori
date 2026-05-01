@@ -24,6 +24,7 @@ FROM node:20-bookworm-slim
 
 WORKDIR /app
 ARG SORI_COMMIT=unknown
+ARG SORI_BUILD_ID=
 
 # Install production dependencies only
 COPY package.json package-lock.json ./
@@ -41,5 +42,6 @@ EXPOSE 3000
 # Env vars will be handled by Docker Compose
 ENV NODE_ENV=production
 ENV SORI_COMMIT=$SORI_COMMIT
+ENV SORI_BUILD_ID=$SORI_BUILD_ID
 
 CMD ["node", "apps/backend/dist/index.js"]
