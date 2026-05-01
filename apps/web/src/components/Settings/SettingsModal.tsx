@@ -62,11 +62,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
 
     let isMounted = true;
 
-    api.get<SystemVersion>(`/api/system/version?t=${Date.now()}`, {
-      headers: {
-        "Cache-Control": "no-cache",
-      },
-    })
+    api.get<SystemVersion>(`/api/system/version?t=${Date.now()}`)
       .then((response) => {
         if (isMounted) {
           setSystemVersion(response.data);
