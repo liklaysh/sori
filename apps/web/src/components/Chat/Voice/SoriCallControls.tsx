@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { NoiseSuppressionPopup } from "../Modals/NoiseSuppressionPopup";
 import { VideoPresets } from "livekit-client";
+import { useUIStore } from "../../../store/useUIStore";
 
 // Internal component for camera selection
 const CameraDeviceSelector = () => {
@@ -83,7 +84,9 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
   setOutputVolume
 }) => {
   const { t } = useTranslation(["voice"]);
-  const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
+  const { localParticipant, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
+  const isMuted = useUIStore((state) => state.isMuted);
+  const setIsMuted = useUIStore((state) => state.setIsMuted);
 
   return (
     <div className={cn(
@@ -93,13 +96,13 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
       {/* Mic & Audio Menu (Unified) */}
       <div className="flex items-center gap-0.5 bg-sori-surface-panel rounded-xl p-1 border border-muted relative">
         <button 
-          onClick={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
+          onClick={() => setIsMuted(!isMuted)}
           className={cn(
             "w-10 h-10 rounded-lg flex items-center justify-center transition-all",
-            !isMicrophoneEnabled ? 'bg-sori-accent-danger text-white' : 'text-on-surface-variant hover:bg-sori-surface-panel'
+            isMuted ? 'bg-sori-accent-danger text-white' : 'text-on-surface-variant hover:bg-sori-surface-panel'
           )}
         >
-          {isMicrophoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+          {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
         </button>
         
         <Popover>

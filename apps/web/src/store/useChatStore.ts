@@ -36,6 +36,7 @@ interface ChatState {
   setVoiceOccupants: (occupants: Record<string, VoiceOccupant[]>) => void;
   updateVoiceOccupants: (channelId: string, occupants: VoiceOccupant[]) => void;
   updateOccupantStatus: (channelId: string, userId: string, data: Partial<VoiceOccupant>) => void;
+  updateUserReferences: (user: { id: string; username?: string | null; avatarUrl?: string | null; status?: Member["status"] | null }) => void;
   setTyping: (channelId: string, username: string | null) => void;
   upsertConversation: (conv: DMConversation) => void;
   startDM: (targetUserId: string) => Promise<DMConversation | null>;
@@ -166,6 +167,58 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const updated = occupants.map(o => o.userId === userId ? { ...o, ...data } : o);
     return {
       voiceOccupants: { ...state.voiceOccupants, [channelId]: sortVoiceOccupantsByJoinTime(updated) }
+    };
+  }),
+  updateUserReferences: (user) => set((state) => {
+    const patchUser = <T extends { id?: string; username?: string; avatarUrl?: string | null; status?: string } | null | undefined>(candidate: T): T => {
+      if (!candidate || candidate.id !== user.id) {
+        return candidate;
+      }
+
+      return {
+        ...candidate,
+        ...(user.username !== undefined && user.username !== null ? { username: user.username } : {}),
+        ...(user.avatarUrl !== undefined ? { avatarUrl: user.avatarUrl } : {}),
+        ...(user.status !== undefined && user.status !== null ? { status: user.status } : {}),
+      };
+    };
+
+    const patchMessage = (item: ChatItem): ChatItem => {
+      if (item.type === "system_call") {
+        return item;
+      }
+
+      const message = item as Message;
+      return normalizeMessage({
+        ...message,
+        ...(message.authorId === user.id && user.username ? { username: user.username } : {}),
+        author: patchUser(message.author),
+      });
+    };
+
+    return {
+      members: state.members.map((member) => member.id === user.id ? patchUser(member)! : member),
+      conversations: state.conversations.map((conversation) => normalizeConversation({
+        ...conversation,
+        user1: patchUser(conversation.user1),
+        user2: patchUser(conversation.user2),
+      })),
+      voiceOccupants: Object.fromEntries(
+        Object.entries(state.voiceOccupants).map(([channelId, occupants]) => [
+          channelId,
+          sortVoiceOccupantsByJoinTime(occupants.map((occupant) => occupant.userId === user.id ? {
+            ...occupant,
+            ...(user.username !== undefined && user.username !== null ? { username: user.username } : {}),
+            ...(user.avatarUrl !== undefined ? { avatarUrl: user.avatarUrl } : {}),
+          } : occupant)),
+        ]),
+      ),
+      messagesByContext: Object.fromEntries(
+        Object.entries(state.messagesByContext).map(([contextKey, messages]) => [
+          contextKey,
+          messages.map(patchMessage),
+        ]),
+      ),
     };
   }),
   setTyping: (channelId, username) => set((state) => {

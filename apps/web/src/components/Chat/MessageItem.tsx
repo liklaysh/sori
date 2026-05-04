@@ -207,7 +207,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
             ) : (msg.content && (msg.type !== 'file' || msg.content.trim() !== "")) && (
               <div className="relative group/content w-full">
                 <div className={cn(
-                  "px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words w-full transition-all duration-200",
+                  "px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words w-full transition-all duration-200 select-text cursor-text",
                   msg.isDeleted 
                     ? "bg-sori-surface-base text-sori-text-dim italic border border-sori-border-subtle shadow-none" 
                     : isMe 

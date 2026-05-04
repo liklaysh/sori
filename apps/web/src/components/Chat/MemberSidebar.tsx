@@ -26,12 +26,17 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ onlineUsersSet, on
         onMemberClick?.(m, e.clientX, e.clientY);
       }}
       className={cn(
-        "flex items-center gap-3 py-2 px-3 rounded-xl cursor-pointer group transition-all active:scale-[0.98]",
-        isOnline ? "hover:bg-sori-surface-hover" : "text-sori-text-dim grayscale"
+        "group flex items-center gap-3 rounded-xl px-3 py-2 cursor-pointer text-left transition-all hover:bg-sori-surface-hover active:scale-[0.98]",
+        isOnline ? "hover:shadow-[inset_0_0_0_1px_var(--sori-border-accent)]" : "text-sori-text-dim grayscale hover:grayscale-0"
       )}
     >
       <div className="relative flex-shrink-0">
-        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black border transition-transform group-hover:scale-105 ${isOnline ? 'bg-sori-surface-accent-subtle text-sori-accent-secondary border-sori-border-accent' : 'bg-sori-surface-panel text-sori-text-muted border-sori-border-subtle'} overflow-hidden`}>
+        <div className={cn(
+          "w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black border transition-transform group-hover:scale-105 overflow-hidden",
+          isOnline
+            ? "bg-sori-surface-accent-subtle text-sori-accent-secondary border-sori-border-accent"
+            : "bg-sori-surface-panel text-sori-text-muted border-sori-border-subtle"
+        )}>
           {getAvatarUrl(m.avatarUrl) ? (
             <img src={getAvatarUrl(m.avatarUrl)!} className="w-full h-full object-cover" />
           ) : (
@@ -51,8 +56,8 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ onlineUsersSet, on
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-4 space-y-6">
         <section>
-          <h3 className="px-2 text-[9px] uppercase font-black text-sori-text-dim mb-3 flex items-center gap-2 tracking-[0.2em] opacity-80">
-            <div className="w-1.5 h-1.5 bg-sori-accent-secondary rounded-full shadow-[0_0_8px_rgba(109,245,225,0.4)]"></div> 
+          <h3 className="mb-3 flex items-center gap-2 px-2 text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-dim">
+            <div className="w-1.5 h-1.5 bg-sori-accent-secondary rounded-full"></div> 
             {t("chat:members.online", { count: onlineMembers.length })}
           </h3>
           <div className="space-y-1">
@@ -60,7 +65,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ onlineUsersSet, on
           </div>
         </section>
         <section>
-          <h3 className="px-2 text-[9px] uppercase font-black text-sori-text-dim mb-3 flex items-center gap-2 tracking-[0.2em] opacity-80">
+          <h3 className="mb-3 flex items-center gap-2 px-2 text-[9px] font-black uppercase tracking-[0.2em] text-sori-text-dim">
             {t("chat:members.offline", { count: offlineMembers.length })}
           </h3>
           <div className="space-y-1">

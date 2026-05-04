@@ -4,6 +4,7 @@ import {
   LiveKitRoom,
   RoomAudioRenderer,
   useConnectionState,
+  useLocalParticipant,
   useRemoteParticipants,
   useRoomContext,
 } from "@livekit/components-react";
@@ -136,6 +137,17 @@ const LiveKitMediaDeviceSync: React.FC<{
   return null;
 };
 
+const LiveKitMuteSync: React.FC = () => {
+  const { localParticipant } = useLocalParticipant();
+  const isMuted = useUIStore((state) => state.isMuted);
+
+  useEffect(() => {
+    localParticipant.setMicrophoneEnabled(!isMuted).catch(() => {});
+  }, [isMuted, localParticipant]);
+
+  return null;
+};
+
 export default function LiveKitSession(props: LiveKitSessionProps) {
   const participantVolumes = useUIStore((state) => state.participantVolumes);
 
@@ -165,6 +177,7 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
         activeMicId={props.activeMicId}
         activeOutputId={props.activeOutputId}
       />
+      <LiveKitMuteSync />
       <StreamingTracker socket={props.socket} channelId={props.connectedChannelId ?? undefined} />
       <CallTelemetryReporter
         socket={props.socket}
