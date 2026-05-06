@@ -12,6 +12,10 @@ export const EmbedCard: React.FC<EmbedCardProps> = ({ data, compact }) => {
   const { t } = useTranslation(["chat"]);
   const domain = new URL(data.url).hostname.replace("www.", "");
 
+  if (!data.isPrivate && data.title === "Preview Unavailable") {
+    return null;
+  }
+
   if (data.isPrivate) {
     return (
       <div className="max-w-sm rounded-2xl p-4 bg-sori-surface-panel border-2 border-dashed border-sori-border-danger flex items-center gap-4">

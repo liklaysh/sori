@@ -22,7 +22,7 @@ export function useChatSocket() {
   const { 
     addMessage, updateMessage, setConversations, setContextMessages,
     updateVoiceOccupants, voiceOccupants, setVoiceOccupants,
-    updateOccupantStatus, updateUserReferences
+    updateOccupantStatus, updateUserReferences, updateReaction
   } = useChatStore();
   const { activeModule, activeChannelId, activeConversationId, isMuted, isDeafened } = useUIStore();
   const connectedChannelId = useVoiceStore((state) => state.connectedChannelId);
@@ -203,6 +203,14 @@ export function useChatSocket() {
 
     newSocket.on("message_read", () => {
       refreshConversations();
+    });
+
+    newSocket.on("reaction_added", (data: { messageId: string; emoji: string; userId: string }) => {
+      updateReaction(data.messageId, data.emoji, data.userId, "add");
+    });
+
+    newSocket.on("reaction_removed", (data: { messageId: string; emoji: string; userId: string }) => {
+      updateReaction(data.messageId, data.emoji, data.userId, "remove");
     });
 
     newSocket.on("user_updated", (data: { id: string; username?: string | null; avatarUrl?: string | null; status?: "online" | "offline" | "idle" | "dnd" | null }) => {

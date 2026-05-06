@@ -16,9 +16,10 @@ interface MessageItemProps {
   msg: Message;
   onContextMenu: (e: React.MouseEvent) => void;
   onForward?: (data: any) => void;
+  onReaction?: (message: Message, emoji: string) => void;
 }
 
-export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, onForward }) => {
+export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, onForward, onReaction }) => {
   const { t } = useTranslation(["chat", "common", "notifications"]);
   const { user } = useUserStore();
   const { formatServerTimestamp } = useServerTime();
@@ -45,9 +46,11 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
   const linkData = parseLinkMetadata(msg.linkMetadata);
 
   const groupedReactions = (msg.reactions || []).reduce((acc, r) => {
-    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+    acc[r.emoji] = acc[r.emoji] || { count: 0, mine: false };
+    acc[r.emoji].count += 1;
+    if (r.userId === user.id) acc[r.emoji].mine = true;
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<string, { count: number; mine: boolean }>);
 
   const formatFileSize = (bytes?: number | null) => {
     if (bytes === null || bytes === undefined) return '';
@@ -236,11 +239,21 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
 
           {Object.keys(groupedReactions).length > 0 && !msg.isDeleted && (
             <div className={`flex flex-wrap gap-1.5 mt-1.5 ${isMe ? "justify-end" : "justify-start"}`}>
-              {Object.entries(groupedReactions).map(([emoji, count]) => (
-                <div key={emoji} className="flex items-center gap-1 bg-sori-surface-panel border border-sori-border-subtle rounded-lg px-1.5 py-0.5 hover:bg-sori-surface-hover transition-colors cursor-pointer">
+              {Object.entries(groupedReactions).map(([emoji, reaction]) => (
+                <button
+                  type="button"
+                  key={emoji}
+                  className={cn(
+                    "flex items-center gap-1 rounded-lg border px-1.5 py-0.5 transition-colors cursor-pointer",
+                    reaction.mine
+                      ? "border-sori-border-accent bg-sori-surface-accent-subtle"
+                      : "border-sori-border-subtle bg-sori-surface-panel hover:bg-sori-surface-hover"
+                  )}
+                  onClick={() => onReaction?.(msg, emoji)}
+                >
                   <span className="text-xs">{emoji}</span>
-                  <span className="text-[9px] font-black text-sori-text-dim">{count}</span>
-                </div>
+                  <span className="text-[9px] font-black text-sori-text-dim">{reaction.count}</span>
+                </button>
               ))}
             </div>
           )}

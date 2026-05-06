@@ -77,12 +77,8 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
             <div className={cn(
               "w-16 h-16 rounded-full bg-sori-surface-base border border-sori-border-subtle flex items-center justify-center text-2xl font-black text-sori-text-dim overflow-hidden shadow-inner transition-all duration-500 relative",
               isIncoming ? "border-sori-accent-secondary animate-pulse scale-110" : "border-sori-border-subtle",
-              isPartnerSpeaking && "ring-4 ring-sori-accent-primary ring-offset-2 ring-offset-sori-surface-panel scale-105"
+              isPartnerSpeaking && "ring-4 ring-sori-accent-primary ring-offset-2 ring-offset-sori-surface-panel"
             )}>
-              {/* Speaking Pulse Ring */}
-              {isPartnerSpeaking && (
-                <div className="absolute inset-0 rounded-full border-2 border-sori-accent-primary animate-ping " />
-              )}
               {getAvatarUrl(partner?.avatarUrl) ? (
                 <img src={getAvatarUrl(partner?.avatarUrl)!} alt={partner?.username} className={cn("w-full h-full object-cover", isOutgoing && "grayscale ")} />
               ) : (
@@ -97,7 +93,7 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
                    <div className={cn(
                      "w-4 h-4 rounded-full transition-all duration-300 shadow-lg",
                      isPartnerSpeaking 
-                      ? "bg-sori-accent-primary scale-125 animate-[pulse_1s_cubic-bezier(0.4,0,0.6,1)_infinite]" 
+                      ? "bg-sori-accent-primary"
                       : "bg-sori-accent-success"
                    )} />
                 )}

@@ -31,6 +31,7 @@ interface ChatState {
   setContextMessages: (contextKey: string, msgs: ChatItem[] | ((prev: ChatItem[]) => ChatItem[])) => void;
   addMessage: (msg: ChatItem) => void;
   updateMessage: (messageId: string, data: Partial<Message>) => void;
+  updateReaction: (messageId: string, emoji: string, userId: string, action: "add" | "remove") => void;
   setMembers: (mbs: Member[]) => void;
   setConversations: (convs: DMConversation[]) => void;
   setVoiceOccupants: (occupants: Record<string, VoiceOccupant[]>) => void;
@@ -140,6 +141,34 @@ export const useChatStore = create<ChatState>((set, get) => ({
           return normalizeMessage({
             ...(message as Message),
             ...data,
+          });
+        }),
+      ]),
+    );
+
+    return { messagesByContext: nextBuckets };
+  }),
+  updateReaction: (messageId, emoji, userId, action) => set((state) => {
+    const nextBuckets = Object.fromEntries(
+      Object.entries(state.messagesByContext).map(([contextKey, messages]) => [
+        contextKey,
+        messages.map((item) => {
+          if (item.id !== messageId || item.type === "system_call") {
+            return item;
+          }
+
+          const message = item as Message;
+          const reactions = message.reactions || [];
+          const exists = reactions.some((reaction) => reaction.emoji === emoji && reaction.userId === userId);
+          const nextReactions = action === "add"
+            ? exists
+              ? reactions
+              : [...reactions, { id: `${messageId}:${userId}:${emoji}`, messageId, userId, emoji }]
+            : reactions.filter((reaction) => !(reaction.emoji === emoji && reaction.userId === userId));
+
+          return normalizeMessage({
+            ...message,
+            reactions: nextReactions,
           });
         }),
       ]),

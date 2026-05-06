@@ -14,6 +14,16 @@
   "detectedProtocols": "Detected Protocols",
   "sendFile": "Send File",
   "addFile": "Add File",
+  "dropzone": {
+    "title": "Drop files here",
+    "description": "Attach files to the current message."
+  },
+  "messageActions": {
+    "reply": "Reply",
+    "copy": "Copy",
+    "copied": "Message copied",
+    "reactions": "Reactions"
+  },
   "searchConversation": "Search in conversation...",
   "history": {
     "syncingArchives": "Syncing archives...",

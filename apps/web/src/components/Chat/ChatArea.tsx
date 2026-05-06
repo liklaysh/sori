@@ -4,8 +4,9 @@ import { ChatHeader } from "./ChatHeader";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 import { DMEmptyState, CommunityEmptyState } from "./ChatEmptyStates";
+import { MessageContextMenu } from "./ContextMenus/MessageContextMenu";
 import { useChatAttachments } from "../../hooks/useChatAttachments";
-import { ChatItem } from "../../types/chat";
+import { ChatItem, Message } from "../../types/chat";
 import { useChatStore } from "../../store/useChatStore";
 import { useUserStore } from "../../store/useUserStore";
 import { useVoiceStore } from "../../store/useVoiceStore";
@@ -15,6 +16,7 @@ import { UploadCloud, ShieldAlert } from "lucide-react";
 import api from "../../lib/api";
 import { getChannelContextKey, getConversationContextKey } from "../../utils/chatMessages";
 import { playNotificationSound } from "../../utils/notificationSounds";
+import { toast } from "sonner";
 
 const EMPTY_CHAT_ITEMS: ChatItem[] = [];
 const LiveKitSession = lazy(() => import("./Voice/LiveKitSession"));
@@ -55,7 +57,7 @@ interface ChatAreaProps {
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = (props) => {
-  const { t } = useTranslation(["voice"]);
+  const { t } = useTranslation(["voice", "chat"]);
   const { user } = useUserStore();
   const { 
     activeModule, activeChannelId, activeConversationId, 
@@ -69,6 +71,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
     contextKey ? state.messagesByContext[contextKey] : undefined
   ));
   const messages = messagesBucket ?? EMPTY_CHAT_ITEMS;
+  const isLoadingMessages = Boolean(contextKey && messagesBucket === undefined);
 
   const { 
     initiateCall, endCall, getChannelToken, resetCall,
@@ -93,6 +96,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [lastError, setLastError] = useState<string | null>(null);
+  const [messageContextMenu, setMessageContextMenu] = useState<{ x: number; y: number; message: Message } | null>(null);
 
   const searchResults = React.useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -161,6 +165,22 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
       props.socket.emit("join_channel", activeChannelId);
     }
   }, [activeModule, activeChannelId, props.socket]);
+
+  useEffect(() => {
+    const closeMenu = () => setMessageContextMenu(null);
+    window.addEventListener("click", closeMenu);
+    return () => window.removeEventListener("click", closeMenu);
+  }, []);
+
+  const toggleReaction = (message: Message, emoji: string) => {
+    if (!message.channelId || !props.socket || !user) {
+      return;
+    }
+
+    const hasReaction = (message.reactions || []).some((reaction) => reaction.emoji === emoji && reaction.userId === user.id);
+    props.socket.emit(hasReaction ? "remove_reaction" : "add_reaction", { messageId: message.id, emoji });
+    useChatStore.getState().updateReaction(message.id, emoji, user.id, hasReaction ? "remove" : "add");
+  };
 
   const handleSendMessage = async (e: React.FormEvent, manualAttachments?: any[]) => {
     if (e) e.preventDefault();
@@ -273,7 +293,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
     }
 
     return (
-      <div className="flex-1 flex flex-col min-w-0 bg-sori-surface-main overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 bg-sori-surface-base overflow-hidden">
         {!showFullVoiceUI && (
           <ChatHeader 
             activeModule={activeModule} 
@@ -316,16 +336,25 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
           />
         )}
 
-        <div className="flex-1 overflow-hidden flex flex-col relative" onDragEnter={attachments.handleDrag} onDragOver={attachments.handleDrag} onDrop={attachments.handleDrop}>
+        <div
+          className="flex-1 overflow-hidden flex flex-col relative"
+          onDragEnter={attachments.handleDrag}
+          onDragOver={attachments.handleDrag}
+          onDrop={attachments.handleDrop}
+          onPaste={attachments.handlePaste}
+        >
           {attachments.dragActive && (
-            <div className="absolute inset-0 z-[100] bg-sori-surface-main border-4 border-dashed border-sori-accent-primary m-4 rounded-3xl flex flex-col items-center justify-center pointer-events-none">
-              <UploadCloud className="h-12 w-12 text-sori-accent-primary mb-4" />
-              <p className="text-xl font-black text-sori-text-strong uppercase tracking-widest">Drop to upload</p>
+            <div className="absolute inset-0 z-[100] m-4 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-sori-border-accent bg-sori-surface-main/95 pointer-events-none shadow-2xl">
+              <div className="mb-4 grid h-16 w-16 place-items-center rounded-2xl border border-sori-border-accent bg-sori-surface-accent-subtle text-sori-accent-primary shadow-glow">
+                <UploadCloud className="h-8 w-8" />
+              </div>
+              <p className="text-xl font-black text-sori-text-strong uppercase tracking-widest">{t("chat:dropzone.title")}</p>
+              <p className="mt-2 text-xs font-bold text-sori-text-muted">{t("chat:dropzone.description")}</p>
             </div>
           )}
 
           {shouldMountLiveKitSession && (
-            <Suspense fallback={<div className="flex-1 bg-sori-surface-main" />}>
+            <Suspense fallback={<div className="flex-1 bg-sori-surface-base" />}>
               <LiveKitSession
                 socket={props.socket}
                 livekitToken={livekitToken!}
@@ -425,8 +454,12 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
             ) : (
               <MessageList 
                 messages={searchQuery ? messages.filter(m => "content" in m && m.content?.toLowerCase().includes(searchQuery.toLowerCase())) : messages}
-                onMessageContextMenu={() => {}} 
-                isLoadingMessages={false}
+                onMessageContextMenu={(event, message) => {
+                  event.preventDefault();
+                  setMessageContextMenu({ x: event.clientX, y: event.clientY, message });
+                }}
+                onReaction={toggleReaction}
+                isLoadingMessages={isLoadingMessages}
                 scrollRef={scrollRef} handleScroll={() => {}} showScrollButton={showScrollButton} scrollToBottom={scrollToBottom}
                 onLoadMore={handleLoadMore} onForward={() => {}}
               />
@@ -449,8 +482,30 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   };
 
   return (
-    <main className="flex-1 flex flex-col h-full bg-sori-surface-main min-w-0 relative">
+    <main className="flex-1 flex flex-col h-full bg-sori-surface-base min-w-0 relative">
       {renderMainChatLayout()}
+      {user && (
+        <MessageContextMenu
+          visible={Boolean(messageContextMenu)}
+          x={messageContextMenu?.x || 0}
+          y={messageContextMenu?.y || 0}
+          message={messageContextMenu?.message || null}
+          currentUser={user}
+          onReply={() => {
+            if (messageContextMenu?.message) setReplyTo(messageContextMenu.message);
+            setMessageContextMenu(null);
+          }}
+          onCopy={() => {
+            const content = messageContextMenu?.message.content || "";
+            void navigator.clipboard.writeText(content).then(() => toast.success(t("chat:messageActions.copied")));
+            setMessageContextMenu(null);
+          }}
+          onReaction={(emoji) => {
+            if (messageContextMenu?.message) toggleReaction(messageContextMenu.message, emoji);
+            setMessageContextMenu(null);
+          }}
+        />
+      )}
     </main>
   );
 };

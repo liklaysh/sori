@@ -29,7 +29,7 @@ export const OccupantItem: React.FC<OccupantItemProps> = ({ occupant, onContextM
         <div className="relative shrink-0">
           <div className={cn(
             "w-6 h-6 rounded-full bg-sori-surface-base flex items-center justify-center text-[8px] font-black text-sori-text-muted border border-transparent transition-all overflow-hidden",
-            isSpeaking ? 'speaking-pulse scale-110' : ''
+            isSpeaking ? 'speaking-pulse' : ''
           )}>
             {getAvatarUrl(occupant.avatarUrl) ? (
               <img 

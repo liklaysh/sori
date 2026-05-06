@@ -12,6 +12,7 @@ import { useUIStore } from "../../store/useUIStore";
 interface MessageListProps {
   messages: ChatItem[];
   onMessageContextMenu: (e: React.MouseEvent, m: Message) => void;
+  onReaction?: (message: Message, emoji: string) => void;
   scrollRef: RefObject<HTMLDivElement>;
   handleScroll: () => void;
   showScrollButton: boolean;
@@ -22,7 +23,7 @@ interface MessageListProps {
 }
 
 export const MessageList: React.FC<MessageListProps> = React.memo(({
-  messages, onMessageContextMenu, scrollRef, 
+  messages, onMessageContextMenu, onReaction, scrollRef,
   handleScroll, showScrollButton, scrollToBottom, onLoadMore,
   isLoadingMessages,
   onForward
@@ -47,25 +48,25 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
     if (!currentId) return;
 
     const isSwitch = currentId !== lastIdRef.current;
-    
+
     // Check if data just appeared (from 0 to >0)
     const dataJustArrived = messages.length > 0 && lastMessagesLengthRef.current === 0;
-    
+
     const firstMsgId = messages[0]?.id || null;
     const lastMsgId = messages[messages.length - 1]?.id || null;
 
     // SCENARIO DETECTION
     // [RESET]: Switching conversations, initial page load, or full dataset replacement (jump)
     const isReset = isSwitch || dataJustArrived || (
-      lastFirstMessageIdRef.current !== null && 
-      lastLastMessageIdRef.current !== null && 
-      firstMsgId !== lastFirstMessageIdRef.current && 
+      lastFirstMessageIdRef.current !== null &&
+      lastLastMessageIdRef.current !== null &&
+      firstMsgId !== lastFirstMessageIdRef.current &&
       lastMsgId !== lastLastMessageIdRef.current
     );
 
     // [APPEND]: New messages added at the bottom (first message stayed same, last changed)
-    const isAppend = !isReset && 
-                     lastFirstMessageIdRef.current === firstMsgId && 
+    const isAppend = !isReset &&
+                     lastFirstMessageIdRef.current === firstMsgId &&
                      lastLastMessageIdRef.current !== lastMsgId;
 
     const lastMessage = messages[messages.length - 1];
@@ -83,10 +84,10 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
 
       return appendedByCurrentUser || isNearBottom;
     })())) {
-      
+
       const performScroll = () => {
         if (!scrollRef.current) return;
-        
+
         // 1. Initial attempt: Scroll to physical anchor
         bottomAnchorRef.current?.scrollIntoView({ block: 'end', behavior: isReset ? 'auto' : 'smooth' });
 
@@ -95,7 +96,7 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
           if (!scrollRef.current) return;
           const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
           const isAtBottom = (scrollTop + clientHeight) >= (scrollHeight - 10);
-          
+
           if (!isAtBottom) {
             // Corrective pass for layout shifts
             scrollRef.current.scrollTo({ top: scrollHeight, behavior: isReset ? 'auto' : 'smooth' });
@@ -122,16 +123,16 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
 
   const internalHandleScroll = useCallback(async () => {
     handleScroll();
-    
+
     if (scrollRef.current && onLoadMore && !isLoadingMore && messages.length >= 50) {
       const { scrollTop, scrollHeight } = scrollRef.current;
-      
+
       if (scrollTop < 50) {
         setIsLoadingMore(true);
         lastScrollHeightRef.current = scrollHeight;
         await onLoadMore();
         setIsLoadingMore(false);
-        
+
         if (scrollRef.current) {
           const newScrollHeight = scrollRef.current.scrollHeight;
           scrollRef.current.scrollTop = newScrollHeight - lastScrollHeightRef.current;
@@ -143,8 +144,8 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
   if (!user) return null;
 
   return (
-    <div 
-      className="flex-1 overflow-y-auto no-scrollbar pl-6 pr-5 py-4 space-y-4 relative" 
+    <div
+      className="flex-1 overflow-y-auto no-scrollbar pl-6 pr-5 py-4 space-y-4 relative"
       ref={scrollRef}
       onScroll={internalHandleScroll}
     >
@@ -231,11 +232,11 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
               }
 
               renderedItems.push(
-                <SystemCallToast 
-                  key={`call-log-${logId}`} 
-                  log={log} 
-                  count={count} 
-                  isCaller={log.callerId === user.id} 
+                <SystemCallToast
+                  key={`call-log-${logId}`}
+                  log={log}
+                  count={count}
+                  isCaller={log.callerId === user.id}
                 />
               );
 
@@ -243,11 +244,12 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
             } else {
               const m = msg as Message;
               renderedItems.push(
-                <MessageItem 
+                <MessageItem
                   key={`${m.id}-${index}`}
-                  msg={m} 
-                  onContextMenu={(e) => onMessageContextMenu(e, m)} 
+                  msg={m}
+                  onContextMenu={(e) => onMessageContextMenu(e, m)}
                   onForward={onForward}
+                  onReaction={onReaction}
                 />
               );
               index++;
@@ -256,12 +258,12 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
           return renderedItems;
         })()
       )}
-      
+
       <div ref={bottomAnchorRef} className="h-px -mt-px w-full pointer-events-none opacity-0" aria-hidden="true" />
 
       {showScrollButton && (
         <div className="sticky bottom-4 left-0 right-0 flex justify-center pointer-events-none z-50">
-          <button 
+          <button
             onClick={() => scrollToBottom('smooth')}
             className="pointer-events-auto bg-sori-surface-main border border-sori-border-accent text-sori-accent-primary w-10 h-10 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all animate-in slide-in-from-bottom-4"
           >

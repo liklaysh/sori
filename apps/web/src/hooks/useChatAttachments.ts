@@ -123,6 +123,16 @@ export const useChatAttachments = () => {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const files = Array.from(e.clipboardData.files || []);
+    if (files.length === 0) {
+      return;
+    }
+
+    e.preventDefault();
+    void handleFilesUpload(files);
+  };
+
   return {
     pendingAttachments,
     dragActive,
@@ -133,6 +143,7 @@ export const useChatAttachments = () => {
     clearAttachments,
     handleDrag,
     handleDrop,
+    handlePaste,
     setDragActive
   };
 };

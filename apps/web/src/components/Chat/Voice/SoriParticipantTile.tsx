@@ -88,7 +88,7 @@ export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackR
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-sori-surface-main">
           <div className={cn(
             "w-24 h-24 rounded-full flex items-center justify-center text-4xl font-black text-sori-text-strong bg-sori-accent-primary-gradient shadow-2xl transition-all duration-300 relative overflow-hidden",
-            isSpeaking ? 'speaking-pulse scale-110' : 'border border-sori-border-subtle'
+            isSpeaking ? 'speaking-pulse' : 'border border-sori-border-subtle'
           )}>
            {avatarUrl ? (
               <img src={avatarUrl} alt={participant.name} className="w-full h-full object-cover" />
@@ -105,9 +105,6 @@ export const SoriParticipantTile: React.FC<SoriParticipantTileProps> = ({ trackR
       {/* Overlay: Name Tag & Stream Status */}
       <div className="absolute bottom-3 left-3 flex flex-col items-start gap-1 transition-all group-hover:translate-x-1 drop-shadow-2xl">
         <div className="flex items-center gap-2 bg-sori-surface-panel px-3 py-1.5 rounded-xl border border-sori-border-subtle shadow-lg">
-          {isSpeaking && (
-            <span className="w-2 h-2 rounded-full bg-sori-accent-success animate-pulse"></span>
-          )}
          <span className="text-[11px] font-black text-white tracking-wide uppercase">
             {participant.name || participant.identity}
           </span>
