@@ -81,10 +81,60 @@ compose() {
   docker compose --env-file "${REPO_DIR}/.env" "${COMPOSE_FILES[@]}" "$@"
 }
 
-compose_with_timeout() {
-  local seconds="$1"
-  shift
-  timeout "${seconds}" docker compose --env-file "${REPO_DIR}/.env" "${COMPOSE_FILES[@]}" "$@"
+compose_tool() {
+  COMPOSE_PROFILES=tools docker compose --env-file "${REPO_DIR}/.env" "${COMPOSE_FILES[@]}" "$@"
+}
+
+run_tool_service() {
+  local service="$1"
+  local seconds="${2:-300s}"
+  local cid=""
+  local exit_code=""
+  local wait_status=0
+  local logs_pid=""
+
+  compose_tool rm -f -s "${service}" >/dev/null 2>&1 || true
+  compose_tool build "${service}"
+  compose_tool up -d --no-deps --force-recreate "${service}"
+
+  cid="$(compose_tool ps -a -q "${service}")"
+  [[ -n "${cid}" ]] || die "Could not find container for ${service}."
+
+  docker logs -f "${cid}" &
+  logs_pid="$!"
+
+  set +e
+  exit_code="$(timeout "${seconds}" docker wait "${cid}")"
+  wait_status="$?"
+  set -e
+
+  if [[ "${wait_status}" -eq 124 ]]; then
+    warn "${service} timed out after ${seconds}. Last logs:"
+    docker logs --tail 120 "${cid}" >&2 || true
+    docker rm -f "${cid}" >/dev/null 2>&1 || true
+    if [[ -n "${logs_pid}" ]]; then
+      wait "${logs_pid}" >/dev/null 2>&1 || true
+    fi
+    die "${service} did not finish in time."
+  fi
+
+  if [[ "${wait_status}" -ne 0 ]]; then
+    warn "${service} failed while waiting for container exit. Last logs:"
+    docker logs --tail 120 "${cid}" >&2 || true
+    docker rm -f "${cid}" >/dev/null 2>&1 || true
+    if [[ -n "${logs_pid}" ]]; then
+      wait "${logs_pid}" >/dev/null 2>&1 || true
+    fi
+    die "${service} failed to report an exit code."
+  fi
+
+  if [[ -n "${logs_pid}" ]]; then
+    wait "${logs_pid}" >/dev/null 2>&1 || true
+  fi
+
+  compose_tool rm -f -s "${service}" >/dev/null 2>&1 || docker rm -f "${cid}" >/dev/null 2>&1 || true
+
+  [[ "${exit_code}" == "0" ]] || die "${service} exited with code ${exit_code}."
 }
 
 update_git_checkout() {
@@ -176,10 +226,10 @@ run_update() {
   wait_for_postgres
 
   log "Running database migrations..."
-  compose run --rm --build sori-db-migrate
+  run_tool_service sori-db-migrate 300s
 
   log "Reapplying install bootstrap..."
-  compose_with_timeout 180s run --rm --build sori-install-bootstrap
+  run_tool_service sori-install-bootstrap 180s
 
   log "Building and restarting Sori services..."
   compose up -d --build sori-backend sori-web sori-gateway postgres-backup
