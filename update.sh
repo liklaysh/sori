@@ -162,6 +162,16 @@ update_git_checkout() {
   git pull --ff-only origin "${current_branch}"
 }
 
+reexec_after_self_update() {
+  if [[ "${SORI_UPDATE_REEXECED:-}" == "1" ]]; then
+    return 0
+  fi
+
+  export SORI_UPDATE_REEXECED=1
+  log "Restarting update script after repository sync..."
+  exec bash "${REPO_DIR}/update.sh" "$@"
+}
+
 set_build_metadata() {
   cd "${REPO_DIR}"
   SORI_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || true)"
@@ -322,6 +332,7 @@ main() {
   parse_args "$@"
   require_root
   update_git_checkout
+  reexec_after_self_update "$@"
   set_build_metadata
   ensure_desktop_app_origins
   run_update
