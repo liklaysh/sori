@@ -13,7 +13,8 @@ import {
   LogOut, 
   Menu, 
   ShieldCheck,
-  Activity
+  Activity,
+  Stethoscope
 } from "lucide-react";
 
 import { useUserStore } from "../../store/useUserStore";
@@ -26,8 +27,9 @@ const AuditLogTab = lazy(() => import("./tabs/AuditLogTab"));
 const BackupsTab = lazy(() => import("./tabs/BackupsTab"));
 const StorageTab = lazy(() => import("./tabs/StorageTab"));
 const TelemetryTab = lazy(() => import("./tabs/TelemetryTab"));
+const DiagnosticsTab = lazy(() => import("./tabs/DiagnosticsTab"));
 
-type AdminTab = "dashboard" | "users" | "channels" | "settings" | "audit" | "backups" | "storage" | "telemetry";
+type AdminTab = "dashboard" | "users" | "channels" | "settings" | "audit" | "backups" | "storage" | "telemetry" | "diagnostics";
 
 const AdminTabLoader = () => (
   <AdminTabLoaderInner />
@@ -64,6 +66,7 @@ export default function AdminPanel() {
     { id: "storage", label: t("admin:shell.tabs.storage"), icon: <Database className="h-5 w-5" /> },
     { id: "audit", label: t("admin:shell.tabs.audit"), icon: <History className="h-5 w-5" /> },
     { id: "telemetry", label: t("admin:shell.tabs.telemetry"), icon: <Activity className="h-5 w-5" />, section: t("admin:shell.sections.analytics") },
+    { id: "diagnostics", label: t("admin:shell.tabs.diagnostics"), icon: <Stethoscope className="h-5 w-5" /> },
     { id: "backups", label: t("admin:shell.tabs.backups"), icon: <Save className="h-5 w-5" /> },
   ];
 
@@ -154,6 +157,7 @@ export default function AdminPanel() {
               {activeTab === "settings" && <SettingsTab />}
               {activeTab === "audit" && <AuditLogTab />}
               {activeTab === "telemetry" && <TelemetryTab />}
+              {activeTab === "diagnostics" && <DiagnosticsTab />}
               {activeTab === "backups" && <BackupsTab />}
               {activeTab === "storage" && <StorageTab />}
             </Suspense>

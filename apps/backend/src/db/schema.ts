@@ -88,12 +88,21 @@ export const calls = pgTable("calls", {
   isActive: boolean("is_active").default(true),
   mos: text("mos"), // Mean Opinion Score (avg at end of call)
   avgBitrate: integer("avg_bitrate"),
+  minBitrate: integer("min_bitrate"),
   packetLoss: text("packet_loss"),
+  maxPacketLoss: text("max_packet_loss"),
   avgJitterMs: integer("avg_jitter_ms"),
+  maxJitterMs: integer("max_jitter_ms"),
   avgRttMs: integer("avg_rtt_ms"),
+  maxRttMs: integer("max_rtt_ms"),
   reconnectCount: integer("reconnect_count").default(0),
   telemetrySamples: integer("telemetry_samples").default(0),
-  connectionQuality: text("connection_quality"),
+  connectionQuality: text("connection_quality"), // Worst observed quality during the call
+  avgConnectionQuality: text("avg_connection_quality"),
+  excellentSamples: integer("excellent_samples").default(0),
+  goodSamples: integer("good_samples").default(0),
+  poorSamples: integer("poor_samples").default(0),
+  lostSamples: integer("lost_samples").default(0),
   startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }).defaultNow(),
   endedAt: timestamp("ended_at", { withTimezone: true, mode: "date" }),
 });

@@ -25,12 +25,32 @@ interface CallLog {
   status: 'active' | 'ended' | 'missed' | 'rejected' | 'ringing' | string;
   mos: string | null;
   avgBitrate: number | null;
+  minBitrate?: number | null;
   packetLoss: string | null;
+  maxPacketLoss?: string | null;
   avgJitterMs?: number | null;
+  maxJitterMs?: number | null;
   avgRttMs?: number | null;
+  maxRttMs?: number | null;
   reconnectCount?: number | null;
   telemetrySamples?: number | null;
   connectionQuality?: "excellent" | "good" | "poor" | "lost" | "unknown" | null;
+  avgConnectionQuality?: "excellent" | "good" | "poor" | "lost" | "unknown" | null;
+  excellentSamples?: number | null;
+  goodSamples?: number | null;
+  poorSamples?: number | null;
+  lostSamples?: number | null;
+  degradationReasons?: Array<
+    | "stable"
+    | "no_samples"
+    | "packet_loss"
+    | "jitter"
+    | "rtt"
+    | "low_bitrate"
+    | "reconnects"
+    | "lost_connection"
+    | "poor_quality"
+  >;
   participantCount?: number | null;
   lastTelemetryAt?: number | null;
   startedAt: string;
@@ -40,6 +60,8 @@ interface CallLog {
   callee?: { username: string };
   participants: CallParticipant[];
 }
+
+type DegradationReason = NonNullable<CallLog["degradationReasons"]>[number];
 
 export default function TelemetryTab() {
   const { t } = useTranslation(["admin"]);
@@ -138,17 +160,17 @@ export default function TelemetryTab() {
 
   const formatQualityValue = (call: CallLog) => {
     if (call.mos) {
-      return call.connectionQuality ? `${call.mos} • ${getQualityLabel(call.connectionQuality)}` : call.mos;
+      return call.avgConnectionQuality ? `${call.mos} • ${getQualityLabel(call.avgConnectionQuality)}` : call.mos;
     }
 
-    if (call.connectionQuality && call.connectionQuality !== "unknown") {
-      return getQualityLabel(call.connectionQuality);
+    if (call.avgConnectionQuality && call.avgConnectionQuality !== "unknown") {
+      return getQualityLabel(call.avgConnectionQuality);
     }
 
     return call.status === "active" ? t("admin:telemetry.calculating") : t("admin:telemetry.notAvailable");
   };
 
-  const formatPacketLoss = (value: string | null) => {
+  const formatPacketLoss = (value?: string | null) => {
     if (!value) {
       return "—";
     }
@@ -159,6 +181,30 @@ export default function TelemetryTab() {
     }
 
     return `${parsed.toFixed(1)}%`;
+  };
+
+  const formatBitrate = (value?: number | null) => {
+    return value ? `${(value / 1000).toFixed(1)} kbps` : "—";
+  };
+
+  const formatMs = (value?: number | null) => {
+    return typeof value === "number" ? `${value} ms` : "—";
+  };
+
+  const qualitySamples = (call: CallLog) => [
+    call.excellentSamples ?? 0,
+    call.goodSamples ?? 0,
+    call.poorSamples ?? 0,
+    call.lostSamples ?? 0,
+  ].reduce((sum, value) => sum + value, 0);
+
+  const qualityShare = (value: number, total: number) => {
+    if (total <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round((value / total) * 100)));
+  };
+
+  const getDegradationLabel = (reason: DegradationReason) => {
+    return t(`admin:telemetry.degradationReasons.${reason}`);
   };
 
   if (loading && calls.length === 0) {
@@ -266,7 +312,7 @@ export default function TelemetryTab() {
                 </div>
 
                 {/* Quality Metrics */}
-                <div className="grid grid-cols-4 gap-6 lg:border-l lg:border-sori-border-subtle lg:pl-6 min-w-[360px]">
+                <div className="grid grid-cols-4 gap-6 lg:border-l lg:border-sori-border-subtle lg:pl-6 min-w-[420px]">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">{t("admin:telemetry.mosQuality")}</p>
                     <p className={cn("text-sm font-black italic", getMOSColor(call.mos))}>
@@ -276,7 +322,7 @@ export default function TelemetryTab() {
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-sori-text-muted mb-1">{t("admin:telemetry.bitrate")}</p>
                     <p className="text-sm font-bold text-sori-text-strong">
-                      {call.avgBitrate ? `${(call.avgBitrate / 1000).toFixed(1)} kbps` : "—"}
+                      {formatBitrate(call.avgBitrate)}
                     </p>
                   </div>
                   <div>
@@ -290,6 +336,27 @@ export default function TelemetryTab() {
                     <p className={cn("text-sm font-bold", getStatusTone(call.status))}>
                       {getStatusLabel(call.status)}
                     </p>
+                  </div>
+                  <div className="col-span-4 rounded-xl border border-sori-border-subtle bg-sori-surface-base/60 p-3">
+                    <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] font-bold uppercase tracking-widest text-sori-text-dim">
+                      <span>
+                        {t("admin:telemetry.diagnosis")}: {(call.degradationReasons?.length ? call.degradationReasons : (["no_samples"] as DegradationReason[])).map(getDegradationLabel).join(", ")}
+                      </span>
+                      <span>{t("admin:telemetry.worst")}: {call.connectionQuality ? getQualityLabel(call.connectionQuality) : "—"}</span>
+                      <span>{t("admin:telemetry.minBitrate")}: {formatBitrate(call.minBitrate)}</span>
+                      <span>{t("admin:telemetry.maxLoss")}: {formatPacketLoss(call.maxPacketLoss)}</span>
+                      <span>{t("admin:telemetry.maxJitter")}: {formatMs(call.maxJitterMs)}</span>
+                      <span>{t("admin:telemetry.maxRtt")}: {formatMs(call.maxRttMs)}</span>
+                      <span>{t("admin:telemetry.samples")}: {call.telemetrySamples ?? 0}</span>
+                    </div>
+                    {qualitySamples(call) > 0 && (
+                      <div className="flex h-1.5 overflow-hidden rounded-full bg-sori-surface-active">
+                        <div className="bg-sori-accent-secondary" style={{ width: `${qualityShare(call.excellentSamples ?? 0, qualitySamples(call))}%` }} />
+                        <div className="bg-sori-accent-success" style={{ width: `${qualityShare(call.goodSamples ?? 0, qualitySamples(call))}%` }} />
+                        <div className="bg-sori-accent-warning" style={{ width: `${qualityShare(call.poorSamples ?? 0, qualitySamples(call))}%` }} />
+                        <div className="bg-sori-accent-danger" style={{ width: `${qualityShare(call.lostSamples ?? 0, qualitySamples(call))}%` }} />
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -19,6 +19,7 @@
       "storage": "Медиахранилище",
       "audit": "Журнал аудита",
       "telemetry": "Телеметрия",
+      "diagnostics": "Диагностика",
       "backups": "Резервные копии"
     }
   },
@@ -185,6 +186,13 @@
     "packetLoss": "Потери пакетов",
     "jitter": "Джиттер",
     "rtt": "RTT",
+    "worst": "Худшее",
+    "minBitrate": "Мин. битрейт",
+    "maxLoss": "Пик потерь",
+    "maxJitter": "Пик джиттера",
+    "maxRtt": "Пик RTT",
+    "samples": "Сэмплы",
+    "diagnosis": "Диагноз",
     "status": "Статус",
     "calculating": "Сбор данных...",
     "notAvailable": "Н/Д",
@@ -196,6 +204,17 @@
       "lost": "Потеряно",
       "unknown": "Неизвестно"
     },
+    "degradationReasons": {
+      "stable": "Стабильно",
+      "no_samples": "Нет сэмплов",
+      "packet_loss": "Потери пакетов",
+      "jitter": "Джиттер",
+      "rtt": "Высокий RTT",
+      "low_bitrate": "Низкий битрейт",
+      "reconnects": "Переподключения",
+      "lost_connection": "Потеря соединения",
+      "poor_quality": "Слабое качество"
+    },
     "statuses": {
       "live": "Активен",
       "ringing": "Дозвон",
@@ -205,6 +224,56 @@
     },
     "errors": {
       "fetchFailed": "Не удалось получить телеметрию звонков"
+    }
+  },
+  "diagnostics": {
+    "loading": "Запускаем диагностику...",
+    "title": "Диагностика системы",
+    "description": "Снимок готовности сервисов, миграций и клиентских endpoint'ов.",
+    "refresh": "Обновить",
+    "copyJson": "Копировать JSON",
+    "overall": "Общий статус",
+    "version": "Версия",
+    "generated": "Сформировано",
+    "status": {
+      "ok": "OK",
+      "degraded": "Деградация",
+      "down": "Недоступно",
+      "error": "Ошибка"
+    },
+    "services": {
+      "database": "База данных",
+      "valkey": "Valkey",
+      "storage": "Хранилище"
+    },
+    "migrations": {
+      "title": "Миграции",
+      "applied": "Применено",
+      "latest": "Последний hash",
+      "createdAt": "Дата применения"
+    },
+    "telemetrySchema": {
+      "title": "Схема телеметрии",
+      "status": "Статус",
+      "columns": "Колонки",
+      "missing": "Отсутствуют"
+    },
+    "runtime": {
+      "title": "Runtime",
+      "environment": "Окружение",
+      "node": "Node",
+      "uptime": "Аптайм",
+      "retention": "Хранение",
+      "uploadLimit": "Лимит загрузки"
+    },
+    "endpoints": {
+      "title": "Клиентские endpoint'ы"
+    },
+    "toasts": {
+      "copied": "JSON диагностики скопирован"
+    },
+    "errors": {
+      "fetchFailed": "Не удалось получить диагностику"
     }
   },
   "backups": {

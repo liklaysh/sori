@@ -16,6 +16,7 @@ export function useAdminApi() {
     getStats: () => request("GET", "/stats"),
     getHealth: () => request("GET", "/health"),
     getCalls: () => request("GET", "/calls"),
+    getDiagnostics: () => request("GET", "/diagnostics"),
     
     // System Settings
     getSettings: () => request("GET", "/settings"),

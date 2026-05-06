@@ -330,12 +330,21 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
           endedAt,
           mos: persistedTelemetry.mos ?? null,
           avgBitrate: persistedTelemetry.avgBitrate ?? null,
+          minBitrate: persistedTelemetry.minBitrate ?? null,
           packetLoss: persistedTelemetry.packetLoss ?? null,
+          maxPacketLoss: persistedTelemetry.maxPacketLoss ?? null,
           avgJitterMs: persistedTelemetry.avgJitterMs ?? null,
+          maxJitterMs: persistedTelemetry.maxJitterMs ?? null,
           avgRttMs: persistedTelemetry.avgRttMs ?? null,
+          maxRttMs: persistedTelemetry.maxRttMs ?? null,
           reconnectCount: persistedTelemetry.reconnectCount ?? 0,
           telemetrySamples: persistedTelemetry.telemetrySamples ?? 0,
           connectionQuality: persistedTelemetry.connectionQuality ?? null,
+          avgConnectionQuality: persistedTelemetry.avgConnectionQuality ?? null,
+          excellentSamples: persistedTelemetry.excellentSamples ?? 0,
+          goodSamples: persistedTelemetry.goodSamples ?? 0,
+          poorSamples: persistedTelemetry.poorSamples ?? 0,
+          lostSamples: persistedTelemetry.lostSamples ?? 0,
         })
         .where(and(eq(calls.id, callId), eq(calls.isActive, true)))
         .returning();

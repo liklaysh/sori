@@ -19,6 +19,7 @@
       "storage": "Media Storage",
       "audit": "Audit Log",
       "telemetry": "Telemetry",
+      "diagnostics": "Diagnostics",
       "backups": "Backups"
     }
   },
@@ -185,6 +186,13 @@
     "packetLoss": "Packet Loss",
     "jitter": "Jitter",
     "rtt": "RTT",
+    "worst": "Worst",
+    "minBitrate": "Min bitrate",
+    "maxLoss": "Peak loss",
+    "maxJitter": "Peak jitter",
+    "maxRtt": "Peak RTT",
+    "samples": "Samples",
+    "diagnosis": "Diagnosis",
     "status": "Status",
     "calculating": "Collecting...",
     "notAvailable": "N/A",
@@ -196,6 +204,17 @@
       "lost": "Lost",
       "unknown": "Unknown"
     },
+    "degradationReasons": {
+      "stable": "Stable",
+      "no_samples": "No samples",
+      "packet_loss": "Packet loss",
+      "jitter": "Jitter",
+      "rtt": "High RTT",
+      "low_bitrate": "Low bitrate",
+      "reconnects": "Reconnects",
+      "lost_connection": "Lost connection",
+      "poor_quality": "Poor quality"
+    },
     "statuses": {
       "live": "Live",
       "ringing": "Ringing",
@@ -205,6 +224,56 @@
     },
     "errors": {
       "fetchFailed": "Failed to fetch call telemetry"
+    }
+  },
+  "diagnostics": {
+    "loading": "Running Diagnostics...",
+    "title": "System Diagnostics",
+    "description": "Production readiness snapshot for services, migrations, and client endpoints.",
+    "refresh": "Refresh",
+    "copyJson": "Copy JSON",
+    "overall": "Overall",
+    "version": "Version",
+    "generated": "Generated",
+    "status": {
+      "ok": "OK",
+      "degraded": "Degraded",
+      "down": "Down",
+      "error": "Error"
+    },
+    "services": {
+      "database": "Database",
+      "valkey": "Valkey",
+      "storage": "Storage"
+    },
+    "migrations": {
+      "title": "Migrations",
+      "applied": "Applied",
+      "latest": "Latest hash",
+      "createdAt": "Applied at"
+    },
+    "telemetrySchema": {
+      "title": "Telemetry Schema",
+      "status": "Status",
+      "columns": "Columns",
+      "missing": "Missing"
+    },
+    "runtime": {
+      "title": "Runtime",
+      "environment": "Environment",
+      "node": "Node",
+      "uptime": "Uptime",
+      "retention": "Retention",
+      "uploadLimit": "Upload limit"
+    },
+    "endpoints": {
+      "title": "Client Endpoints"
+    },
+    "toasts": {
+      "copied": "Diagnostics JSON copied"
+    },
+    "errors": {
+      "fetchFailed": "Failed to fetch diagnostics"
     }
   },
   "backups": {

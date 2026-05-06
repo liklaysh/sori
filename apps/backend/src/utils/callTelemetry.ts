@@ -18,25 +18,44 @@ export interface CallTelemetryAggregate {
   bitrateTotal: number;
   bitrateSamples: number;
   avgBitrate: number | null;
+  minBitrate: number | null;
   packetLossTotal: number;
   packetLossSamples: number;
   avgPacketLoss: number | null;
+  maxPacketLoss: number | null;
   jitterTotalMs: number;
   jitterSamples: number;
   avgJitterMs: number | null;
+  maxJitterMs: number | null;
   rttTotalMs: number;
   rttSamples: number;
   avgRttMs: number | null;
+  maxRttMs: number | null;
   qualityScoreTotal: number;
   qualityScoreSamples: number;
   qualityScore: number | null;
   connectionQuality: ConnectionQualityLabel;
+  avgConnectionQuality: ConnectionQualityLabel;
+  excellentSamples: number;
+  goodSamples: number;
+  poorSamples: number;
+  lostSamples: number;
   participantCount: number;
   reconnectCount: number;
   updatedAt: number;
 }
 
 type CallRowUpdate = Partial<typeof calls.$inferInsert>;
+export type CallTelemetryDegradationReason =
+  | "stable"
+  | "no_samples"
+  | "packet_loss"
+  | "jitter"
+  | "rtt"
+  | "low_bitrate"
+  | "reconnects"
+  | "lost_connection"
+  | "poor_quality";
 
 const QUALITY_SCORE_MAP: Record<ConnectionQualityLabel, number | null> = {
   excellent: 4.5,
@@ -98,36 +117,80 @@ function roundMetric(value: number | null, digits = 1): number | null {
   return Math.round(value * multiplier) / multiplier;
 }
 
+function qualityScoreToLabel(score: number | null): ConnectionQualityLabel {
+  if (score === null) {
+    return "unknown";
+  }
+
+  if (score >= 4.15) {
+    return "excellent";
+  }
+
+  if (score >= 3.2) {
+    return "good";
+  }
+
+  if (score >= 2.05) {
+    return "poor";
+  }
+
+  return "lost";
+}
+
 export function createEmptyTelemetryAggregate(): CallTelemetryAggregate {
   return {
     sampleCount: 0,
     bitrateTotal: 0,
     bitrateSamples: 0,
     avgBitrate: null,
+    minBitrate: null,
     packetLossTotal: 0,
     packetLossSamples: 0,
     avgPacketLoss: null,
+    maxPacketLoss: null,
     jitterTotalMs: 0,
     jitterSamples: 0,
     avgJitterMs: null,
+    maxJitterMs: null,
     rttTotalMs: 0,
     rttSamples: 0,
     avgRttMs: null,
+    maxRttMs: null,
     qualityScoreTotal: 0,
     qualityScoreSamples: 0,
     qualityScore: null,
     connectionQuality: "unknown",
+    avgConnectionQuality: "unknown",
+    excellentSamples: 0,
+    goodSamples: 0,
+    poorSamples: 0,
+    lostSamples: 0,
     participantCount: 0,
     reconnectCount: 0,
     updatedAt: Date.now(),
   };
 }
 
+export function hydrateTelemetryAggregate(
+  aggregate: CallTelemetryAggregate | null | undefined,
+): CallTelemetryAggregate | null {
+  if (!aggregate) {
+    return null;
+  }
+
+  const hydrated = { ...createEmptyTelemetryAggregate(), ...aggregate };
+  if (hydrated.qualityScore !== null && hydrated.avgConnectionQuality === "unknown") {
+    hydrated.avgConnectionQuality = qualityScoreToLabel(hydrated.qualityScore);
+  }
+
+  return hydrated;
+}
+
 export function mergeTelemetryAggregate(
   current: CallTelemetryAggregate | null | undefined,
   sample: CallTelemetrySample,
 ): CallTelemetryAggregate {
-  const base = current ? { ...current } : createEmptyTelemetryAggregate();
+  const base = hydrateTelemetryAggregate(current) ?? createEmptyTelemetryAggregate();
   const now = Date.now();
 
   base.sampleCount += 1;
@@ -138,6 +201,7 @@ export function mergeTelemetryAggregate(
     base.bitrateTotal += bitrate;
     base.bitrateSamples += 1;
     base.avgBitrate = Math.round(base.bitrateTotal / base.bitrateSamples);
+    base.minBitrate = base.minBitrate === null ? Math.round(bitrate) : Math.min(base.minBitrate, Math.round(bitrate));
   }
 
   const packetLoss = normalizeFiniteNumber(sample.packetLoss);
@@ -145,6 +209,7 @@ export function mergeTelemetryAggregate(
     base.packetLossTotal += packetLoss;
     base.packetLossSamples += 1;
     base.avgPacketLoss = roundMetric(base.packetLossTotal / base.packetLossSamples);
+    base.maxPacketLoss = base.maxPacketLoss === null ? roundMetric(packetLoss) : Math.max(base.maxPacketLoss, roundMetric(packetLoss) ?? 0);
   }
 
   const jitterMs = normalizeFiniteNumber(sample.jitterMs);
@@ -152,6 +217,7 @@ export function mergeTelemetryAggregate(
     base.jitterTotalMs += jitterMs;
     base.jitterSamples += 1;
     base.avgJitterMs = Math.round(base.jitterTotalMs / base.jitterSamples);
+    base.maxJitterMs = base.maxJitterMs === null ? Math.round(jitterMs) : Math.max(base.maxJitterMs, Math.round(jitterMs));
   }
 
   const rttMs = normalizeFiniteNumber(sample.rttMs);
@@ -159,6 +225,7 @@ export function mergeTelemetryAggregate(
     base.rttTotalMs += rttMs;
     base.rttSamples += 1;
     base.avgRttMs = Math.round(base.rttTotalMs / base.rttSamples);
+    base.maxRttMs = base.maxRttMs === null ? Math.round(rttMs) : Math.max(base.maxRttMs, Math.round(rttMs));
   }
 
   const quality = normalizeConnectionQuality(sample.connectionQuality);
@@ -168,11 +235,22 @@ export function mergeTelemetryAggregate(
     base.connectionQuality = quality;
   }
 
+  if (quality === "excellent") {
+    base.excellentSamples += 1;
+  } else if (quality === "good") {
+    base.goodSamples += 1;
+  } else if (quality === "poor") {
+    base.poorSamples += 1;
+  } else if (quality === "lost") {
+    base.lostSamples += 1;
+  }
+
   const qualityScore = resolveQualityScore(sample, quality);
   if (qualityScore !== null) {
     base.qualityScoreTotal += qualityScore;
     base.qualityScoreSamples += 1;
     base.qualityScore = roundMetric(base.qualityScoreTotal / base.qualityScoreSamples);
+    base.avgConnectionQuality = qualityScoreToLabel(base.qualityScore);
   }
 
   const participantCount = normalizeFiniteNumber(sample.participantCount);
@@ -189,18 +267,68 @@ export function mergeTelemetryAggregate(
 }
 
 export function telemetryAggregateToCallUpdate(aggregate: CallTelemetryAggregate | null | undefined): CallRowUpdate {
-  if (!aggregate) {
+  const hydrated = hydrateTelemetryAggregate(aggregate);
+  if (!hydrated) {
     return {};
   }
 
   return {
-    mos: aggregate.qualityScore !== null ? aggregate.qualityScore.toFixed(1) : null,
-    avgBitrate: aggregate.avgBitrate,
-    packetLoss: aggregate.avgPacketLoss !== null ? aggregate.avgPacketLoss.toFixed(1) : null,
-    avgJitterMs: aggregate.avgJitterMs,
-    avgRttMs: aggregate.avgRttMs,
-    reconnectCount: aggregate.reconnectCount,
-    telemetrySamples: aggregate.sampleCount,
-    connectionQuality: aggregate.connectionQuality === "unknown" ? null : aggregate.connectionQuality,
+    mos: hydrated.qualityScore !== null ? hydrated.qualityScore.toFixed(1) : null,
+    avgBitrate: hydrated.avgBitrate,
+    minBitrate: hydrated.minBitrate,
+    packetLoss: hydrated.avgPacketLoss !== null ? hydrated.avgPacketLoss.toFixed(1) : null,
+    maxPacketLoss: hydrated.maxPacketLoss !== null ? hydrated.maxPacketLoss.toFixed(1) : null,
+    avgJitterMs: hydrated.avgJitterMs,
+    maxJitterMs: hydrated.maxJitterMs,
+    avgRttMs: hydrated.avgRttMs,
+    maxRttMs: hydrated.maxRttMs,
+    reconnectCount: hydrated.reconnectCount,
+    telemetrySamples: hydrated.sampleCount,
+    connectionQuality: hydrated.connectionQuality === "unknown" ? null : hydrated.connectionQuality,
+    avgConnectionQuality: hydrated.avgConnectionQuality === "unknown" ? null : hydrated.avgConnectionQuality,
+    excellentSamples: hydrated.excellentSamples,
+    goodSamples: hydrated.goodSamples,
+    poorSamples: hydrated.poorSamples,
+    lostSamples: hydrated.lostSamples,
   };
+}
+
+export function diagnoseTelemetryDegradation(
+  telemetry: Partial<CallTelemetryAggregate> | null | undefined,
+): CallTelemetryDegradationReason[] {
+  if (!telemetry || !telemetry.sampleCount) {
+    return ["no_samples"];
+  }
+
+  const reasons: CallTelemetryDegradationReason[] = [];
+
+  if ((telemetry.reconnectCount ?? 0) > 0) {
+    reasons.push("reconnects");
+  }
+
+  if ((telemetry.lostSamples ?? 0) > 0 || telemetry.connectionQuality === "lost") {
+    reasons.push("lost_connection");
+  }
+
+  if ((telemetry.maxPacketLoss ?? 0) >= 5 || (telemetry.avgPacketLoss ?? 0) >= 2) {
+    reasons.push("packet_loss");
+  }
+
+  if ((telemetry.maxJitterMs ?? 0) >= 40 || (telemetry.avgJitterMs ?? 0) >= 25) {
+    reasons.push("jitter");
+  }
+
+  if ((telemetry.maxRttMs ?? 0) >= 300 || (telemetry.avgRttMs ?? 0) >= 180) {
+    reasons.push("rtt");
+  }
+
+  if (telemetry.minBitrate !== null && telemetry.minBitrate !== undefined && telemetry.minBitrate > 0 && telemetry.minBitrate < 16000) {
+    reasons.push("low_bitrate");
+  }
+
+  if ((telemetry.poorSamples ?? 0) > 0 || telemetry.connectionQuality === "poor" || telemetry.avgConnectionQuality === "poor") {
+    reasons.push("poor_quality");
+  }
+
+  return reasons.length > 0 ? reasons : ["stable"];
 }

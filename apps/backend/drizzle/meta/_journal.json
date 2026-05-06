@@ -15,6 +15,13 @@
       "when": 1777123527912,
       "tag": "0001_call_telemetry_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778011200000,
+      "tag": "0002_call_telemetry_diagnostics",
+      "breakpoints": true
     }
   ]
 }

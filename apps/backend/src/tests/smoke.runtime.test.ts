@@ -482,14 +482,15 @@ test("runtime smoke gate against deployed Sori stack", async () => {
     socketAVoice.emit("join_voice_channel", voiceChannel!.id);
     await voiceJoinEvent;
 
-    const voiceLeaveOnDisconnect = waitForSocketEvent<any>(
+    const voiceLeaveOnExplicitLeave = waitForSocketEvent<any>(
       socketB,
       "voice_occupants_update",
       (payload) => payload?.channelId === voiceChannel!.id && !payload?.occupants?.some((occupant: any) => occupant.userId === userASession!.user.id),
       10000,
     );
+    socketAVoice.emit("leave_voice_channel", voiceChannel!.id);
+    await voiceLeaveOnExplicitLeave;
     socketAVoice.disconnect();
-    await voiceLeaveOnDisconnect;
 
     const incomingCall = waitForSocketEvent<any>(socketB, "incoming_call");
     const outgoingCallFromCaller = waitForSocketEvent<any>(socketA, "outgoing_call_started");

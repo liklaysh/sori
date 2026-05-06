@@ -23,6 +23,16 @@ export function CallTelemetryReporter({ socket, callId, channelId }: CallTelemet
   const remoteParticipants = useRemoteParticipants();
   const baselinesRef = useRef<StatsBaselineMap>(new Map());
   const reconnectCountRef = useRef(0);
+  const localParticipantRef = useRef(localParticipant);
+  const remoteParticipantsRef = useRef(remoteParticipants);
+
+  useEffect(() => {
+    localParticipantRef.current = localParticipant;
+  }, [localParticipant]);
+
+  useEffect(() => {
+    remoteParticipantsRef.current = remoteParticipants;
+  }, [remoteParticipants]);
 
   useEffect(() => {
     const onReconnected = () => {
@@ -49,13 +59,16 @@ export function CallTelemetryReporter({ socket, callId, channelId }: CallTelemet
 
       const metricReports = [];
 
-      const localReport = await getParticipantAudioReport(localParticipant);
+      const currentLocalParticipant = localParticipantRef.current;
+      const currentRemoteParticipants = remoteParticipantsRef.current;
+
+      const localReport = await getParticipantAudioReport(currentLocalParticipant);
       if (localReport) {
-        metricReports.push(collectReportMetrics(localReport, `local:${localParticipant.identity}`, baselinesRef.current));
+        metricReports.push(collectReportMetrics(localReport, `local:${currentLocalParticipant.identity}`, baselinesRef.current));
       }
 
       const remoteReports = await Promise.all(
-        remoteParticipants.map(async (participant) => {
+        currentRemoteParticipants.map(async (participant) => {
           const report = await getParticipantAudioReport(participant);
           if (!report) {
             return null;
@@ -68,14 +81,14 @@ export function CallTelemetryReporter({ socket, callId, channelId }: CallTelemet
       metricReports.push(...remoteReports.filter((report): report is NonNullable<typeof report> => Boolean(report)));
 
       const connectionQuality = getWorstConnectionQuality([
-        localParticipant.connectionQuality,
-        ...remoteParticipants.map((participant) => participant.connectionQuality),
+        currentLocalParticipant.connectionQuality,
+        ...currentRemoteParticipants.map((participant) => participant.connectionQuality),
       ]);
 
       const snapshot = buildTelemetrySnapshot({
         metrics: metricReports,
         quality: connectionQuality,
-        participantCount: remoteParticipants.length + 1,
+        participantCount: currentRemoteParticipants.length + 1,
         reconnectCount: reconnectCountRef.current,
       });
 
@@ -95,8 +108,7 @@ export function CallTelemetryReporter({ socket, callId, channelId }: CallTelemet
       isCancelled = true;
       window.clearInterval(interval);
     };
-  }, [socket, callId, channelId, room, localParticipant, remoteParticipants]);
+  }, [socket, callId, channelId, room]);
 
   return null;
 }
-
