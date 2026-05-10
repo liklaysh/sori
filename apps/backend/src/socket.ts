@@ -7,7 +7,7 @@ import { config } from "./config.js";
 import { setGlobalIo } from "./globals.js";
 import { eq, inArray, and } from "drizzle-orm";
 import { createAdapter } from "@socket.io/redis-adapter";
-import { pubClient, subClient, redisPresence, redisVoice } from "./utils/redis.js";
+import { pubClient, subClient, redisPresence, redisVoice, sanitizeVoiceOccupantsState } from "./utils/redis.js";
 import { logger } from "./utils/logger.js";
 import { nanoid } from "nanoid";
 
@@ -134,7 +134,7 @@ export function initSocket(server: any) {
     socket.on("get_voice_state", async () => {
       try {
         const state = await redisVoice.getAllOccupants();
-        socket.emit("voice_occupants_state", state);
+        socket.emit("voice_occupants_state", sanitizeVoiceOccupantsState(state));
       } catch (err) {
         logger.error("[Socket] get_voice_state error:", { error: err });
       }
@@ -188,7 +188,7 @@ export function initSocket(server: any) {
     }
     
     const allVoiceOccupants = await redisVoice.getAllOccupants();
-    socket.emit("voice_occupants_state", allVoiceOccupants);
+    socket.emit("voice_occupants_state", sanitizeVoiceOccupantsState(allVoiceOccupants));
     
     // Initial presence sync
     const onlineUserIds = await redisPresence.getGlobalOnlineUsers();

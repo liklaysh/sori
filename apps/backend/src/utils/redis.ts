@@ -253,6 +253,16 @@ export const redisVoice = {
   }
 };
 
+export function sanitizeVoiceOccupants<T extends Record<string, any>>(occupants: T[]) {
+  return occupants.map(({ socketId, ...occupant }) => occupant);
+}
+
+export function sanitizeVoiceOccupantsState(state: Record<string, any[]>) {
+  return Object.fromEntries(
+    Object.entries(state).map(([channelId, occupants]) => [channelId, sanitizeVoiceOccupants(occupants)]),
+  );
+}
+
 /**
  * Helper to manage active direct calls in Redis
  */

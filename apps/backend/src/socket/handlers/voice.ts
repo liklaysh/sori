@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { redisPresence, redisVoice } from "../../utils/redis.js";
+import { redisPresence, redisVoice, sanitizeVoiceOccupants } from "../../utils/redis.js";
 import { db } from "../../db/index.js";
 import { callParticipants, calls, channels, users } from "../../db/schema.js";
 import { and, eq } from "drizzle-orm";
@@ -11,16 +11,36 @@ import { telemetryAggregateToCallUpdate } from "../../utils/callTelemetry.js";
 
 const VOICE_DISCONNECT_GRACE_MS = 120_000;
 
+type VoiceLifecycleSource =
+  | "explicit_user_action"
+  | "socket_reconnect"
+  | "socket_disconnect_grace"
+  | "heartbeat_recovery";
+
 type VoiceOccupant = {
   userId: string;
   username: string;
   avatarUrl?: string | null;
+  socketId?: string;
   joinedAt?: number;
   heartbeatAt?: number;
   isMuted?: boolean;
   isDeafened?: boolean;
   isSpeaking?: boolean;
   isStreaming?: boolean;
+};
+
+type LeaveChannelResult = {
+  changed: boolean;
+  occupants: VoiceOccupant[];
+  remainingUserIds: string[];
+  leavingUser: {
+    userId: string;
+    username: string;
+    avatarUrl?: string | null;
+  };
+  skippedReason: "not_occupant" | "stale_socket" | null;
+  ownerSocketId?: string | null;
 };
 
 export function handleVoice(io: Server, socket: Socket, user: { id: string, username: string, role: string }, isAdminPanel: boolean) {
@@ -113,13 +133,57 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
     await redisCallTelemetry.removeTelemetry(activeCall.id);
   };
 
-  const leaveChannel = async (channelId: string) => {
+  const leaveChannel = async (
+    channelId: string,
+    options: { source: VoiceLifecycleSource; expectedSocketId?: string } = { source: "explicit_user_action" },
+  ) => {
     if (!channelId) {
       return;
     }
 
-    const { changed, occupants: filtered, remainingUserIds, leavingUser } = await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
+    const { changed, occupants: filtered, remainingUserIds, leavingUser, skippedReason, ownerSocketId } = await redisVoice.updateOccupants<LeaveChannelResult>(channelId, async (occupants: VoiceOccupant[]) => {
       const leavingOccupant = occupants.find((occupant) => occupant.userId === user.id);
+
+      if (!leavingOccupant) {
+        return {
+          occupants,
+          result: {
+            changed: false,
+            occupants,
+            remainingUserIds: occupants.map((occupant) => occupant.userId),
+            leavingUser: {
+              userId: user.id,
+              username: user.username,
+              avatarUrl: null,
+            },
+            skippedReason: "not_occupant",
+            ownerSocketId: null,
+          },
+        };
+      }
+
+      if (
+        options.expectedSocketId
+        && leavingOccupant.socketId
+        && leavingOccupant.socketId !== options.expectedSocketId
+      ) {
+        return {
+          occupants,
+          result: {
+            changed: false,
+            occupants,
+            remainingUserIds: occupants.map((occupant) => occupant.userId),
+            leavingUser: {
+              userId: user.id,
+              username: leavingOccupant.username || user.username,
+              avatarUrl: leavingOccupant.avatarUrl || null,
+            },
+            skippedReason: "stale_socket",
+            ownerSocketId: leavingOccupant.socketId,
+          },
+        };
+      }
+
       const filteredOccupants = occupants.filter((occupant) => occupant.userId !== user.id);
       return {
         occupants: filteredOccupants,
@@ -132,11 +196,23 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
             username: leavingOccupant?.username || user.username,
             avatarUrl: leavingOccupant?.avatarUrl || null,
           },
+          skippedReason: null,
+          ownerSocketId: leavingOccupant.socketId || null,
         },
       };
     });
 
     if (!changed) {
+      logger.info({
+        message: "[Voice] Leave skipped",
+        event: "voice_leave_skipped",
+        source: options.source,
+        reason: skippedReason,
+        userId: user.id,
+        channelId,
+        socketId: socket.id,
+        ownerSocketId,
+      });
       return;
     }
 
@@ -151,8 +227,15 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
       }
     }
 
-    logger.info({ message: `🔌 [Voice] User left channel: ${user.username}`, userId: user.id, channelId });
-    io.emit("voice_occupants_update", { channelId, occupants: filtered });
+    logger.info({
+      message: `🔌 [Voice] User left channel: ${user.username}`,
+      event: "voice_left",
+      source: options.source,
+      userId: user.id,
+      channelId,
+      socketId: socket.id,
+    });
+    io.emit("voice_occupants_update", { channelId, occupants: sanitizeVoiceOccupants(filtered) });
     emitVoiceEventToUsers(remainingUserIds, "voice_user_left", {
       channelId,
       userId: leavingUser.userId,
@@ -169,7 +252,7 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
         continue;
       }
 
-      await leaveChannel(channelId);
+      await leaveChannel(channelId, { source: "socket_disconnect_grace", expectedSocketId: socket.id });
     }
   };
   
@@ -200,17 +283,19 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
       }
     }
 
-    const { occupants: currentOccupants, joined, previousUserIds } = await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
+    const { occupants: currentOccupants, joined, reconnected, previousUserIds, previousSocketId } = await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
       const now = Date.now();
       const previousUserIds = occupants.map((occupant) => occupant.userId);
       const existingOccupant = occupants.find((occupant) => occupant.userId === user.id);
       const avatarUrl = normalizeS3Url(latestUser?.avatarUrl) || latestUser?.avatarUrl || null;
+      const reconnected = Boolean(existingOccupant && existingOccupant.socketId && existingOccupant.socketId !== socket.id);
       const nextOccupants = existingOccupant
         ? occupants.map((occupant) => occupant.userId === user.id
             ? {
                 ...occupant,
                 username: user.username,
                 avatarUrl,
+                socketId: socket.id,
                 heartbeatAt: now,
               }
             : occupant,
@@ -221,6 +306,7 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
               userId: user.id,
               username: user.username,
               avatarUrl,
+              socketId: socket.id,
               joinedAt: now,
               heartbeatAt: now,
               isMuted: false,
@@ -233,15 +319,30 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
         result: {
           occupants: nextOccupants,
           joined: !existingOccupant,
+          reconnected,
+          previousSocketId: existingOccupant?.socketId || null,
           previousUserIds,
         },
       };
     });
 
-    await upsertParticipantJoin(channelId);
+    if (joined) {
+      await upsertParticipantJoin(channelId);
+    }
 
-    logger.info({ message: `🎙️ [Voice] User joined channel: ${user.username}`, userId: user.id, channelId });
-    io.emit("voice_occupants_update", { channelId, occupants: currentOccupants });
+    logger.info({
+      message: joined
+        ? `🎙️ [Voice] User joined channel: ${user.username}`
+        : `[Voice] User refreshed voice channel: ${user.username}`,
+      event: joined ? "voice_joined" : "voice_join_refreshed",
+      source: joined ? "explicit_user_action" : "socket_reconnect",
+      userId: user.id,
+      channelId,
+      socketId: socket.id,
+      previousSocketId,
+      reconnected,
+    });
+    io.emit("voice_occupants_update", { channelId, occupants: sanitizeVoiceOccupants(currentOccupants) });
     if (joined) {
       emitVoiceEventToUsers(previousUserIds, "voice_user_joined", {
         channelId,
@@ -254,18 +355,33 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
 
   socket.on("leave_voice_channel", async (channelId: string) => {
     try {
-      await leaveChannel(channelId);
+      await leaveChannel(channelId, { source: "explicit_user_action", expectedSocketId: socket.id });
     } catch (err) {
       logger.error("[Voice] leave_voice_channel Error", { error: err as Error });
     }
   });
 
   socket.on("disconnect", () => {
+    logger.info({
+      message: "[Voice] Disconnect grace started",
+      event: "voice_disconnect_grace_started",
+      source: "socket_disconnect_grace",
+      graceMs: VOICE_DISCONNECT_GRACE_MS,
+      userId: user.id,
+      socketId: socket.id,
+    });
+
     setTimeout(async () => {
       try {
         const isStillOnline = await redisPresence.isUserOnline(user.id);
         if (isStillOnline) {
-          logger.debug("[Voice] Skipped disconnect cleanup after quick reconnect", { userId: user.id });
+          logger.info({
+            message: "[Voice] Disconnect grace cancelled after reconnect",
+            event: "voice_disconnect_grace_cancelled",
+            source: "socket_reconnect",
+            userId: user.id,
+            socketId: socket.id,
+          });
           return;
         }
 
@@ -307,13 +423,14 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
         let recovered = false;
         const existingOccupant = occupants.find((occupant) => occupant.userId === user.id);
         const nextOccupants = existingOccupant
-          ? occupants.map((occupant) => occupant.userId === user.id ? { ...occupant, heartbeatAt: now } : occupant)
+          ? occupants.map((occupant) => occupant.userId === user.id ? { ...occupant, socketId: socket.id, heartbeatAt: now } : occupant)
           : [
               ...occupants,
               {
                 userId: user.id,
                 username: user.username,
                 avatarUrl: recoveryAvatarUrl,
+                socketId: socket.id,
                 joinedAt: now,
                 heartbeatAt: now,
                 isMuted: false,
@@ -332,8 +449,16 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
       });
 
       if (recovered) {
-        logger.warn("[Voice] Recovered missing voice occupant from heartbeat", { userId: user.id, channelId });
-        io.emit("voice_occupants_update", { channelId, occupants: updatedOccupants });
+        await upsertParticipantJoin(channelId);
+        logger.warn({
+          message: "[Voice] Recovered missing voice occupant from heartbeat",
+          event: "voice_occupant_restored",
+          source: "heartbeat_recovery",
+          userId: user.id,
+          channelId,
+          socketId: socket.id,
+        });
+        io.emit("voice_occupants_update", { channelId, occupants: sanitizeVoiceOccupants(updatedOccupants) });
       }
     } catch (err) {
       logger.error("[Voice] voice_heartbeat Error", { error: err as Error });
@@ -345,11 +470,11 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
       if (!channelId) return;
       const updated = await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
         const nextOccupants = occupants.map((occupant: any) =>
-          occupant.userId === user.id ? { ...occupant, isStreaming, heartbeatAt: Date.now() } : occupant,
+          occupant.userId === user.id ? { ...occupant, socketId: socket.id, isStreaming, heartbeatAt: Date.now() } : occupant,
         );
         return { occupants: nextOccupants, result: nextOccupants };
       });
-      io.emit("voice_occupants_update", { channelId, occupants: updated });
+      io.emit("voice_occupants_update", { channelId, occupants: sanitizeVoiceOccupants(updated) });
     } catch (err) {
       logger.error("[Voice] user_streaming_update Error", { error: err as Error });
     }
@@ -360,7 +485,7 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
       if (!channelId) return;
       await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
         const updated = occupants.map((occupant: any) =>
-          occupant.userId === user.id ? { ...occupant, isSpeaking, heartbeatAt: Date.now() } : occupant,
+          occupant.userId === user.id ? { ...occupant, socketId: socket.id, isSpeaking, heartbeatAt: Date.now() } : occupant,
         );
         return { occupants: updated, result: updated };
       });
@@ -380,7 +505,7 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
 
         await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
           const updated = occupants.map((occupant: any) =>
-            occupant.userId === user.id ? { ...occupant, isMuted, isDeafened, heartbeatAt: Date.now() } : occupant,
+            occupant.userId === user.id ? { ...occupant, socketId: socket.id, isMuted, isDeafened, heartbeatAt: Date.now() } : occupant,
           );
           return { occupants: updated, result: updated };
         });

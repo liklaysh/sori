@@ -80,6 +80,60 @@ capture_admin_calls() {
   rm -f "${cookie_jar}"
 }
 
+capture_voice_summary() {
+  local target="${WORK_DIR}/voice-reconnect-summary.txt"
+  local backend_logs="${WORK_DIR}/backend-logs.txt"
+  local admin_calls="${WORK_DIR}/admin-calls.json"
+
+  {
+    printf 'SORI voice reconnect summary\n'
+    printf 'Generated at: %s\n\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+    if [[ -f "${backend_logs}" ]] && command -v jq >/dev/null 2>&1; then
+      printf 'Socket disconnects by user/reason\n'
+      sed -n 's/^.*| //p' "${backend_logs}" \
+        | jq -r 'select(.message? | contains("[Socket] Disconnected")) | [(.message | split(": ")[1]), .userId, .reason] | @tsv' 2>/dev/null \
+        | awk -F '\t' '{ key=$1 "\t" $2 "\t" $3; count[key]++ } END { for (key in count) print count[key] "\t" key }' \
+        | sort -nr || true
+
+      printf '\nVoice lifecycle events by user/source/reason\n'
+      sed -n 's/^.*| //p' "${backend_logs}" \
+        | jq -r '
+          select(.event? | startswith("voice_"))
+          | [.event, (.source // "unknown"), (.reason // ""), (.message | split(": ")[1] // ""), (.userId // ""), (.channelId // "")]
+          | @tsv
+        ' 2>/dev/null \
+        | awk -F '\t' '{ key=$1 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6; count[key]++ } END { for (key in count) print count[key] "\t" key }' \
+        | sort -nr || true
+    else
+      printf 'Backend logs or jq are unavailable; voice log summary skipped.\n'
+    fi
+
+    if [[ -f "${admin_calls}" ]] && command -v jq >/dev/null 2>&1; then
+      printf '\nCall telemetry overview\n'
+      jq -r '
+        if type == "array" then
+          .[]
+          | [
+              .id,
+              .type,
+              .startedAt,
+              .endedAt,
+              (.participants // [] | length),
+              (.telemetrySamples // 0),
+              (.avgConnectionQuality // .connectionQuality // "unknown"),
+              (.reconnectCount // 0),
+              (.maxPacketLoss // ""),
+              (.maxRttMs // ""),
+              ((.degradationReasons // []) | join(","))
+            ]
+          | @tsv
+        else empty end
+      ' "${admin_calls}" 2>/dev/null || true
+    fi
+  } >"${target}"
+}
+
 api_url="$(env_value PUBLIC_API_URL)"
 web_url="$(env_value PUBLIC_WEB_URL)"
 db_user="$(env_value POSTGRES_USER)"
@@ -122,6 +176,7 @@ if [[ -x "${REPO_DIR}/scripts/doctor.sh" ]]; then
 fi
 
 capture_admin_calls
+capture_voice_summary
 
 archive="${OUTPUT_DIR}/sori-diagnostics-${TIMESTAMP}.tar.gz"
 tar -C "${OUTPUT_DIR}" -czf "${archive}" "sori-diagnostics-${TIMESTAMP}"
