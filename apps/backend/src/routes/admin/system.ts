@@ -33,6 +33,7 @@ const TELEMETRY_COLUMNS = [
   "good_samples",
   "poor_samples",
   "lost_samples",
+  "participant_telemetry",
 ];
 
 async function checkDatabase() {
@@ -111,6 +112,9 @@ function callPersistedTelemetry(call: typeof calls.$inferSelect): Partial<CallTe
     goodSamples: call.goodSamples ?? 0,
     poorSamples: call.poorSamples ?? 0,
     lostSamples: call.lostSamples ?? 0,
+    participants: (call.participantTelemetry && typeof call.participantTelemetry === "object" && !Array.isArray(call.participantTelemetry))
+      ? call.participantTelemetry as CallTelemetryAggregate["participants"]
+      : {},
   };
 }
 
@@ -227,6 +231,7 @@ system.get("/calls", async (c) => {
     if (!runtime || !call.isActive) {
       return {
         ...sanitizedCall,
+        participantTelemetry: callPersistedTelemetry(call).participants ?? {},
         degradationReasons: diagnoseTelemetryDegradation(callPersistedTelemetry(call)),
       };
     }
@@ -249,6 +254,7 @@ system.get("/calls", async (c) => {
       goodSamples: runtime.goodSamples ?? call.goodSamples,
       poorSamples: runtime.poorSamples ?? call.poorSamples,
       lostSamples: runtime.lostSamples ?? call.lostSamples,
+      participantTelemetry: runtime.participants ?? callPersistedTelemetry(call).participants ?? {},
       participantCount: runtime.participantCount || call.participants.length || undefined,
       lastTelemetryAt: runtime.updatedAt,
       degradationReasons: diagnoseTelemetryDegradation(runtime),

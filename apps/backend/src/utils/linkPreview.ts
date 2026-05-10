@@ -2,6 +2,7 @@ import ogs from "open-graph-scraper";
 import dns from "node:dns/promises";
 import { isIP } from "node:net";
 import { redis } from "./redis.js";
+import { logger } from "./logger.js";
 
 export interface LinkMetadata {
   title?: string;
@@ -16,6 +17,7 @@ const CACHE_TTL = 3600; // 1 hour
 const PREVIEW_TIMEOUT_MS = 5000;
 const PREVIEW_MAX_BYTES = 1024 * 1024;
 const MAX_REDIRECTS = 3;
+const NEGATIVE_CACHE_TTL = 300; // 5 minutes
 
 function isPrivateIPv4(ip: string): boolean {
   const parts = ip.split(".").map((part) => Number(part));
@@ -103,6 +105,25 @@ async function validatePreviewUrl(url: string): Promise<URL> {
 
   await assertPublicHostname(parsed.hostname);
   return parsed;
+}
+
+function isTechnicalPreviewUrl(parsed: URL): boolean {
+  const hostname = parsed.hostname.toLowerCase();
+  const pathname = parsed.pathname.toLowerCase();
+
+  if (
+    pathname.endsWith("/dns-query")
+    || pathname.includes("/api/")
+    || pathname.includes("/graphql")
+    || pathname.includes("/rpc/")
+    || pathname.includes("/socket.io/")
+    || hostname.includes("dns.")
+  ) {
+    return true;
+  }
+
+  const fileExtension = pathname.match(/\.([a-z0-9]{1,8})$/)?.[1];
+  return Boolean(fileExtension && !["html", "htm", "php", "aspx"].includes(fileExtension));
 }
 
 async function readHtmlWithLimit(response: Response): Promise<string> {
@@ -211,11 +232,19 @@ export async function getSingleLinkPreview(url: string): Promise<LinkMetadata | 
       return JSON.parse(cached);
     }
   } catch (err) {
-    console.error("[LinkPreview] Cache error:", err);
+    logger.debug("[LinkPreview] Cache read failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   // 2. Scrape Metadata
   try {
+    const parsed = await validatePreviewUrl(url);
+    if (isTechnicalPreviewUrl(parsed)) {
+      await redis.set(cacheKey, JSON.stringify(null), "EX", NEGATIVE_CACHE_TTL);
+      return null;
+    }
+
     const { html, finalUrl } = await fetchPreviewHtml(url);
     const { result } = await ogs({ html });
     const imageUrl = Array.isArray((result as any).ogImage)
@@ -230,6 +259,11 @@ export async function getSingleLinkPreview(url: string): Promise<LinkMetadata | 
       siteName: result.ogSiteName || result.twitterSite || (result as any).siteName,
     };
 
+    if (!metadata.title && !metadata.description && !metadata.image) {
+      await redis.set(cacheKey, JSON.stringify(null), "EX", NEGATIVE_CACHE_TTL);
+      return null;
+    }
+
     // 3. Cache Result (even if partial)
     if (metadata.title) {
       await redis.set(cacheKey, JSON.stringify(metadata), "EX", CACHE_TTL);
@@ -237,17 +271,12 @@ export async function getSingleLinkPreview(url: string): Promise<LinkMetadata | 
 
     return metadata;
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Preview Unavailable";
-    const isPrivate = message.toLowerCase().includes("private");
-    console.error(`[LinkPreview] Failed scraping ${url}:`, err);
+    const message = err instanceof Error ? err.message : "Preview unavailable";
+    const logLevel = message.toLowerCase().includes("private") ? "debug" : "info";
+    logger[logLevel]("[LinkPreview] Preview skipped", { url, reason: message });
     // Cache a failed result briefly to avoid hammering dead links
-    await redis.set(cacheKey, JSON.stringify({ url, title: isPrivate ? "Private Network Resource" : "Preview Unavailable", isPrivate }), "EX", 300);
-    return {
-      url,
-      title: isPrivate ? "Private Network Resource" : "Preview Unavailable",
-      description: isPrivate ? "This link points to an internal resource and cannot be previewed." : undefined,
-      isPrivate,
-    };
+    await redis.set(cacheKey, JSON.stringify(null), "EX", NEGATIVE_CACHE_TTL);
+    return null;
   }
 }
 

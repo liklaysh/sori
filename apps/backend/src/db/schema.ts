@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, timestamp, primaryKey, index, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, timestamp, primaryKey, index, uniqueIndex, varchar, jsonb } from "drizzle-orm/pg-core";
 import { sql, relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -103,6 +103,7 @@ export const calls = pgTable("calls", {
   goodSamples: integer("good_samples").default(0),
   poorSamples: integer("poor_samples").default(0),
   lostSamples: integer("lost_samples").default(0),
+  participantTelemetry: jsonb("participant_telemetry").$type<Record<string, unknown>>(),
   startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }).defaultNow(),
   endedAt: timestamp("ended_at", { withTimezone: true, mode: "date" }),
 });

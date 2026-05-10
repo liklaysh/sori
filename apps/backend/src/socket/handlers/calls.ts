@@ -260,7 +260,10 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
           return;
         }
 
-        await redisCallTelemetry.mergeTelemetry(resolvedCallId, data);
+        await redisCallTelemetry.mergeTelemetry(resolvedCallId, {
+          ...data,
+          participantId: user.id,
+        });
       } catch (err) {
         logger.warn("[Calls] Telemetry update failed", { error: err as Error, userId: user.id });
       }
@@ -345,6 +348,7 @@ export function handleCalls(io: Server, socket: Socket, user: any) {
           goodSamples: persistedTelemetry.goodSamples ?? 0,
           poorSamples: persistedTelemetry.poorSamples ?? 0,
           lostSamples: persistedTelemetry.lostSamples ?? 0,
+          participantTelemetry: persistedTelemetry.participantTelemetry ?? null,
         })
         .where(and(eq(calls.id, callId), eq(calls.isActive, true)))
         .returning();

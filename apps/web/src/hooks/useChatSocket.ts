@@ -36,6 +36,8 @@ export function useChatSocket() {
   const channelsRef = useRef(channels);
   const connectedChannelIdRef = useRef(connectedChannelId);
   const notifiedMessageIdsRef = useRef<Set<string>>(new Set());
+  const reconnectToastIdRef = useRef<string | number | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
 
   useEffect(() => { userRef.current = user; }, [user]);
   useEffect(() => { activeModuleRef.current = activeModule; }, [activeModule]);
@@ -78,6 +80,14 @@ export function useChatSocket() {
 
     newSocket.on("connect", () => {
       setSocket(newSocket);
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      if (reconnectToastIdRef.current !== null) {
+        toast.dismiss(reconnectToastIdRef.current);
+        reconnectToastIdRef.current = null;
+      }
       const activeVoiceChannelId = useVoiceStore.getState().connectedChannelId;
       if (activeVoiceChannelId) {
         newSocket.emit("join_voice_channel", activeVoiceChannelId);
@@ -89,6 +99,20 @@ export function useChatSocket() {
         });
       }
       refreshConversations();
+    });
+
+    newSocket.on("disconnect", (reason) => {
+      setSocket(null);
+      if (reason === "io client disconnect" || reconnectTimerRef.current !== null) {
+        return;
+      }
+
+      reconnectTimerRef.current = window.setTimeout(() => {
+        reconnectTimerRef.current = null;
+        if (!newSocket.connected && reconnectToastIdRef.current === null) {
+          reconnectToastIdRef.current = toast.loading(i18n.t("notifications:connection.reconnecting"));
+        }
+      }, 2500);
     });
 
     newSocket.on("new_message", (incoming: Message & { username?: string }) => {
@@ -249,7 +273,17 @@ export function useChatSocket() {
     });
 
     setSocket(newSocket);
-    return () => { newSocket.close(); };
+    return () => {
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      if (reconnectToastIdRef.current !== null) {
+        toast.dismiss(reconnectToastIdRef.current);
+        reconnectToastIdRef.current = null;
+      }
+      newSocket.close();
+    };
   }, []); 
 
   useEffect(() => {

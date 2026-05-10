@@ -3,6 +3,7 @@ import type { calls } from "../db/schema.js";
 export type ConnectionQualityLabel = "excellent" | "good" | "poor" | "lost" | "unknown";
 
 export interface CallTelemetrySample {
+  participantId?: string | null;
   bitrate?: number | null;
   packetLoss?: number | null;
   jitterMs?: number | null;
@@ -11,6 +12,26 @@ export interface CallTelemetrySample {
   qualityScore?: number | null;
   participantCount?: number | null;
   reconnectCount?: number | null;
+}
+
+export interface ParticipantTelemetryAggregate {
+  userId: string;
+  sampleCount: number;
+  avgBitrate: number | null;
+  minBitrate: number | null;
+  avgPacketLoss: number | null;
+  maxPacketLoss: number | null;
+  avgJitterMs: number | null;
+  maxJitterMs: number | null;
+  avgRttMs: number | null;
+  maxRttMs: number | null;
+  qualityScore: number | null;
+  connectionQuality: ConnectionQualityLabel;
+  avgConnectionQuality: ConnectionQualityLabel;
+  poorSamples: number;
+  lostSamples: number;
+  reconnectCount: number;
+  updatedAt: number;
 }
 
 export interface CallTelemetryAggregate {
@@ -42,6 +63,7 @@ export interface CallTelemetryAggregate {
   lostSamples: number;
   participantCount: number;
   reconnectCount: number;
+  participants: Record<string, ParticipantTelemetryAggregate>;
   updatedAt: number;
 }
 
@@ -137,6 +159,28 @@ function qualityScoreToLabel(score: number | null): ConnectionQualityLabel {
   return "lost";
 }
 
+function createEmptyParticipantTelemetryAggregate(userId: string): ParticipantTelemetryAggregate {
+  return {
+    userId,
+    sampleCount: 0,
+    avgBitrate: null,
+    minBitrate: null,
+    avgPacketLoss: null,
+    maxPacketLoss: null,
+    avgJitterMs: null,
+    maxJitterMs: null,
+    avgRttMs: null,
+    maxRttMs: null,
+    qualityScore: null,
+    connectionQuality: "unknown",
+    avgConnectionQuality: "unknown",
+    poorSamples: 0,
+    lostSamples: 0,
+    reconnectCount: 0,
+    updatedAt: Date.now(),
+  };
+}
+
 export function createEmptyTelemetryAggregate(): CallTelemetryAggregate {
   return {
     sampleCount: 0,
@@ -167,6 +211,7 @@ export function createEmptyTelemetryAggregate(): CallTelemetryAggregate {
     lostSamples: 0,
     participantCount: 0,
     reconnectCount: 0,
+    participants: {},
     updatedAt: Date.now(),
   };
 }
@@ -182,8 +227,94 @@ export function hydrateTelemetryAggregate(
   if (hydrated.qualityScore !== null && hydrated.avgConnectionQuality === "unknown") {
     hydrated.avgConnectionQuality = qualityScoreToLabel(hydrated.qualityScore);
   }
+  hydrated.participants = normalizeParticipantTelemetryMap(hydrated.participants);
 
   return hydrated;
+}
+
+function normalizeParticipantTelemetryMap(value: unknown): Record<string, ParticipantTelemetryAggregate> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const result: Record<string, ParticipantTelemetryAggregate> = {};
+  for (const [userId, aggregate] of Object.entries(value as Record<string, Partial<ParticipantTelemetryAggregate>>)) {
+    if (!userId || !aggregate || typeof aggregate !== "object") {
+      continue;
+    }
+
+    result[userId] = {
+      ...createEmptyParticipantTelemetryAggregate(userId),
+      ...aggregate,
+      userId,
+      connectionQuality: normalizeConnectionQuality(aggregate.connectionQuality),
+      avgConnectionQuality: normalizeConnectionQuality(aggregate.avgConnectionQuality),
+    };
+  }
+
+  return result;
+}
+
+function mergeParticipantTelemetryAggregate(
+  current: ParticipantTelemetryAggregate | null | undefined,
+  sample: CallTelemetrySample,
+  userId: string,
+): ParticipantTelemetryAggregate {
+  const base = current ? { ...createEmptyParticipantTelemetryAggregate(userId), ...current, userId } : createEmptyParticipantTelemetryAggregate(userId);
+  const now = Date.now();
+  const nextCount = base.sampleCount + 1;
+
+  const bitrate = normalizeFiniteNumber(sample.bitrate);
+  if (bitrate !== null && bitrate >= 0) {
+    base.avgBitrate = base.avgBitrate === null ? Math.round(bitrate) : Math.round(((base.avgBitrate * base.sampleCount) + bitrate) / nextCount);
+    base.minBitrate = base.minBitrate === null ? Math.round(bitrate) : Math.min(base.minBitrate, Math.round(bitrate));
+  }
+
+  const packetLoss = normalizeFiniteNumber(sample.packetLoss);
+  if (packetLoss !== null && packetLoss >= 0) {
+    base.avgPacketLoss = base.avgPacketLoss === null ? roundMetric(packetLoss) : roundMetric(((base.avgPacketLoss * base.sampleCount) + packetLoss) / nextCount);
+    base.maxPacketLoss = base.maxPacketLoss === null ? roundMetric(packetLoss) : Math.max(base.maxPacketLoss, roundMetric(packetLoss) ?? 0);
+  }
+
+  const jitterMs = normalizeFiniteNumber(sample.jitterMs);
+  if (jitterMs !== null && jitterMs >= 0) {
+    base.avgJitterMs = base.avgJitterMs === null ? Math.round(jitterMs) : Math.round(((base.avgJitterMs * base.sampleCount) + jitterMs) / nextCount);
+    base.maxJitterMs = base.maxJitterMs === null ? Math.round(jitterMs) : Math.max(base.maxJitterMs, Math.round(jitterMs));
+  }
+
+  const rttMs = normalizeFiniteNumber(sample.rttMs);
+  if (rttMs !== null && rttMs >= 0) {
+    base.avgRttMs = base.avgRttMs === null ? Math.round(rttMs) : Math.round(((base.avgRttMs * base.sampleCount) + rttMs) / nextCount);
+    base.maxRttMs = base.maxRttMs === null ? Math.round(rttMs) : Math.max(base.maxRttMs, Math.round(rttMs));
+  }
+
+  const quality = normalizeConnectionQuality(sample.connectionQuality);
+  if (quality !== "unknown" && QUALITY_WEIGHT_MAP[quality] < QUALITY_WEIGHT_MAP[base.connectionQuality]) {
+    base.connectionQuality = quality;
+  } else if (base.connectionQuality === "unknown") {
+    base.connectionQuality = quality;
+  }
+
+  if (quality === "poor") {
+    base.poorSamples += 1;
+  } else if (quality === "lost") {
+    base.lostSamples += 1;
+  }
+
+  const qualityScore = resolveQualityScore(sample, quality);
+  if (qualityScore !== null) {
+    base.qualityScore = base.qualityScore === null ? roundMetric(qualityScore) : roundMetric(((base.qualityScore * base.sampleCount) + qualityScore) / nextCount);
+    base.avgConnectionQuality = qualityScoreToLabel(base.qualityScore);
+  }
+
+  const reconnectCount = normalizeFiniteNumber(sample.reconnectCount);
+  if (reconnectCount !== null) {
+    base.reconnectCount = Math.max(base.reconnectCount, Math.round(reconnectCount));
+  }
+
+  base.sampleCount = nextCount;
+  base.updatedAt = now;
+  return base;
 }
 
 export function mergeTelemetryAggregate(
@@ -263,6 +394,14 @@ export function mergeTelemetryAggregate(
     base.reconnectCount = Math.max(base.reconnectCount, Math.round(reconnectCount));
   }
 
+  if (sample.participantId) {
+    base.participants[sample.participantId] = mergeParticipantTelemetryAggregate(
+      base.participants[sample.participantId],
+      sample,
+      sample.participantId,
+    );
+  }
+
   return base;
 }
 
@@ -290,6 +429,7 @@ export function telemetryAggregateToCallUpdate(aggregate: CallTelemetryAggregate
     goodSamples: hydrated.goodSamples,
     poorSamples: hydrated.poorSamples,
     lostSamples: hydrated.lostSamples,
+    participantTelemetry: hydrated.participants,
   };
 }
 

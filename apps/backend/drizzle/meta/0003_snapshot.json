@@ -1,6 +1,6 @@
 {
-  "id": "63fb0772-bcca-4521-8118-3dad6830a164",
-  "prevId": "8b7a00a7-0698-4086-9f54-5a3d4949d067",
+  "id": "9a74d2a8-f4dc-4d47-9ddc-6828cd3227d3",
+  "prevId": "63fb0772-bcca-4521-8118-3dad6830a164",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -422,6 +422,12 @@
         "ended_at": {
           "name": "ended_at",
           "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "participant_telemetry": {
+          "name": "participant_telemetry",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         }

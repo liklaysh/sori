@@ -14,9 +14,25 @@ import { getAvatarUrl } from "../../../utils/avatar";
 
 interface CallParticipant {
   user: {
+    id: string;
     username: string;
     avatarUrl?: string;
   };
+}
+
+interface ParticipantTelemetryAggregate {
+  userId: string;
+  sampleCount: number;
+  avgBitrate: number | null;
+  avgPacketLoss: number | null;
+  avgJitterMs: number | null;
+  avgRttMs: number | null;
+  qualityScore: number | null;
+  connectionQuality: CallLog["connectionQuality"];
+  avgConnectionQuality: CallLog["avgConnectionQuality"];
+  poorSamples: number;
+  lostSamples: number;
+  reconnectCount: number;
 }
 
 interface CallLog {
@@ -40,6 +56,7 @@ interface CallLog {
   goodSamples?: number | null;
   poorSamples?: number | null;
   lostSamples?: number | null;
+  participantTelemetry?: Record<string, ParticipantTelemetryAggregate>;
   degradationReasons?: Array<
     | "stable"
     | "no_samples"
@@ -56,8 +73,8 @@ interface CallLog {
   startedAt: string;
   endedAt: string | null;
   channel?: { name: string };
-  caller?: { username: string };
-  callee?: { username: string };
+  caller?: { id?: string; username: string };
+  callee?: { id?: string; username: string };
   participants: CallParticipant[];
 }
 
@@ -142,6 +159,34 @@ export default function TelemetryTab() {
     return "text-sori-accent-danger";
   };
 
+  const getQualityTone = (quality?: CallLog["connectionQuality"]) => {
+    switch (quality) {
+      case "excellent":
+      case "good":
+        return "text-sori-accent-secondary";
+      case "poor":
+        return "text-sori-accent-warning";
+      case "lost":
+        return "text-sori-accent-danger";
+      default:
+        return "text-sori-text-muted";
+    }
+  };
+
+  const getQualityBarTone = (quality?: CallLog["connectionQuality"]) => {
+    switch (quality) {
+      case "excellent":
+      case "good":
+        return "bg-sori-accent-secondary";
+      case "poor":
+        return "bg-sori-accent-warning";
+      case "lost":
+        return "bg-sori-accent-danger";
+      default:
+        return "bg-sori-surface-active";
+    }
+  };
+
   const getQualityLabel = (quality?: CallLog["connectionQuality"]) => {
     switch (quality) {
       case "excellent":
@@ -168,6 +213,25 @@ export default function TelemetryTab() {
     }
 
     return call.status === "active" ? t("admin:telemetry.calculating") : t("admin:telemetry.notAvailable");
+  };
+
+  const getParticipantTelemetryRows = (call: CallLog) => {
+    const telemetry = call.participantTelemetry || {};
+    return Object.values(telemetry)
+      .sort((a, b) => {
+        const severity = { lost: 0, poor: 1, good: 2, excellent: 3, unknown: 4 };
+        return severity[a.connectionQuality || "unknown"] - severity[b.connectionQuality || "unknown"];
+      })
+      .slice(0, 4)
+      .map((participantTelemetry) => {
+        const participant = call.participants.find((entry) => entry.user.id === participantTelemetry.userId)?.user;
+        const directUser = call.caller?.id === participantTelemetry.userId ? call.caller : call.callee?.id === participantTelemetry.userId ? call.callee : null;
+
+        return {
+          ...participantTelemetry,
+          username: participant?.username || directUser?.username || participantTelemetry.userId.slice(0, 8),
+        };
+      });
   };
 
   const formatPacketLoss = (value?: string | null) => {
@@ -258,7 +322,7 @@ export default function TelemetryTab() {
               <div className={cn(
                 "absolute left-0 top-0 bottom-0 w-1",
                 call.status === 'active' ? "bg-sori-accent-danger" : 
-                call.mos ? (parseFloat(call.mos) > 3.5 ? "bg-sori-accent-secondary" : "bg-sori-accent-danger") : "bg-sori-surface-active"
+                getQualityBarTone(call.avgConnectionQuality || call.connectionQuality)
               )} />
 
               <div className="flex flex-col lg:flex-row lg:items-center gap-6">
@@ -342,6 +406,7 @@ export default function TelemetryTab() {
                       <span>
                         {t("admin:telemetry.diagnosis")}: {(call.degradationReasons?.length ? call.degradationReasons : (["no_samples"] as DegradationReason[])).map(getDegradationLabel).join(", ")}
                       </span>
+                      <span>{t("admin:telemetry.average")}: {call.avgConnectionQuality ? getQualityLabel(call.avgConnectionQuality) : "—"}</span>
                       <span>{t("admin:telemetry.worst")}: {call.connectionQuality ? getQualityLabel(call.connectionQuality) : "—"}</span>
                       <span>{t("admin:telemetry.minBitrate")}: {formatBitrate(call.minBitrate)}</span>
                       <span>{t("admin:telemetry.maxLoss")}: {formatPacketLoss(call.maxPacketLoss)}</span>
@@ -355,6 +420,21 @@ export default function TelemetryTab() {
                         <div className="bg-sori-accent-success" style={{ width: `${qualityShare(call.goodSamples ?? 0, qualitySamples(call))}%` }} />
                         <div className="bg-sori-accent-warning" style={{ width: `${qualityShare(call.poorSamples ?? 0, qualitySamples(call))}%` }} />
                         <div className="bg-sori-accent-danger" style={{ width: `${qualityShare(call.lostSamples ?? 0, qualitySamples(call))}%` }} />
+                      </div>
+                    )}
+                    {getParticipantTelemetryRows(call).length > 0 && (
+                      <div className="mt-3 grid gap-1.5">
+                        {getParticipantTelemetryRows(call).map((participant) => (
+                          <div key={participant.userId} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-sori-surface-main/70 px-2 py-1 text-[9px] font-bold uppercase tracking-widest">
+                            <span className="min-w-[80px] truncate text-sori-text-strong normal-case tracking-normal">{participant.username}</span>
+                            <span className={cn("font-black", getQualityTone(participant.avgConnectionQuality || participant.connectionQuality))}>
+                              {getQualityLabel(participant.avgConnectionQuality || participant.connectionQuality)}
+                            </span>
+                            <span className="text-sori-text-dim">{t("admin:telemetry.lossShort")}: {formatPacketLoss(participant.avgPacketLoss !== null ? String(participant.avgPacketLoss) : null)}</span>
+                            <span className="text-sori-text-dim">RTT: {formatMs(participant.avgRttMs)}</span>
+                            <span className="text-sori-text-dim">{t("admin:telemetry.samples")}: {participant.sampleCount}</span>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

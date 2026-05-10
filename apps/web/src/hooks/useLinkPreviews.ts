@@ -19,7 +19,7 @@ export function useLinkPreviews(content: string) {
     const timer = setTimeout(() => {
       urls.forEach(async (url) => {
         // Skip if already in cache or being fetched
-        if (cache.current[url] || pendingRequests.current.has(url)) {
+        if (Object.prototype.hasOwnProperty.call(cache.current, url) || pendingRequests.current.has(url)) {
           if (cache.current[url] && !previews[url]) {
             setPreviews(prev => ({ ...prev, [url]: cache.current[url] }));
           }

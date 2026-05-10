@@ -16,5 +16,8 @@
   },
   "clipboard": {
     "linkCopied": "Link copied to clipboard"
+  },
+  "connection": {
+    "reconnecting": "Connection interrupted. Reconnecting..."
   }
 }
