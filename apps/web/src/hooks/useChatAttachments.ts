@@ -22,6 +22,7 @@ export const useChatAttachments = () => {
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragDepthRef = useRef(0);
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
@@ -107,16 +108,33 @@ export const useChatAttachments = () => {
     setPendingAttachments([]);
   };
 
+  const hasDraggedFiles = (e: React.DragEvent) => Array.from(e.dataTransfer?.types || []).includes("Files");
+
   const handleDrag = (e: React.DragEvent) => {
+    if (!hasDraggedFiles(e)) return;
+
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
-    else if (e.type === "dragleave") setDragActive(false);
+
+    if (e.type === "dragenter") {
+      dragDepthRef.current += 1;
+      setDragActive(true);
+    } else if (e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) {
+        setDragActive(false);
+      }
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
+    if (!hasDraggedFiles(e)) return;
+
     e.preventDefault();
     e.stopPropagation();
+    dragDepthRef.current = 0;
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       void handleFilesUpload(e.dataTransfer.files);

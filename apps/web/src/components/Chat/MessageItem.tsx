@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Attachment, Message, Reaction } from "../../types/chat";
 import { useUserStore } from "../../store/useUserStore";
 import { cn } from "@sori/ui";
-import { CornerUpLeft, FileText, Download, X, PhoneMissed, Phone, PhoneOff, Forward, Copy, Save } from "lucide-react";
+import { CornerUpLeft, FileText, Download, X, PhoneMissed, Phone, PhoneOff, Forward, Copy, Save, Music } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useServerTime } from "../../hooks/useServerTime";
@@ -78,6 +78,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
   const renderAttachment = (attachment: Attachment, index: number) => {
     const isImage = attachment.fileType?.startsWith('image/');
     const isVideo = attachment.fileType?.startsWith('video/');
+    const isAudio = attachment.fileType?.startsWith('audio/');
 
     return (
       <div
@@ -90,6 +91,25 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
           </div>
         ) : isVideo ? (
           <video src={attachment.fileUrl} controls className="max-h-80 w-auto" />
+        ) : isAudio ? (
+          <div className="p-4 flex items-center gap-4 min-w-[280px] max-w-md">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-sori-border-accent bg-sori-surface-accent-subtle text-sori-accent-primary">
+              <Music className="h-6 w-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="mb-2 truncate text-xs font-bold text-sori-text-strong">{attachment.fileName}</p>
+              <audio src={attachment.fileUrl} controls preload="metadata" className="h-9 w-full min-w-[220px] max-w-sm accent-sori-accent-primary" />
+              <p className="mt-1 text-[10px] text-sori-text-muted font-black uppercase tracking-widest">{formatFileSize(attachment.fileSize)}</p>
+            </div>
+            <a
+              href={attachment.fileUrl}
+              download={attachment.fileName}
+              className="w-10 h-10 rounded-xl bg-sori-surface-accent-subtle text-sori-accent-primary flex items-center justify-center hover:bg-sori-accent-primary hover:text-black transition-all shadow-sm"
+              title={t("common:actions.download")}
+            >
+              <Download className="h-5 w-5" />
+            </a>
+          </div>
         ) : (
           <div className="p-4 flex items-center gap-4 min-w-[240px]">
             <FileText className="h-6 w-6" />

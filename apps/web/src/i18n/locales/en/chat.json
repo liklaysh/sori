@@ -16,7 +16,8 @@
   "addFile": "Add File",
   "dropzone": {
     "title": "Drop files here",
-    "description": "Attach files to the current message."
+    "description": "Attach files to the current message.",
+    "maxSize": "Maximum file size: {{size}} MB"
   },
   "messageActions": {
     "reply": "Reply",

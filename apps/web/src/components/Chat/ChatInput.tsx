@@ -68,6 +68,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [mentionState, setMentionState] = useState<{ visible: boolean, filter: string, cursorPosition: number }>({ visible: false, filter: "", cursorPosition: 0 });
   const typingStopTimeoutRef = useRef<number | null>(null);
   const lastTypingEmitAtRef = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   const { previews, loading, removePreview, clearPreviews } = useLinkPreviews(inputValue);
 
@@ -137,6 +138,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     setShowEmojiPicker(false);
     setShowPlusMenu(false);
     clearPreviews();
+    window.requestAnimationFrame(() => inputRef.current?.focus());
   };
 
   return (
@@ -274,6 +276,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         />
         
         <input 
+          ref={inputRef}
           className="flex-1 bg-transparent border-none text-sm text-white outline-none placeholder:text-sori-text-dim min-w-0 font-medium" 
           placeholder={editingMessage
             ? t("chat:placeholders.editMessage")

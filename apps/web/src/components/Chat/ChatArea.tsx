@@ -17,6 +17,7 @@ import api from "../../lib/api";
 import { getChannelContextKey, getConversationContextKey } from "../../utils/chatMessages";
 import { playNotificationSound } from "../../utils/notificationSounds";
 import { toast } from "sonner";
+import { MAX_UPLOAD_SIZE_MB } from "../../config";
 
 const EMPTY_CHAT_ITEMS: ChatItem[] = [];
 const LiveKitSession = lazy(() => import("./Voice/LiveKitSession"));
@@ -340,16 +341,22 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
           className="flex-1 overflow-hidden flex flex-col relative"
           onDragEnter={attachments.handleDrag}
           onDragOver={attachments.handleDrag}
+          onDragLeave={attachments.handleDrag}
           onDrop={attachments.handleDrop}
           onPaste={attachments.handlePaste}
         >
           {attachments.dragActive && (
-            <div className="absolute inset-0 z-[100] m-4 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-sori-border-accent bg-sori-surface-main/95 pointer-events-none shadow-2xl">
-              <div className="mb-4 grid h-16 w-16 place-items-center rounded-2xl border border-sori-border-accent bg-sori-surface-accent-subtle text-sori-accent-primary shadow-glow">
-                <UploadCloud className="h-8 w-8" />
+            <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/35 backdrop-blur-sm pointer-events-none">
+              <div className="m-4 flex min-h-64 w-[min(38rem,calc(100%-2rem))] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-sori-border-accent bg-sori-surface-main/95 shadow-2xl">
+                <div className="mb-4 grid h-16 w-16 place-items-center rounded-2xl border border-sori-border-accent bg-sori-surface-accent-subtle text-sori-accent-primary shadow-glow">
+                  <UploadCloud className="h-8 w-8" />
+                </div>
+                <p className="text-xl font-black text-sori-text-strong uppercase tracking-widest">{t("chat:dropzone.title")}</p>
+                <p className="mt-2 text-xs font-bold text-sori-text-muted">{t("chat:dropzone.description")}</p>
+                <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-sori-text-dim">
+                  {t("chat:dropzone.maxSize", { size: MAX_UPLOAD_SIZE_MB })}
+                </p>
               </div>
-              <p className="text-xl font-black text-sori-text-strong uppercase tracking-widest">{t("chat:dropzone.title")}</p>
-              <p className="mt-2 text-xs font-bold text-sori-text-muted">{t("chat:dropzone.description")}</p>
             </div>
           )}
 
