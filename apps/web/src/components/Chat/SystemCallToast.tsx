@@ -4,6 +4,7 @@ import { CallLog } from "../../types/chat";
 import { PhoneIncoming, PhoneOutgoing, PhoneMissed, PhoneOff, Clock, AlertCircle } from "lucide-react";
 import { cn } from "@sori/ui";
 import { format } from "date-fns";
+import { formatCallDuration } from "../../utils/duration";
 
 interface SystemCallToastProps {
   log: CallLog;
@@ -44,7 +45,7 @@ export const SystemCallToast: React.FC<SystemCallToastProps> = ({ log, count = 1
         };
       case 'ended':
         const durationStr = log.duration 
-          ? `${Math.floor(log.duration / 60)}:${(log.duration % 60).toString().padStart(2, '0')}`
+          ? formatCallDuration(log.duration)
           : "";
         return {
           label: durationStr

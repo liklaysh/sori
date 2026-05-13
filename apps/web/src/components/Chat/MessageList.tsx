@@ -163,9 +163,9 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
       )}
 
       {isLoadingMessages ? (
-        <div className="space-y-6">
+        <div className="space-y-6" role="status" aria-label={t("chat:history.loadingMessages")}>
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="flex gap-4 animate-in fade-in slide-in-from-bottom-2">
+            <div key={i} className="flex gap-4 animate-in fade-in slide-in-from-bottom-2" aria-hidden="true">
               <Skeleton className="h-10 w-10 rounded-full shrink-0" />
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2">
@@ -265,6 +265,8 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
         <div className="sticky bottom-4 left-0 right-0 flex justify-center pointer-events-none z-50">
           <button
             onClick={() => scrollToBottom('smooth')}
+            aria-label={t("chat:history.scrollToLatest")}
+            title={t("chat:history.scrollToLatest")}
             className="pointer-events-auto bg-sori-surface-main border border-sori-border-accent text-sori-accent-primary w-10 h-10 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all animate-in slide-in-from-bottom-4"
           >
             <ArrowDown className="h-5 w-5" />

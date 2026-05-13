@@ -355,7 +355,7 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
 
   socket.on("leave_voice_channel", async (channelId: string) => {
     try {
-      await leaveChannel(channelId, { source: "explicit_user_action", expectedSocketId: socket.id });
+      await leaveChannel(channelId, { source: "explicit_user_action" });
     } catch (err) {
       logger.error("[Voice] leave_voice_channel Error", { error: err as Error });
     }
@@ -503,13 +503,14 @@ export function handleVoice(io: Server, socket: Socket, user: { id: string, user
       try {
         if (!channelId) return;
 
-        await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
+        const updatedOccupants = await redisVoice.updateOccupants(channelId, async (occupants: VoiceOccupant[]) => {
           const updated = occupants.map((occupant: any) =>
             occupant.userId === user.id ? { ...occupant, socketId: socket.id, isMuted, isDeafened, heartbeatAt: Date.now() } : occupant,
           );
           return { occupants: updated, result: updated };
         });
         io.emit("user_audio_status", { channelId, userId: user.id, isMuted, isDeafened });
+        io.emit("voice_occupants_update", { channelId, occupants: sanitizeVoiceOccupants(updatedOccupants) });
       } catch (err) {
         logger.error("[Voice] user_audio_status_update Error", { error: err as Error });
       }

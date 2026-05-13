@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3
+
+- Improved voice channel occupant synchronization so explicit leave actions and mute/deafen status changes converge faster across clients.
+- Restored the chat "scroll to latest message" control in the web client and added the same behavior to the desktop app.
+- Improved chat timers to consistently use `HH:MM:SS` formatting for longer voice/call sessions.
+- Refined chat UI details found during testing, including DM dividers, message container color consistency, skeleton accessibility, and input tray colors.
+
 ## 0.1.2
 
 - Improved voice reconnect stability and presence synchronization during navigation and transient network failures.

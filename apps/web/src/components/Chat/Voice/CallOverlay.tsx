@@ -4,6 +4,7 @@ import { CallStatus } from "../../../store/useVoiceStore";
 import { getAvatarUrl } from "../../../utils/avatar";
 import { Phone, PhoneOff, X, Loader2, Maximize2, Mic, MicOff } from "lucide-react";
 import { useServerTime } from "../../../hooks/useServerTime";
+import { formatCallDuration } from "../../../utils/duration";
 import { 
   Button,
   cn
@@ -34,20 +35,18 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
 }) => {
   const { t } = useTranslation(["voice"]);
   const { getSyncedDate } = useServerTime();
-  const [duration, setDuration] = useState("00:00");
+  const [duration, setDuration] = useState("00:00:00");
 
   useEffect(() => {
     if (status !== "connected" || !startTime) {
-      setDuration("00:00");
+      setDuration("00:00:00");
       return;
     }
 
     const updateDuration = () => {
       const now = getSyncedDate().getTime();
       const diff = Math.max(0, Math.floor((now - startTime) / 1000));
-      const mins = Math.floor(diff / 60).toString().padStart(2, "0");
-      const secs = (diff % 60).toString().padStart(2, "0");
-      setDuration(`${mins}:${secs}`);
+      setDuration(formatCallDuration(diff));
     };
 
     updateDuration();

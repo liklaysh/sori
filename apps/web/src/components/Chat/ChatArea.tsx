@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, RefObject, useState, useRef, useEffect } from "react";
+import React, { Suspense, lazy, RefObject, useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ChatHeader } from "./ChatHeader";
 import { MessageList } from "./MessageList";
@@ -117,8 +117,20 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
   const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
+      setShowScrollButton(false);
     }
   };
+
+  const handleMessagesScroll = useCallback(() => {
+    const node = scrollRef.current;
+    if (!node) {
+      setShowScrollButton(false);
+      return;
+    }
+
+    const distanceFromBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
+    setShowScrollButton(distanceFromBottom > 240);
+  }, []);
 
   const handleLoadMore = async () => {
     const before = messages[0]?.createdAt;
@@ -467,7 +479,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
                 }}
                 onReaction={toggleReaction}
                 isLoadingMessages={isLoadingMessages}
-                scrollRef={scrollRef} handleScroll={() => {}} showScrollButton={showScrollButton} scrollToBottom={scrollToBottom}
+                scrollRef={scrollRef} handleScroll={handleMessagesScroll} showScrollButton={showScrollButton} scrollToBottom={scrollToBottom}
                 onLoadMore={handleLoadMore} onForward={() => {}}
               />
             )

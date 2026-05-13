@@ -142,7 +142,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <footer className="px-2 md:px-3 pb-2 pt-0 bg-sori-surface-main relative shrink-0">
+    <footer className="px-2 md:px-3 pb-2 pt-0 bg-sori-surface-base relative shrink-0">
       {(replyTo || editingMessage) && (
         <div className={cn(trayShellClass, "mb-2 p-3 bg-sori-surface-panel border-l-4 border-sori-accent-primary rounded-tr-2xl rounded-br-2xl flex items-center justify-between animate-in slide-in-from-bottom-2")}>
             <div className="min-w-0">
@@ -161,7 +161,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
 
       {Object.keys(previews).length > 0 && (
-        <div className={cn(trayShellClass, "mb-4 p-4 bg-sori-surface-main rounded-2xl border border-sori-border-medium animate-in fade-in slide-in-from-bottom-2 duration-300")}>
+        <div className={cn(trayShellClass, "mb-4 p-4 bg-sori-surface-base rounded-2xl border border-sori-border-medium animate-in fade-in slide-in-from-bottom-2 duration-300")}>
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 px-1">
               <Globe className="h-3 w-3 text-sori-accent-primary" />
@@ -186,7 +186,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
       {pendingAttachments.length > 0 && (
-        <div className={cn(trayShellClass, "mb-4 p-4 bg-sori-surface-main rounded-2xl border border-sori-border-medium animate-in fade-in slide-in-from-bottom-2 duration-300")}>
+        <div className={cn(trayShellClass, "mb-4 p-4 bg-sori-surface-base rounded-2xl border border-sori-border-medium animate-in fade-in slide-in-from-bottom-2 duration-300")}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {pendingAttachments.map((attachment) => {
               const isImage = attachment.file.type.startsWith('image/');

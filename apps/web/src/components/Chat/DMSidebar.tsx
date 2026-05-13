@@ -4,7 +4,7 @@ import { useChatStore } from "../../store/useChatStore";
 import { useUserStore } from "../../store/useUserStore";
 import { useUIStore } from "../../store/useUIStore";
 import { getAvatarUrl } from "../../utils/avatar";
-import { Skeleton, cn, Popover, PopoverTrigger, PopoverContent, Slider } from "@sori/ui";
+import { cn, Popover, PopoverTrigger, PopoverContent, Slider } from "@sori/ui";
 import { UserPlus, MessageSquare, Volume2, Mic, MicOff, Headphones, ChevronDown, Waves, PhoneOff } from "lucide-react";
 import { NoiseSuppressionPopup } from "./Modals/NoiseSuppressionPopup";
 import { API_URL } from "../../config";
@@ -66,17 +66,19 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-sori-text-muted">{t("chat:directMessages")}</h2>
       </header>
 
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-3 space-y-1">
+      <div className="border-b border-sori-border-subtle p-3">
         <button 
           onClick={onOpenFindFriend}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sori-text-muted hover:bg-sori-surface-hover hover:text-white transition-all group mb-4"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sori-text-muted hover:bg-sori-surface-hover hover:text-white transition-all group"
         >
            <div className="w-8 h-8 rounded-lg bg-sori-surface-elevated flex items-center justify-center border border-sori-border-subtle group-hover:border-sori-border-accent transition-all text-sori-accent-primary">
               <UserPlus className="h-4 w-4" />
            </div>
            <span className="text-xs font-bold">{t("chat:findFriendButton")}</span>
         </button>
+      </div>
 
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-3 space-y-1">
         {conversations.length === 0 ? (
           <div className="py-10 text-center px-4">
              <div className="w-12 h-12 bg-sori-surface-elevated rounded-2xl flex items-center justify-center mx-auto mb-3">

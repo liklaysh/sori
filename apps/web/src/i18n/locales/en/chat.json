@@ -27,8 +27,10 @@
   },
   "searchConversation": "Search in conversation...",
   "history": {
+    "loadingMessages": "Loading messages",
     "syncingArchives": "Syncing archives...",
     "endOfRecentHistory": "End of recent history",
+    "scrollToLatest": "Scroll to latest message",
     "welcomeToConversation": "Welcome to your conversation!"
   },
   "security": {

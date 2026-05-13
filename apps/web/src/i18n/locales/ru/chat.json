@@ -27,8 +27,10 @@
   },
   "searchConversation": "Поиск в беседе...",
   "history": {
+    "loadingMessages": "Загрузка сообщений",
     "syncingArchives": "Синхронизация истории...",
     "endOfRecentHistory": "Конец последних сообщений",
+    "scrollToLatest": "Перейти к последнему сообщению",
     "welcomeToConversation": "Добро пожаловать в ваш диалог!"
   },
   "security": {

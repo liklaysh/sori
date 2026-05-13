@@ -35,6 +35,7 @@ import {
 import { SoriParticipantTile } from "./SoriParticipantTile";
 import { SoriCallControls } from "./SoriCallControls";
 import { SoriCallSidebar } from "./SoriCallSidebar";
+import { formatCallDuration } from "../../../utils/duration";
 
 interface SoriVoiceRoomProps {
   onLeave: () => void;
@@ -91,7 +92,7 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
 }) => {
   const { t } = useTranslation(["voice"]);
   const { getSyncedDate } = useServerTime();
-  const [duration, setDuration] = useState("00:00");
+  const [duration, setDuration] = useState("00:00:00");
   const { localParticipant } = useLocalParticipant();
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -175,16 +176,14 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
   // --- Duration Timer ---
   useEffect(() => {
     if (!startTime) {
-      setDuration("00:00");
+      setDuration("00:00:00");
       return;
     }
 
     const updateDuration = () => {
       const now = getSyncedDate().getTime();
       const diff = Math.max(0, Math.floor((now - startTime) / 1000));
-      const mins = Math.floor(diff / 60).toString().padStart(2, "0");
-      const secs = (diff % 60).toString().padStart(2, "0");
-      setDuration(`${mins}:${secs}`);
+      setDuration(formatCallDuration(diff));
     };
 
     updateDuration();
