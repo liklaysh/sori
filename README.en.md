@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  🇬🇧 English | <a href="./README.md">🇷🇺 Русский</a>
+  <a href="./README.md">Home</a> · <a href="./README.ru.md">🇷🇺 Русский</a> · 🇬🇧 English
 </p>
 
 ---
@@ -66,14 +66,10 @@ Just your infrastructure, fully under your control.
 - Voice & calls — powered by LiveKit for low-latency communication  
 - Media uploads — S3-compatible storage via MinIO  
 - Channels & direct messages — structured communication model  
-- Admin panel — manage users, channels, storage, and system state  
+- Admin panel — manage users, channels, and system state  
 - Self-hosted — full ownership of data and infrastructure  
 
 ---
-
-## 🧠 Architecture
-
-SORI is built as a modular, production-ready system where each component has a clear responsibility:
 
 ## 🧠 Architecture
 
@@ -115,14 +111,16 @@ SORI stores the product version in the root `VERSION` file. The backend exposes 
 
 ## 🏗 Deployment Model
 
-SORI is designed around simplicity and predictability:
+SORI is designed to be as simple as possible:
 
 - 🖥 Single-server deployment  
 - 🌐 One domain → full system access  
 - 🔐 Automatic HTTPS via Caddy  
 - ⚙️ Minimal infrastructure requirements  
 
-Everything runs as a unified stack, making it easy to deploy, maintain, and scale when needed.
+All components run as one unified stack, making it easy to deploy and maintain.
+
+---
 
 ## 🚀 Install
 
@@ -157,7 +155,7 @@ Full guide: [install.md](install.md).
 
 SORI is not just a chat app.
 
-It’s a complete, self-hosted communication platform that gives you full control over your data, infrastructure, and user experience.
+It’s a complete communication platform that you fully control — from data to infrastructure.
 
 ____
 

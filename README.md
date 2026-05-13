@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  🇷🇺 Русский | <a href="./README.en.md">🇬🇧 English</a>
+  <a href="./README.ru.md">🇷🇺 Русский</a> · <a href="./README.en.md">🇬🇧 English</a>
 </p>
 
 ---
@@ -32,42 +32,34 @@ SORI — это self-hosted платформа общения, которая о
 
 ---
 
-## 📸 Превью
+## 🚀 Установка
 
-<p align="center">
-  <img src="./docs/images/login.png" width="800"/>
-  <br/>
-  <i>Авторизация</i>
-</p>
+Для production-style установки нужен чистый сервер:
 
-<p align="center">
-  <img src="./docs/images/chat.png" width="800"/>
-  <br/>
-  <i>Чат</i>
-</p>
+- Ubuntu 22.04+
+- root/sudo доступ
+- публичный IPv4
+- домен, направленный на сервер
+- открытые порты `22/tcp`, `80/tcp`, `443/tcp`, `7881/tcp`, `7882/udp`
 
-<p align="center">
-  <img src="./docs/images/call.png" width="800"/>
-  <br/>
-  <i>Звонки</i>
-</p>
+Перед запуском установщика создайте DNS `A`-записи:
 
-<p align="center">
-  <img src="./docs/images/admin.png" width="800"/>
-  <br/>
-  <i>Админ-панель</i>
-</p>
+```text
+example.com          -> server public IPv4
+api.example.com      -> server public IPv4
+livekit.example.com  -> server public IPv4
+media.example.com    -> server public IPv4
+```
 
----
+Установка одной командой:
 
-## ⚡ Возможности
+```bash
+curl -fsSL https://github.com/liklaysh/sori/raw/main/install.sh | sudo bash
+```
 
-- Чат в реальном времени — быстрые сообщения, реакции, live-обновления  
-- Голос и звонки — на базе LiveKit с низкой задержкой  
-- Загрузка медиа — S3-совместимое хранилище (MinIO)  
-- Каналы и личные сообщения — структурированная коммуникация  
-- Админ-панель — управление пользователями, каналами и системой  
-- Self-hosted — полный контроль над данными и инфраструктурой  
+Установщик сам проверит сервер, установит Docker / Docker Compose и зависимости, спросит домен, email Let's Encrypt и имя сервера, проверит DNS, настроит Caddy и HTTPS, добавит безопасные UFW-правила, сгенерирует секреты и adminpanel credentials, запустит стек, выполнит миграции/bootstrap и выведет URL, admin URL и данные доступа.
+
+Подробная инструкция: [install.md](install.md).
 
 ---
 
@@ -91,71 +83,21 @@ SORI — это self-hosted платформа общения, которая о
 
 SORI поддерживает несколько языков:
 
-- 🇬🇧 Английский  
-- 🇷🇺 Русский  
+- 🇬🇧 Английский
+- 🇷🇺 Русский
 
 Интерфейс полностью локализован и может быть расширен другими языками.
 
 ---
 
-## 🧭 Версионность
-
-SORI хранит продуктовую версию в файле `VERSION`. Backend отдаёт служебную информацию через `/api/system/version`:
-
-- `version` — продуктовая версия системы.
-- `apiVersion` — версия API-контракта для web, desktop и будущих mobile-клиентов.
-- `buildId` — служебный идентификатор сборки. По умолчанию совпадает с коротким git commit hash, который был развернут через install/update/deploy.
-- `commit` — короткий git commit hash backend-сборки.
-
----
-
-## 🏗 Модель развертывания
-
-SORI спроектирован максимально просто:
-
-- 🖥 Один сервер  
-- 🌐 Один домен → доступ ко всей системе  
-- 🔐 Автоматический HTTPS (Caddy)  
-- ⚙️ Минимальные требования к инфраструктуре  
-
-Все компоненты работают как единый стек — легко развернуть и поддерживать.
-
-## 🚀 Установка
-
-На чистом Ubuntu 22.04+ сервере:
-
-```bash
-curl -fsSL https://github.com/liklaysh/sori/raw/main/install.sh | sudo bash
-```
-
-Скрипт сам спросит домен, email для Let's Encrypt, имя сервера и настройку firewall.
-
-Обновление установленного сервера:
-
-```bash
-curl -fsSL https://github.com/liklaysh/sori/raw/main/update.sh | sudo bash
-```
-
-Подробная инструкция: [install.md](install.md).
-
----
-
 ## 🧑‍💻 Для кого это
 
-- Приватные сообщества  
-- Команды и небольшие организации  
-- Любители self-host решений  
-- Разработчики внутренних коммуникационных систем  
+- Приватные сообщества
+- Команды и небольшие организации
+- Любители self-host решений
+- Разработчики внутренних коммуникационных систем
 
 ---
-
-## 💡 Итог
-
-SORI — это не просто чат.
-
-Это полноценная платформа общения, которую вы полностью контролируете — от данных до инфраструктуры.
-
-____
 
 ## 📄 Лицензия
 
@@ -166,8 +108,21 @@ ____
 
 Подробнее в файле [LICENSE](LICENSE).
 
-____
+---
 
 ## 🤝 Вклад в проект
 
 - [@EchoRiteMusic](https://github.com/EchoRiteMusic) — Sound Design (notifications, call events, UI feedback)
+
+---
+
+## 💜 Поддержка проекта
+
+SORI развивается как независимый self-hosted проект. Я делаю его сам, в том числе с помощью AI-инструментов, но с практическим пониманием того, как такие коммуникационные системы должны работать в реальной эксплуатации и продуктовой среде из-за профильной работы.
+
+Если проект оказался полезен или вы хотите поддержать дальнейшую разработку — можно сделать это любым удобным способом.
+
+BTC: `bc1qk5d9nfrp3xcjeckpzl0qap2cftay3aa899ysk5`  
+YooMoney: [https://yoomoney.ru/fundraise/1HO46GGNSHV.260513](https://yoomoney.ru/fundraise/1HO46GGNSHV.260513)  
+CloudTips: [https://pay.cloudtips.ru/p/eb410a45](https://pay.cloudtips.ru/p/eb410a45)  
+Boosty: coming soon
