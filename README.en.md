@@ -173,3 +173,16 @@ ____
 ## 🤝 Contributors
 
 - [@EchoRiteMusic](https://github.com/EchoRiteMusic) — Sound Design (notifications, call events, UI feedback)
+
+---
+
+## 💜 Support the Project
+
+SORI is developed as an independent self-hosted project. I build it myself, including with the help of AI tools, while bringing practical understanding of how communication systems should work in real operations and product environments through my professional background.
+
+If the project has been useful to you or you want to support further development, you can do it in any convenient way.
+
+BTC: `bc1qk5d9nfrp3xcjeckpzl0qap2cftay3aa899ysk5`  
+YooMoney: [https://yoomoney.ru/fundraise/1HO46GGNSHV.260513](https://yoomoney.ru/fundraise/1HO46GGNSHV.260513)  
+CloudTips: [https://pay.cloudtips.ru/p/eb410a45](https://pay.cloudtips.ru/p/eb410a45)  
+Boosty: coming soon
