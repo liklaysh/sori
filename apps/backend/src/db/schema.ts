@@ -10,6 +10,8 @@ export const users = pgTable("users", {
   status: text("status").default("offline"),
   role: text("role").notNull().default("user"),
   noiseSuppression: boolean("noise_suppression").default(false),
+  noiseSuppressionMode: text("noise_suppression_mode").notNull().default("webrtc_basic"),
+  webNoiseSuppressionFallbackMode: text("web_noise_suppression_fallback_mode"),
   micGain: integer("mic_gain").default(100),
   outputVolume: integer("output_volume").default(100),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow(),

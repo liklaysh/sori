@@ -111,6 +111,8 @@ export interface User {
   status?: "online" | "offline" | "idle" | "dnd";
   role?: string;
   noiseSuppression?: boolean;
+  noiseSuppressionMode?: "webrtc_basic" | "rnnoise" | "experimental_ai";
+  webNoiseSuppressionFallbackMode?: "webrtc_basic" | "rnnoise" | null;
   micGain?: number;
   outputVolume?: number;
 }

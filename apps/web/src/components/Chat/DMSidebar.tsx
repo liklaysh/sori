@@ -8,6 +8,7 @@ import { cn, Popover, PopoverTrigger, PopoverContent, Slider } from "@sori/ui";
 import { UserPlus, MessageSquare, Volume2, Mic, MicOff, Headphones, ChevronDown, Waves, PhoneOff } from "lucide-react";
 import { NoiseSuppressionPopup } from "./Modals/NoiseSuppressionPopup";
 import { API_URL } from "../../config";
+import { WebNoiseSuppressionMode } from "../../utils/noiseSuppressionModes";
 
 interface DMSidebarProps {
   onOpenFindFriend: () => void;
@@ -25,8 +26,8 @@ interface DMSidebarProps {
   outputDevices: MediaDeviceInfo[];
   activeOutputId?: string;
   setActiveOutput: (id: string) => void;
-  noiseSuppression: boolean;
-  toggleNoiseSuppression: () => void;
+  effectiveNoiseSuppressionMode: WebNoiseSuppressionMode;
+  setNoiseSuppressionMode: (mode: WebNoiseSuppressionMode) => void;
   onlineUsersSet: Set<string>;
   
   // Call Orchestration (from Chat.tsx)
@@ -42,7 +43,7 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
     onOpenFindFriend, socket, setIsVoiceChatOpen,
     micGain, setMicGain, outputVolume, setOutputVolume,
     micDevices, activeMicId, setActiveMic, outputDevices, activeOutputId, setActiveOutput,
-    noiseSuppression, toggleNoiseSuppression, onlineUsersSet,
+    effectiveNoiseSuppressionMode, setNoiseSuppressionMode, onlineUsersSet,
     livekitToken, connectedChannelId, partner, endCall, setIsDisconnecting
   } = props;
   const { user } = useUserStore();
@@ -149,11 +150,11 @@ export const DMSidebar: React.FC<DMSidebarProps> = (props) => {
             </div>
             
             <div className="flex items-center">
-              <NoiseSuppressionPopup isEnabled={noiseSuppression} onToggle={toggleNoiseSuppression}>
+              <NoiseSuppressionPopup value={effectiveNoiseSuppressionMode} onChange={setNoiseSuppressionMode}>
                 <button 
                   className={cn(
                     "p-1.5 rounded-lg transition-all",
-                    noiseSuppression ? 'text-sori-accent-primary' : 'text-sori-text-dim hover:text-sori-text-muted'
+                    effectiveNoiseSuppressionMode !== "webrtc_basic" ? 'text-sori-accent-primary' : 'text-sori-text-dim hover:text-sori-text-muted'
                   )}
                   title={t("voice:noiseSuppression")}
                 >

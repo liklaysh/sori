@@ -24,7 +24,7 @@
   "inputVolume": "Громкость входа",
   "outputVolume": "Громкость выхода",
   "noiseSuppression": "Шумоподавление",
-  "noiseSuppressionDescription": "Удаление фонового шума с помощью AI.",
+  "noiseSuppressionDescription": "Выберите один движок обработки звука.",
   "hardwareTest": "Проверка оборудования",
   "verifyHardware": "Проверьте камеру и микрофон.",
   "startTest": "Начать тест",

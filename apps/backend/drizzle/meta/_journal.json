@@ -29,6 +29,13 @@
       "when": 1778395200000,
       "tag": "0003_call_participant_telemetry",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778768895019,
+      "tag": "0004_sticky_patch",
+      "breakpoints": true
     }
   ]
 }

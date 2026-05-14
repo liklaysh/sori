@@ -1,34 +1,82 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import api from "../lib/api";
 import { User } from "../types/chat";
 import { useUserStore } from "../store/useUserStore";
 import { useBrowserMediaDevices } from "./useBrowserMediaDevices";
+import {
+  NoiseSuppressionMode,
+  WebNoiseSuppressionMode,
+  isNoiseSuppressionMode,
+  isWebNoiseSuppressionMode,
+  resolveWebNoiseSuppressionMode,
+} from "../utils/noiseSuppressionModes";
 
 interface UseMediaSettingsProps {
   initialUser: User;
 }
 
 export const useMediaSettings = ({ initialUser }: UseMediaSettingsProps) => {
+  const { t } = useTranslation(["voice"]);
   const { setUser } = useUserStore();
   const [currentUser, setCurrentUser] = useState<User>(initialUser);
+  const unsupportedModeNoticeRef = useRef<string | null>(null);
+
+  const resolveInitialNoiseMode = (user?: User): NoiseSuppressionMode => {
+    if (isNoiseSuppressionMode(user?.noiseSuppressionMode)) {
+      return user.noiseSuppressionMode;
+    }
+
+    return user?.noiseSuppression ? "rnnoise" : "webrtc_basic";
+  };
+
+  const resolveInitialWebFallbackMode = (user?: User): WebNoiseSuppressionMode | null => {
+    if (isWebNoiseSuppressionMode(user?.webNoiseSuppressionFallbackMode)) {
+      return user.webNoiseSuppressionFallbackMode;
+    }
+
+    return user?.noiseSuppression ? "rnnoise" : null;
+  };
 
   // 1. Noise Suppression
-  const [noiseSuppression, setNoiseSuppression] = useState(() => {
-    return !!initialUser?.noiseSuppression;
+  const [noiseSuppressionMode, setNoiseSuppressionModeState] = useState<NoiseSuppressionMode>(() => {
+    return resolveInitialNoiseMode(initialUser);
+  });
+  const [webNoiseSuppressionFallbackMode, setWebNoiseSuppressionFallbackMode] = useState<WebNoiseSuppressionMode | null>(() => {
+    return resolveInitialWebFallbackMode(initialUser);
   });
 
+  const effectiveNoiseSuppressionMode = resolveWebNoiseSuppressionMode(
+    noiseSuppressionMode,
+    webNoiseSuppressionFallbackMode,
+  );
+  const noiseSuppression = effectiveNoiseSuppressionMode === "rnnoise";
+
   const toggleNoiseSuppression = async () => {
-    const newState = !noiseSuppression;
-    setNoiseSuppression(newState);
+    await setNoiseSuppressionMode(noiseSuppression ? "webrtc_basic" : "rnnoise");
+  };
+
+  const setNoiseSuppressionMode = async (mode: WebNoiseSuppressionMode) => {
+    const previousMode = noiseSuppressionMode;
+    const previousFallbackMode = webNoiseSuppressionFallbackMode;
+    setNoiseSuppressionModeState(mode);
+    setWebNoiseSuppressionFallbackMode(mode);
     
     try {
       const res = await api.patch("/users/me", {
-        noiseSuppression: newState
+        noiseSuppressionMode: mode,
+        webNoiseSuppressionFallbackMode: mode,
       });
       const updatedUser = res.data as User;
       setCurrentUser(updatedUser);
       setUser(updatedUser);
+      setNoiseSuppressionModeState(resolveInitialNoiseMode(updatedUser));
+      setWebNoiseSuppressionFallbackMode(resolveInitialWebFallbackMode(updatedUser));
+      toast.success(t("voice:noiseSuppressionChanged"));
     } catch (err) {
+      setNoiseSuppressionModeState(previousMode);
+      setWebNoiseSuppressionFallbackMode(previousFallbackMode);
       console.error("[MediaSettings] Noise sync failed:", err);
     }
   };
@@ -41,22 +89,35 @@ export const useMediaSettings = ({ initialUser }: UseMediaSettingsProps) => {
   const lastSyncedRef = useRef({ micGain, outputVolume });
 
   useEffect(() => {
-    const nextNoiseSuppression = !!initialUser?.noiseSuppression;
+    const nextNoiseSuppressionMode = resolveInitialNoiseMode(initialUser);
+    const nextWebFallbackMode = resolveInitialWebFallbackMode(initialUser);
     const nextMicGain = initialUser?.micGain ?? 100;
     const nextOutputVolume = initialUser?.outputVolume ?? 100;
 
     setCurrentUser(initialUser);
-    setNoiseSuppression((prev) => (prev === nextNoiseSuppression ? prev : nextNoiseSuppression));
+    setNoiseSuppressionModeState((prev) => (prev === nextNoiseSuppressionMode ? prev : nextNoiseSuppressionMode));
+    setWebNoiseSuppressionFallbackMode((prev) => (prev === nextWebFallbackMode ? prev : nextWebFallbackMode));
     setMicGain((prev) => (prev === nextMicGain ? prev : nextMicGain));
     setOutputVolume((prev) => (prev === nextOutputVolume ? prev : nextOutputVolume));
     lastSyncedRef.current = { micGain: nextMicGain, outputVolume: nextOutputVolume };
+
+    if (
+      nextNoiseSuppressionMode === "experimental_ai"
+      && unsupportedModeNoticeRef.current !== `${initialUser?.id}:experimental_ai`
+    ) {
+      unsupportedModeNoticeRef.current = `${initialUser?.id}:experimental_ai`;
+      toast.message(t("voice:experimentalAiDesktopOnly"));
+    }
   }, [
     initialUser?.id,
     initialUser?.username,
     initialUser?.avatarUrl,
     initialUser?.noiseSuppression,
+    initialUser?.noiseSuppressionMode,
+    initialUser?.webNoiseSuppressionFallbackMode,
     initialUser?.micGain,
     initialUser?.outputVolume,
+    t,
   ]);
 
   useEffect(() => {
@@ -103,7 +164,11 @@ export const useMediaSettings = ({ initialUser }: UseMediaSettingsProps) => {
 
   return {
     noiseSuppression,
+    noiseSuppressionMode,
+    effectiveNoiseSuppressionMode,
+    webNoiseSuppressionFallbackMode,
     toggleNoiseSuppression,
+    setNoiseSuppressionMode,
     micGain,
     setMicGain,
     outputVolume,

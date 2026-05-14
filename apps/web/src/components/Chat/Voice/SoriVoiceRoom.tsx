@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@sori/ui";
-import { 
+import {
   useTracks,
   useLocalParticipant,
   TrackReference,
   isTrackReference,
 } from "@livekit/components-react";
-import { Track, LocalAudioTrack } from "livekit-client";
+import { Track } from "livekit-client";
 import { User, ChatItem } from "../../../types/chat";
 import { useServerTime } from "../../../hooks/useServerTime";
 import { API_URL } from "../../../config";
@@ -36,6 +36,7 @@ import { SoriParticipantTile } from "./SoriParticipantTile";
 import { SoriCallControls } from "./SoriCallControls";
 import { SoriCallSidebar } from "./SoriCallSidebar";
 import { formatCallDuration } from "../../../utils/duration";
+import { WebNoiseSuppressionMode } from "../../../utils/noiseSuppressionModes";
 
 interface SoriVoiceRoomProps {
   onLeave: () => void;
@@ -49,8 +50,8 @@ interface SoriVoiceRoomProps {
   outputVolume: number;
   micGain: number;
   participantVolumes: Record<string, number>;
-  noiseSuppression: boolean;
-  toggleNoiseSuppression: () => void;
+  effectiveNoiseSuppressionMode: WebNoiseSuppressionMode;
+  setNoiseSuppressionMode: (mode: WebNoiseSuppressionMode) => void;
   isChatOpen: boolean;
   setIsChatOpen: (v: boolean) => void;
   channelName: string;
@@ -78,8 +79,8 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
   user,
   outputVolume,
   micGain,
-  noiseSuppression,
-  toggleNoiseSuppression,
+  effectiveNoiseSuppressionMode,
+  setNoiseSuppressionMode,
   isChatOpen,
   setIsChatOpen,
   channelName,
@@ -192,37 +193,6 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
   }, [startTime, getSyncedDate]);
 
   // Handle focused track disappearing
-
-  // --- RNNoise Integration ---
-  useEffect(() => {
-    let isCancelled = false;
-
-    const applyNoiseSuppression = async () => {
-      const audioPub = localParticipant.getTrackPublication(Track.Source.Microphone);
-      if (audioPub && audioPub.audioTrack instanceof LocalAudioTrack) {
-        try {
-          if (!noiseSuppression) {
-            await audioPub.audioTrack.stopProcessor();
-            return;
-          }
-
-          const { toggleNoiseSuppression } = await import("../../../utils/noise-processor");
-          if (isCancelled) {
-            return;
-          }
-          await toggleNoiseSuppression(audioPub.audioTrack, true);
-        } catch (err) {
-          console.error("[RNNoise] Failed to toggle:", err);
-        }
-      }
-    };
-
-    applyNoiseSuppression();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [noiseSuppression, localParticipant]);
 
   const ITEMS_PER_PAGE = 9;
   const totalPages = Math.ceil(participantTracks.length / ITEMS_PER_PAGE);
@@ -397,8 +367,8 @@ export const SoriVoiceRoom: React.FC<SoriVoiceRoomProps> = ({
         {/* Unified Bottom Controls */}
         <SoriCallControls 
           onHangUp={onLeave}
-          noiseSuppression={noiseSuppression}
-          toggleNoiseSuppression={toggleNoiseSuppression}
+          effectiveNoiseSuppressionMode={effectiveNoiseSuppressionMode}
+          setNoiseSuppressionMode={setNoiseSuppressionMode}
           hideSelfCamera={hideSelfCamera}
           setHideSelfCamera={setHideSelfCamera}
           micDevices={micDevices}

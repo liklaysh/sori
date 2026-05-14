@@ -18,6 +18,7 @@ import { getChannelContextKey, getConversationContextKey } from "../../utils/cha
 import { playNotificationSound } from "../../utils/notificationSounds";
 import { toast } from "sonner";
 import { MAX_UPLOAD_SIZE_MB } from "../../config";
+import { WebNoiseSuppressionMode } from "../../utils/noiseSuppressionModes";
 
 const EMPTY_CHAT_ITEMS: ChatItem[] = [];
 const LiveKitSession = lazy(() => import("./Voice/LiveKitSession"));
@@ -43,8 +44,8 @@ interface ChatAreaProps {
   startTime: number | null;
 
   // Media settings (from useMediaSettings)
-  noiseSuppression: boolean;
-  toggleNoiseSuppression: () => void;
+  effectiveNoiseSuppressionMode: WebNoiseSuppressionMode;
+  setNoiseSuppressionMode: (mode: WebNoiseSuppressionMode) => void;
   outputVolume: number;
   micGain: number;
   micDevices: MediaDeviceInfo[];
@@ -400,8 +401,8 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
                 user={user!}
                 outputVolume={props.outputVolume}
                 micGain={props.micGain}
-                noiseSuppression={props.noiseSuppression}
-                toggleNoiseSuppression={props.toggleNoiseSuppression}
+                effectiveNoiseSuppressionMode={props.effectiveNoiseSuppressionMode}
+                setNoiseSuppressionMode={props.setNoiseSuppressionMode}
                 micDevices={props.micDevices}
                 activeMicId={props.activeMicId}
                 setActiveMic={props.setActiveMic}

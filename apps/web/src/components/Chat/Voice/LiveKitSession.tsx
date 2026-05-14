@@ -9,6 +9,7 @@ import {
   useRoomContext,
 } from "@livekit/components-react";
 import { ConnectionState } from "livekit-client";
+import { Track, LocalAudioTrack } from "livekit-client";
 import { LIVEKIT_URL } from "../../../config";
 import { ChatItem, User } from "../../../types/chat";
 import { useUIStore } from "../../../store/useUIStore";
@@ -17,6 +18,7 @@ import { ParticipantsVolumeManager } from "./ParticipantsVolumeManager";
 import { SoriVoiceRoom } from "./SoriVoiceRoom";
 import { StreamingTracker } from "./StreamingTracker";
 import { CallTelemetryReporter } from "./CallTelemetryReporter";
+import { WebNoiseSuppressionMode, getLiveKitAudioCaptureOptions } from "../../../utils/noiseSuppressionModes";
 
 interface LiveKitSessionProps {
   socket: any;
@@ -44,8 +46,8 @@ interface LiveKitSessionProps {
   user: User;
   outputVolume: number;
   micGain: number;
-  noiseSuppression: boolean;
-  toggleNoiseSuppression: () => void;
+  effectiveNoiseSuppressionMode: WebNoiseSuppressionMode;
+  setNoiseSuppressionMode: (mode: WebNoiseSuppressionMode) => void;
   micDevices: MediaDeviceInfo[];
   activeMicId?: string;
   setActiveMic: (id: string) => void;
@@ -137,13 +139,47 @@ const LiveKitMediaDeviceSync: React.FC<{
   return null;
 };
 
-const LiveKitMuteSync: React.FC = () => {
+const LiveKitAudioSync: React.FC<{
+  activeMicId?: string;
+  noiseSuppressionMode: WebNoiseSuppressionMode;
+}> = ({ activeMicId, noiseSuppressionMode }) => {
   const { localParticipant } = useLocalParticipant();
   const isMuted = useUIStore((state) => state.isMuted);
 
   useEffect(() => {
-    localParticipant.setMicrophoneEnabled(!isMuted).catch(() => {});
-  }, [isMuted, localParticipant]);
+    const audioOptions = {
+      ...getLiveKitAudioCaptureOptions(noiseSuppressionMode),
+      deviceId: activeMicId && activeMicId !== "default" ? activeMicId : undefined,
+    };
+
+    localParticipant.setMicrophoneEnabled(!isMuted, audioOptions).catch(() => {});
+  }, [activeMicId, isMuted, localParticipant, noiseSuppressionMode]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const applyProcessor = async () => {
+      const audioPub = localParticipant.getTrackPublication(Track.Source.Microphone);
+      if (!audioPub?.audioTrack || !(audioPub.audioTrack instanceof LocalAudioTrack)) {
+        return;
+      }
+
+      const { applyNoiseSuppressionMode } = await import("../../../utils/noise-processor");
+      if (isCancelled) {
+        return;
+      }
+
+      await applyNoiseSuppressionMode(audioPub.audioTrack, noiseSuppressionMode);
+    };
+
+    applyProcessor().catch((err) => {
+      console.error("[NoiseSuppression] Failed to apply:", err);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [localParticipant, noiseSuppressionMode]);
 
   return null;
 };
@@ -154,7 +190,7 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
   return (
     <LiveKitRoom
       video={false}
-      audio={true}
+      audio={getLiveKitAudioCaptureOptions(props.effectiveNoiseSuppressionMode)}
       options={{ webAudioMix: true }}
       token={props.livekitToken}
       serverUrl={LIVEKIT_URL}
@@ -177,7 +213,10 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
         activeMicId={props.activeMicId}
         activeOutputId={props.activeOutputId}
       />
-      <LiveKitMuteSync />
+      <LiveKitAudioSync
+        activeMicId={props.activeMicId}
+        noiseSuppressionMode={props.effectiveNoiseSuppressionMode}
+      />
       <StreamingTracker socket={props.socket} channelId={props.connectedChannelId ?? undefined} />
       <CallTelemetryReporter
         socket={props.socket}
@@ -201,8 +240,8 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
               outputVolume={props.outputVolume}
               micGain={props.micGain}
               participantVolumes={{}}
-              noiseSuppression={props.noiseSuppression}
-              toggleNoiseSuppression={props.toggleNoiseSuppression}
+              effectiveNoiseSuppressionMode={props.effectiveNoiseSuppressionMode}
+              setNoiseSuppressionMode={props.setNoiseSuppressionMode}
               isChatOpen={props.isInternalChatOpen}
               setIsChatOpen={props.setIsInternalChatOpen}
               channelName={props.activeModule === "dm" ? (props.partner?.username || "Direct Call") : (props.currentChannelName || "Voice Channel")}

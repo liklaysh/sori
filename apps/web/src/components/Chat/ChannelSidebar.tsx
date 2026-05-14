@@ -14,6 +14,7 @@ import api from "../../lib/api";
 import { toast } from "sonner";
 import { playNotificationSound } from "../../utils/notificationSounds";
 import { VoiceOccupant } from "../../types/chat";
+import { WebNoiseSuppressionMode } from "../../utils/noiseSuppressionModes";
 
 interface ChannelSidebarProps {
   socket: any;
@@ -30,8 +31,8 @@ interface ChannelSidebarProps {
   outputDevices: MediaDeviceInfo[];
   activeOutputId?: string;
   setActiveOutput: (id: string) => void;
-  noiseSuppression: boolean;
-  toggleNoiseSuppression: () => void;
+  effectiveNoiseSuppressionMode: WebNoiseSuppressionMode;
+  setNoiseSuppressionMode: (mode: WebNoiseSuppressionMode) => void;
   
   // Call Orchestration (from Chat.tsx)
   livekitToken: string | null;
@@ -48,7 +49,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
     socket, setIsVoiceChatOpen,
     micGain, setMicGain, outputVolume, setOutputVolume,
     micDevices, activeMicId, setActiveMic, outputDevices, activeOutputId, setActiveOutput,
-    noiseSuppression, toggleNoiseSuppression,
+    effectiveNoiseSuppressionMode, setNoiseSuppressionMode,
     livekitToken, connectedChannelId, status, 
     getChannelToken, resetCall, setIsDisconnecting 
   } = props;
@@ -282,11 +283,11 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
             </div>
             
             <div className="flex items-center">
-              <NoiseSuppressionPopup isEnabled={noiseSuppression} onToggle={toggleNoiseSuppression}>
+              <NoiseSuppressionPopup value={effectiveNoiseSuppressionMode} onChange={setNoiseSuppressionMode}>
                 <button 
                   className={cn(
                     "p-1.5 rounded-lg transition-all",
-                    noiseSuppression ? 'text-sori-accent-primary' : 'text-sori-text-dim hover:text-sori-text-muted'
+                    effectiveNoiseSuppressionMode !== "webrtc_basic" ? 'text-sori-accent-primary' : 'text-sori-text-dim hover:text-sori-text-muted'
                   )}
                   title={t("voice:noiseSuppression")}
                 >

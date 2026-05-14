@@ -17,6 +17,7 @@ import { VoiceVideoTab } from "./Tabs/VoiceVideoTab";
 import { NotificationsTab } from "./Tabs/NotificationsTab";
 import { LanguageSelector } from "../Chat/LanguageSelector";
 import api from "../../lib/api";
+import { WebNoiseSuppressionMode } from "../../utils/noiseSuppressionModes";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -34,9 +35,9 @@ interface SettingsModalProps {
   activeOutputId?: string;
   setActiveOutput: (id: string) => void;
   
-  // RNNoise State
-  noiseSuppression: boolean;
-  toggleNoiseSuppression: () => void;
+  // Noise suppression state
+  effectiveNoiseSuppressionMode: WebNoiseSuppressionMode;
+  setNoiseSuppressionMode: (mode: WebNoiseSuppressionMode) => void;
 }
 
 type Tab = "profile" | "equipment" | "notifications";
@@ -154,7 +155,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 outputVolume={props.outputVolume} setOutputVolume={props.setOutputVolume}
                 micDevices={props.micDevices} activeMicId={props.activeMicId} setActiveMic={props.setActiveMic}
                 outputDevices={props.outputDevices} activeOutputId={props.activeOutputId} setActiveOutput={props.setActiveOutput}
-                noiseSuppression={props.noiseSuppression} toggleNoiseSuppression={props.toggleNoiseSuppression}
+                effectiveNoiseSuppressionMode={props.effectiveNoiseSuppressionMode}
+                setNoiseSuppressionMode={props.setNoiseSuppressionMode}
               />
             ) : (
               <NotificationsTab />

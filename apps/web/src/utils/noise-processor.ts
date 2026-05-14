@@ -1,4 +1,5 @@
 import { Rnnoise, DenoiseState } from '@shiguredo/rnnoise-wasm';
+import { WebNoiseSuppressionMode } from './noiseSuppressionModes';
 
 const RNNOISE_WORKLET_SOURCE = `
   class RNNoiseWorklet extends AudioWorkletProcessor {
@@ -115,4 +116,19 @@ export async function toggleNoiseSuppression(track: any, enabled: boolean) {
       await track.stopProcessor();
     }
   } catch {}
+}
+
+export async function applyNoiseSuppressionMode(track: any, mode: WebNoiseSuppressionMode) {
+  try {
+    await track.stopProcessor();
+
+    if (mode === "rnnoise") {
+      const processor = new RNNoiseProcessor();
+      if (track.mediaStreamTrack.readyState === 'ended') return;
+      await track.setProcessor(processor);
+    }
+  } catch (err) {
+    console.error("[NoiseSuppression] Failed to apply mode:", err);
+    throw err;
+  }
 }

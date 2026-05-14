@@ -24,7 +24,7 @@
   "inputVolume": "Input Volume",
   "outputVolume": "Output Volume",
   "noiseSuppression": "Noise Suppression",
-  "noiseSuppressionDescription": "AI-powered background noise removal.",
+  "noiseSuppressionDescription": "Choose one audio cleanup engine.",
   "hardwareTest": "Hardware Test",
   "verifyHardware": "Verify your camera and microphone.",
   "startTest": "Start Test",

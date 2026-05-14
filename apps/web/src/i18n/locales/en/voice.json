@@ -1,7 +1,24 @@
 {
   "initiateCall": "Initiate Call",
   "voiceChat": "Voice Chat",
-  "noiseSuppression": "Noise Suppression",
+  "noiseSuppression": "Noise suppression",
+  "noiseSuppressionHint": "Choose one audio cleanup engine for voice channels and calls.",
+  "noiseSuppressionChanged": "Noise suppression changed",
+  "experimentalAiDesktopOnly": "Experimental AI is available only in desktop app",
+  "noiseModes": {
+    "webrtc_basic": {
+      "label": "WebRTC Basic",
+      "description": "Uses browser echo cancellation, noise suppression, and auto gain."
+    },
+    "rnnoise": {
+      "label": "RNNoise",
+      "description": "Uses the RNNoise processor for stronger background noise filtering."
+    },
+    "experimental_ai": {
+      "label": "Experimental AI",
+      "description": "Desktop-only AI noise suppression mode."
+    }
+  },
   "controls": {
     "inputDevice": "Input Device",
     "inputVolume": "Input Volume",
@@ -15,14 +32,14 @@
     "hideMyCamera": "Hide My Camera"
   },
   "noisePopup": {
-    "title": "Protocol: Silence",
-    "neuralIsolation": "Neural Isolation",
-    "neuralIsolationDescription": "Distinguishes voice from background via AI.",
-    "acousticShield": "Acoustic Shield",
-    "acousticShieldDescription": "Eliminates clicks and environment static.",
+    "title": "Noise suppression",
+    "neuralIsolation": "RNNoise",
+    "neuralIsolationDescription": "Stronger background noise filtering.",
+    "acousticShield": "WebRTC Basic",
+    "acousticShieldDescription": "Browser audio cleanup.",
     "active": "Active",
-    "suspended": "Suspended",
-    "engine": "Neural Engine"
+    "suspended": "Inactive",
+    "engine": "Engine"
   },
   "room": {
     "expand": "Expand",

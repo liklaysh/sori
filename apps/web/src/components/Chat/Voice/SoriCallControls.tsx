@@ -20,6 +20,7 @@ import {
 import { NoiseSuppressionPopup } from "../Modals/NoiseSuppressionPopup";
 import { VideoPresets } from "livekit-client";
 import { useUIStore } from "../../../store/useUIStore";
+import { WebNoiseSuppressionMode } from "../../../utils/noiseSuppressionModes";
 
 // Internal component for camera selection
 const CameraDeviceSelector = () => {
@@ -48,8 +49,8 @@ const CameraDeviceSelector = () => {
 
 interface SoriCallControlsProps {
   onHangUp: () => void;
-  noiseSuppression: boolean;
-  toggleNoiseSuppression: () => void;
+  effectiveNoiseSuppressionMode: WebNoiseSuppressionMode;
+  setNoiseSuppressionMode: (mode: WebNoiseSuppressionMode) => void;
   hideSelfCamera: boolean;
   setHideSelfCamera: (val: boolean) => void;
   className?: string;
@@ -67,8 +68,8 @@ interface SoriCallControlsProps {
 
 export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
   onHangUp,
-  noiseSuppression,
-  toggleNoiseSuppression,
+  effectiveNoiseSuppressionMode,
+  setNoiseSuppressionMode,
   hideSelfCamera,
   setHideSelfCamera,
   className,
@@ -253,11 +254,11 @@ export const SoriCallControls: React.FC<SoriCallControlsProps> = ({
       </button>
 
       {/* Noise Suppression Popup */}
-      <NoiseSuppressionPopup isEnabled={noiseSuppression} onToggle={toggleNoiseSuppression}>
+      <NoiseSuppressionPopup value={effectiveNoiseSuppressionMode} onChange={setNoiseSuppressionMode}>
         <button 
           className={cn(
             "w-11 h-11 rounded-xl flex items-center justify-center transition-all",
-            noiseSuppression 
+            effectiveNoiseSuppressionMode !== "webrtc_basic"
               ? 'bg-muted text-primary border border-primary' 
               : 'bg-sori-surface-panel text-on-surface-variant hover:bg-sori-surface-base border border-transparent'
           )}

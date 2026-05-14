@@ -11,6 +11,17 @@ export const loginSchema = z.object({
   password: z.string(),
 });
 
+export const noiseSuppressionModeSchema = z.enum([
+  "webrtc_basic",
+  "rnnoise",
+  "experimental_ai",
+]);
+
+export const webNoiseSuppressionFallbackModeSchema = z.enum([
+  "webrtc_basic",
+  "rnnoise",
+]);
+
 export const createChannelSchema = z.object({
   name: z.string().min(1).max(32).regex(/^[a-z0-9-_]+$/, "Channel names can only contain lowercase letters, numbers, hyphens, and underscores"),
   type: z.enum(["text", "voice"]),

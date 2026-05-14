@@ -15,6 +15,8 @@ import {
   Waves 
 } from "lucide-react";
 import { useHardwareTest } from "../../../hooks/useHardwareTest";
+import { WebNoiseSuppressionMode } from "../../../utils/noiseSuppressionModes";
+import { NoiseSuppressionModePicker } from "../../Chat/Voice/NoiseSuppressionModePicker";
 
 interface VoiceVideoTabProps {
   micGain: number;
@@ -27,17 +29,17 @@ interface VoiceVideoTabProps {
   outputDevices: MediaDeviceInfo[];
   activeOutputId?: string;
   setActiveOutput: (id: string) => void;
-  noiseSuppression: boolean;
-  toggleNoiseSuppression: () => void;
+  effectiveNoiseSuppressionMode: WebNoiseSuppressionMode;
+  setNoiseSuppressionMode: (mode: WebNoiseSuppressionMode) => void;
 }
 
 export const VoiceVideoTab: React.FC<VoiceVideoTabProps> = ({
   micGain, setMicGain, outputVolume, setOutputVolume,
   micDevices, activeMicId, setActiveMic,
   outputDevices, activeOutputId, setActiveOutput,
-  noiseSuppression, toggleNoiseSuppression
+  effectiveNoiseSuppressionMode, setNoiseSuppressionMode
 }) => {
-  const { t } = useTranslation(["settings", "common"]);
+  const { t } = useTranslation(["settings", "common", "voice"]);
   const hardware = useHardwareTest(activeMicId);
 
   return (
@@ -101,25 +103,23 @@ export const VoiceVideoTab: React.FC<VoiceVideoTabProps> = ({
          </div>
 
           {/* Noise Suppression */}
-          <div className="bg-sori-surface-panel rounded-[2rem] p-6 border border-sori-border-subtle flex items-center justify-between">
+          <div className="bg-sori-surface-panel rounded-[2rem] p-6 border border-sori-border-subtle space-y-4">
              <div className="flex items-center gap-5">
                 <div className={cn(
                   "w-12 h-12 rounded-2xl flex items-center justify-center border border-sori-border-subtle",
-                  noiseSuppression ? 'bg-sori-surface-elevated text-sori-accent-primary' : 'bg-sori-surface-base text-sori-text-muted'
+                  "bg-sori-surface-elevated text-sori-accent-primary"
                 )}>
                    <Waves className="h-6 w-6" />
                 </div>
                 <div>
-                   <h3 className="text-white font-bold text-base mb-1">{t("settings:noiseSuppression")}</h3>
-                   <p className="text-sori-text-dim text-[10px] font-medium">{t("settings:noiseSuppressionDescription")}</p>
+                   <h3 className="text-white font-bold text-base mb-1">{t("voice:noiseSuppression")}</h3>
+                   <p className="text-sori-text-dim text-[10px] font-medium">{t("voice:noiseSuppressionHint")}</p>
                 </div>
              </div>
-               <button 
-                onClick={toggleNoiseSuppression}
-                className={cn("w-14 h-8 rounded-full relative transition-all duration-500", noiseSuppression ? 'bg-sori-accent-primary' : 'bg-sori-surface-hover')}
-              >
-                 <div className={cn("absolute top-1 w-6 h-6 rounded-full bg-white transition-all duration-500", noiseSuppression ? 'left-7' : 'left-1')} />
-              </button>
+             <NoiseSuppressionModePicker
+               value={effectiveNoiseSuppressionMode}
+               onChange={setNoiseSuppressionMode}
+             />
           </div>
 
           {/* Hardware Test */}

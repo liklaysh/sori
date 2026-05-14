@@ -77,6 +77,8 @@ auth.post("/login", safe(async (c) => {
       role: user.role, 
       avatarUrl: normalizeS3Url(user.avatarUrl),
       noiseSuppression: user.noiseSuppression,
+      noiseSuppressionMode: user.noiseSuppressionMode,
+      webNoiseSuppressionFallbackMode: user.webNoiseSuppressionFallbackMode,
       micGain: user.micGain,
       outputVolume: user.outputVolume
     } 
@@ -128,6 +130,8 @@ auth.get("/me", safe(async (c) => {
       role: user.role, 
       avatarUrl: normalizeS3Url(user.avatarUrl),
       noiseSuppression: user.noiseSuppression,
+      noiseSuppressionMode: user.noiseSuppressionMode,
+      webNoiseSuppressionFallbackMode: user.webNoiseSuppressionFallbackMode,
       micGain: user.micGain,
       outputVolume: user.outputVolume
     } 

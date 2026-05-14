@@ -2,6 +2,23 @@
   "initiateCall": "Начать звонок",
   "voiceChat": "Чат звонка",
   "noiseSuppression": "Шумоподавление",
+  "noiseSuppressionHint": "Выберите один движок обработки звука для голосовых каналов и звонков.",
+  "noiseSuppressionChanged": "Шумоподавление изменено",
+  "experimentalAiDesktopOnly": "Experimental AI доступен только в desktop-приложении",
+  "noiseModes": {
+    "webrtc_basic": {
+      "label": "WebRTC Basic",
+      "description": "Использует браузерное эхоподавление, шумоподавление и автогейн."
+    },
+    "rnnoise": {
+      "label": "RNNoise",
+      "description": "Использует RNNoise processor для более сильной фильтрации фонового шума."
+    },
+    "experimental_ai": {
+      "label": "Experimental AI",
+      "description": "Экспериментальный AI-режим шумоподавления только для desktop."
+    }
+  },
   "controls": {
     "inputDevice": "Устройство ввода",
     "inputVolume": "Громкость микрофона",
@@ -15,14 +32,14 @@
     "hideMyCamera": "Скрыть мою камеру"
   },
   "noisePopup": {
-    "title": "Протокол: Тишина",
-    "neuralIsolation": "Нейронная изоляция",
-    "neuralIsolationDescription": "Отделяет голос от фонового шума с помощью AI.",
-    "acousticShield": "Акустический щит",
-    "acousticShieldDescription": "Убирает щелчки и посторонние шумы окружения.",
+    "title": "Шумоподавление",
+    "neuralIsolation": "RNNoise",
+    "neuralIsolationDescription": "Более сильная фильтрация фонового шума.",
+    "acousticShield": "WebRTC Basic",
+    "acousticShieldDescription": "Браузерная обработка звука.",
     "active": "Активно",
-    "suspended": "Приостановлено",
-    "engine": "Нейронный движок"
+    "suspended": "Неактивно",
+    "engine": "Движок"
   },
   "room": {
     "expand": "Развернуть",
