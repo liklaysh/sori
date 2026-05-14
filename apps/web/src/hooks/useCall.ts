@@ -201,10 +201,6 @@ export function useCall({ socket }: UseCallProps) {
       const activeCallId = callIdRef.current;
       const currentStatus = statusRef.current;
 
-      if (activeChannelId) {
-        activeSocket.emit("leave_voice_channel", activeChannelId);
-      }
-
       if (activeCallId && currentStatus !== "idle") {
         stopNotificationSoundLoop("directCall");
         activeSocket.emit("direct_call_end", { callId: activeCallId });

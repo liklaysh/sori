@@ -38,7 +38,7 @@ const Chat: React.FC = () => {
   
   const { 
     fetchInitialData, fetchConversations,
-    conversations, startDM, members, channels
+    conversations, startDM, members, channels, voiceOccupants
   } = useChatStore();
   
   const { 
@@ -55,6 +55,7 @@ const Chat: React.FC = () => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isFindFriendOpen, setIsFindFriendOpen] = useState(false);
   const initializedDirectCallRef = useRef<string | null>(null);
+  const restoredVoiceChannelRef = useRef<string | null>(null);
 
   // Initialize Socket (URL and auth handled internally)
   const { socket, onlineUsersSet } = useChatSocket();
@@ -126,6 +127,72 @@ const Chat: React.FC = () => {
       setIsVoiceChatOpen(false);
     }
   }, [call.callId, call.connectedChannelId, call.partner, call.status, setIsVoiceChatOpen]);
+
+  useEffect(() => {
+    if (
+      !socket?.connected
+      || !user?.id
+      || call.livekitToken
+      || call.connectedChannelId
+      || call.callId
+      || call.status !== "idle"
+    ) {
+      return;
+    }
+
+    const channelToRestore = Object.entries(voiceOccupants).find(([, occupants]) =>
+      occupants.some((occupant) => occupant.userId === user.id),
+    )?.[0] || null;
+
+    if (!channelToRestore) {
+      restoredVoiceChannelRef.current = null;
+      return;
+    }
+
+    if (restoredVoiceChannelRef.current === channelToRestore) {
+      return;
+    }
+
+    restoredVoiceChannelRef.current = channelToRestore;
+    let cancelled = false;
+
+    call.setIsDisconnecting(false);
+    call.getChannelToken(channelToRestore)
+      .then(() => {
+        if (cancelled) {
+          return;
+        }
+
+        socket.emit("join_voice_channel", channelToRestore);
+        const { isMuted, isDeafened } = useUIStore.getState();
+        socket.emit("user_audio_status_update", {
+          channelId: channelToRestore,
+          isMuted,
+          isDeafened,
+        });
+        setIsVoiceChatOpen(true);
+      })
+      .catch(() => {
+        if (restoredVoiceChannelRef.current === channelToRestore) {
+          restoredVoiceChannelRef.current = null;
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    socket,
+    user?.id,
+    voiceOccupants,
+    call.livekitToken,
+    call.connectedChannelId,
+    call.callId,
+    call.status,
+    call.getChannelToken,
+    call.setIsDisconnecting,
+    setIsVoiceChatOpen,
+  ]);
 
   // Initial Data Load
   useEffect(() => {
