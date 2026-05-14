@@ -51,6 +51,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
     if (r.userId === user.id) acc[r.emoji].mine = true;
     return acc;
   }, {} as Record<string, { count: number; mine: boolean }>);
+  const reactionEntries = Object.entries(groupedReactions);
+  const hasReactions = reactionEntries.length > 0 && !msg.isDeleted;
 
   const formatFileSize = (bytes?: number | null) => {
     if (bytes === null || bytes === undefined) return '';
@@ -196,7 +198,11 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
             )}
           </div>
           
-          <div className={`flex flex-col gap-2 ${isMe ? 'items-end' : 'items-start'} max-w-[calc(100vw-120px)] md:max-w-md lg:max-w-lg xl:max-w-xl`}>
+          <div className={cn(
+            "relative flex flex-col gap-2 max-w-[calc(100vw-120px)] md:max-w-md lg:max-w-lg xl:max-w-xl",
+            isMe ? "items-end" : "items-start",
+            hasReactions && "mb-4"
+          )}>
             {msg.type === 'call_missed' ? (
               <div className="flex items-center gap-3 py-3 px-5 bg-sori-surface-danger-subtle border border-sori-border-danger-dim rounded-2xl animate-in fade-in zoom-in-95 duration-500 my-1">
                 <div className="w-10 h-10 rounded-xl bg-sori-surface-danger-subtle flex items-center justify-center text-sori-accent-danger shadow-inner">
@@ -255,28 +261,31 @@ export const MessageItem: React.FC<MessageItemProps> = ({ msg, onContextMenu, on
                 {attachments.map((attachment, index) => renderAttachment(attachment, index))}
               </div>
             )}
-          </div>
 
-          {Object.keys(groupedReactions).length > 0 && !msg.isDeleted && (
-            <div className={`flex flex-wrap gap-1.5 mt-1.5 ${isMe ? "justify-end" : "justify-start"}`}>
-              {Object.entries(groupedReactions).map(([emoji, reaction]) => (
-                <button
-                  type="button"
-                  key={emoji}
-                  className={cn(
-                    "flex items-center gap-1 rounded-lg border px-1.5 py-0.5 transition-colors cursor-pointer",
-                    reaction.mine
-                      ? "border-sori-border-accent bg-sori-surface-accent-subtle"
-                      : "border-sori-border-subtle bg-sori-surface-panel hover:bg-sori-surface-hover"
+            {hasReactions && (
+              <div className="absolute -bottom-3 left-3 z-10 flex max-w-[calc(100%-24px)] flex-wrap gap-1.5">
+                {reactionEntries.map(([emoji, reaction]) => (
+                  <button
+                    type="button"
+                    key={emoji}
+                    className={cn(
+                      "flex min-h-6 items-center gap-1 rounded-full border px-2 py-0.5 text-sori-text-primary transition-colors cursor-pointer",
+                      reaction.mine
+                        ? "border-sori-border-accent bg-sori-surface-accent-subtle text-sori-text-strong hover:border-sori-border-accent"
+                        : "border-sori-border-subtle bg-sori-surface-elevated hover:bg-sori-surface-hover"
                   )}
                   onClick={() => onReaction?.(msg, emoji)}
                 >
-                  <span className="text-xs">{emoji}</span>
-                  <span className="text-[9px] font-black text-sori-text-dim">{reaction.count}</span>
+                  <span className="text-xs leading-none">{emoji}</span>
+                  <span className={cn(
+                    "text-[10px] font-black leading-none",
+                    reaction.mine ? "text-sori-accent-primary" : "text-sori-text-dim"
+                  )}>{reaction.count}</span>
                 </button>
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
 
