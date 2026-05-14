@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4
+
+- Added a unified user-level noise suppression mode model with WebRTC Basic and RNNoise support in the web client, backed by synced voice preferences.
+- Improved voice channel restore behavior after browser refresh so the connected voice module and LiveKit session recover consistently.
+- Reworked message reactions so reaction pills attach to the message bubble instead of rendering as detached rows.
+- Redesigned audio attachment bubbles with compact file metadata, inline playback controls, progress seeking, and volume handling.
+- Updated localized README documentation with project support information.
+
 ## 0.1.3
 
 - Improved voice channel occupant synchronization so explicit leave actions and mute/deafen status changes converge faster across clients.
