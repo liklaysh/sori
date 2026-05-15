@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Fixed a server time synchronization request stampede in the web client that could trigger bursts of `/time` requests during heavy chat rendering.
+- Fixed web voice channel manual leave behavior so stale occupant snapshots no longer reconnect the user after pressing disconnect.
+- Unified the web voice connected controls with the user control card so the connected voice state renders as one compact sidebar component.
+
 ## 0.1.4
 
 - Added a unified user-level noise suppression mode model with WebRTC Basic and RNNoise support in the web client, backed by synced voice preferences.
