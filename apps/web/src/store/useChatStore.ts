@@ -16,6 +16,29 @@ interface FetchMessagesOptions {
   append?: boolean;
 }
 
+const MANUAL_VOICE_LEAVE_GUARD_MS = 60_000;
+const manualVoiceLeaveGuards = new Map<string, number>();
+
+function getManualVoiceLeaveGuardKey(channelId: string, userId: string) {
+  return `${channelId}:${userId}`;
+}
+
+function suppressStaleSelfOccupant(channelId: string, occupants: VoiceOccupant[]) {
+  const userId = useUserStore.getState().user?.id;
+  if (!userId) return occupants;
+
+  const guardKey = getManualVoiceLeaveGuardKey(channelId, userId);
+  const suppressUntil = manualVoiceLeaveGuards.get(guardKey);
+  if (!suppressUntil) return occupants;
+
+  if (Date.now() > suppressUntil) {
+    manualVoiceLeaveGuards.delete(guardKey);
+    return occupants;
+  }
+
+  return occupants.filter((occupant) => occupant.userId !== userId);
+}
+
 interface ChatState {
   communities: Community[];
   channels: Channel[];
@@ -36,6 +59,8 @@ interface ChatState {
   setConversations: (convs: DMConversation[]) => void;
   setVoiceOccupants: (occupants: Record<string, VoiceOccupant[]>) => void;
   updateVoiceOccupants: (channelId: string, occupants: VoiceOccupant[]) => void;
+  markManualVoiceLeave: (channelId: string | null | undefined) => void;
+  clearManualVoiceLeave: (channelId: string | null | undefined) => void;
   updateOccupantStatus: (channelId: string, userId: string, data: Partial<VoiceOccupant>) => void;
   updateUserReferences: (user: { id: string; username?: string | null; avatarUrl?: string | null; status?: Member["status"] | null }) => void;
   setTyping: (channelId: string, username: string | null) => void;
@@ -184,13 +209,40 @@ export const useChatStore = create<ChatState>((set, get) => ({
     voiceOccupants: Object.fromEntries(
       Object.entries(voiceOccupants).map(([channelId, occupants]) => [
         channelId,
-        sortVoiceOccupantsByJoinTime(occupants),
+        sortVoiceOccupantsByJoinTime(suppressStaleSelfOccupant(channelId, occupants)),
       ]),
     ),
   }),
   updateVoiceOccupants: (channelId, occupants) => set((state) => ({
-    voiceOccupants: { ...state.voiceOccupants, [channelId]: sortVoiceOccupantsByJoinTime(occupants) }
+    voiceOccupants: { ...state.voiceOccupants, [channelId]: sortVoiceOccupantsByJoinTime(suppressStaleSelfOccupant(channelId, occupants)) }
   })),
+  markManualVoiceLeave: (channelId) => set((state) => {
+    const userId = useUserStore.getState().user?.id;
+    if (!channelId || !userId) {
+      return state;
+    }
+
+    manualVoiceLeaveGuards.set(
+      getManualVoiceLeaveGuardKey(channelId, userId),
+      Date.now() + MANUAL_VOICE_LEAVE_GUARD_MS,
+    );
+
+    const occupants = state.voiceOccupants[channelId] || [];
+    return {
+      voiceOccupants: {
+        ...state.voiceOccupants,
+        [channelId]: occupants.filter((occupant) => occupant.userId !== userId),
+      },
+    };
+  }),
+  clearManualVoiceLeave: (channelId) => {
+    const userId = useUserStore.getState().user?.id;
+    if (!channelId || !userId) {
+      return;
+    }
+
+    manualVoiceLeaveGuards.delete(getManualVoiceLeaveGuardKey(channelId, userId));
+  },
   updateOccupantStatus: (channelId, userId, data) => set((state) => {
     const occupants = state.voiceOccupants[channelId] || [];
     const updated = occupants.map(o => o.userId === userId ? { ...o, ...data } : o);

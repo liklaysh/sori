@@ -55,7 +55,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
   } = props;
 
   const { user } = useUserStore();
-  const { channels, voiceOccupants } = useChatStore();
+  const { channels, voiceOccupants, markManualVoiceLeave, clearManualVoiceLeave } = useChatStore();
   const { 
     activeChannelId, setActiveChannelId, 
     collapsedCategories, toggleCategory,
@@ -83,6 +83,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
     }
 
     try {
+      clearManualVoiceLeave(channelId);
       setIsDisconnecting(false);
       await getChannelToken(channelId);
       socket?.emit("join_voice_channel", channelId);
@@ -95,6 +96,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
 
   const handleLeaveVoiceChannel = () => {
     if (connectedChannelId) {
+      markManualVoiceLeave(connectedChannelId);
       playNotificationSound("voiceLeave");
     }
     socket?.emit("leave_voice_channel", connectedChannelId);

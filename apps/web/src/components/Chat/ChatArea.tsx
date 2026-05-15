@@ -65,7 +65,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
     activeModule, activeChannelId, activeConversationId, 
     setChannelSidebarOpen, setMemberSidebarOpen 
   } = useUIStore();
-  const { channels, conversations, fetchMessages, fetchDMMessages } = useChatStore();
+  const { channels, conversations, fetchMessages, fetchDMMessages, markManualVoiceLeave, clearManualVoiceLeave } = useChatStore();
   const contextKey = activeModule === "community"
     ? (activeChannelId ? getChannelContextKey(activeChannelId) : null)
     : (activeConversationId ? getConversationContextKey(activeConversationId) : null);
@@ -253,6 +253,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
 
     try {
       setLastError(null);
+      clearManualVoiceLeave(activeChannelId);
       setIsDisconnecting(false);
       await getChannelToken(activeChannelId);
       props.socket?.emit("join_voice_channel", activeChannelId);
@@ -429,6 +430,7 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
                     return;
                   }
                   if (connectedChannelId) {
+                    markManualVoiceLeave(connectedChannelId);
                     playNotificationSound("voiceLeave");
                   }
                   props.socket?.emit("leave_voice_channel", connectedChannelId);
