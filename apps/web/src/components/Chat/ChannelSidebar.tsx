@@ -275,39 +275,46 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
         onClose={() => setOccupantMenu(null)}
       />
 
-      <div className="mt-auto flex flex-col">
-        {socket?.connected && connectedChannelId && (
-          <div className="bg-sori-surface-elevated px-3 py-2 border-t border-sori-border-subtle flex items-center gap-3 animate-in slide-in-from-bottom relative">
-            <Volume2 className="h-4 w-4 text-sori-accent-secondary animate-pulse" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[9px] font-black uppercase text-sori-accent-secondary leading-none">{t("chat:voiceConnected")}</div>
-              <div className="text-[10px] text-sori-text-muted font-bold truncate">{connectedChannel?.name}</div>
+      <div className="mt-auto p-2">
+        <div className="relative overflow-hidden rounded-2xl border border-sori-border-subtle bg-sori-surface-elevated transition-all duration-200 group/user">
+          {connectedChannelId && (
+            <div className="border-b border-sori-border-subtle bg-sori-surface-main px-3 py-2 animate-in slide-in-from-bottom-1">
+              <div className="flex items-center gap-3">
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-sori-surface-success-subtle text-sori-accent-secondary">
+                  <Volume2 className="h-4 w-4 animate-pulse" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[9px] font-black uppercase leading-none text-sori-accent-secondary">{t("chat:voiceConnected")}</div>
+                  <div className="mt-1 truncate text-[11px] font-bold text-sori-text-muted">{connectedChannel?.name || status}</div>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <NoiseSuppressionPopup value={effectiveNoiseSuppressionMode} onChange={setNoiseSuppressionMode}>
+                    <button
+                      type="button"
+                      className={cn(
+                        "grid h-8 w-8 place-items-center rounded-lg transition",
+                        effectiveNoiseSuppressionMode !== "webrtc_basic"
+                          ? "bg-sori-surface-accent-subtle text-sori-accent-secondary"
+                          : "bg-sori-surface-elevated text-sori-text-muted hover:bg-sori-surface-hover hover:text-sori-text-strong"
+                      )}
+                      title={t("voice:noiseSuppression")}
+                    >
+                      <Waves className="h-4 w-4" />
+                    </button>
+                  </NoiseSuppressionPopup>
+                  <button
+                    type="button"
+                    onClick={handleLeaveVoiceChannel}
+                    className="grid h-8 w-8 place-items-center rounded-lg bg-sori-accent-danger-subtle text-sori-accent-danger transition hover:bg-sori-surface-danger-subtle"
+                    title={t("voice:controls.disconnect")}
+                  >
+                    <PhoneOff className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             </div>
-            
-            <div className="flex items-center">
-              <NoiseSuppressionPopup value={effectiveNoiseSuppressionMode} onChange={setNoiseSuppressionMode}>
-                <button 
-                  className={cn(
-                    "p-1.5 rounded-lg transition-all",
-                    effectiveNoiseSuppressionMode !== "webrtc_basic" ? 'text-sori-accent-primary' : 'text-sori-text-dim hover:text-sori-text-muted'
-                  )}
-                  title={t("voice:noiseSuppression")}
-                >
-                  <Waves className="h-5 w-5" />
-                </button>
-              </NoiseSuppressionPopup>
-            </div>
-
-            <button 
-              onClick={handleLeaveVoiceChannel} 
-              className="p-1.5 bg-sori-accent-danger rounded-xl text-sori-text-on-accent hover:brightness-110 transition-all shadow-sm"
-              title={t("voice:controls.disconnect")}
-            >
-              <PhoneOff className="h-5 w-5" /> 
-            </button>
-          </div>
-        )}
-        <div className="m-2 p-2 bg-sori-surface-elevated border border-sori-border-subtle rounded-2xl flex items-center justify-between gap-2 group/user">
+          )}
+          <div className="flex items-center justify-between gap-2 p-2">
           <div className="flex items-center gap-2.5 min-w-0 flex-1 hover:bg-sori-surface-hover rounded-xl p-1 cursor-pointer transition-all">
             <div className="relative shrink-0">
               <div className="w-9 h-9 rounded-full bg-sori-surface-base flex items-center justify-center text-[11px] font-black text-sori-accent-primary border border-sori-border-subtle group-hover/user:scale-105 transition-transform overflow-hidden">
@@ -449,6 +456,7 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
               </Popover>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
