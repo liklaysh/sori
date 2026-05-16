@@ -229,7 +229,22 @@ const LiveKitAudioSync: React.FC<{
         return;
       }
 
-      await applyNoiseSuppressionMode(audioPub.audioTrack, noiseSuppressionMode);
+      const processorDiagnostics = await applyNoiseSuppressionMode(audioPub.audioTrack, noiseSuppressionMode);
+      const gateDiagnostics = "gate" in processorDiagnostics ? processorDiagnostics.gate : null;
+      emitVoiceLifecycle(socket, {
+        event: "audio_processor_applied",
+        reason: "publish_track_processor",
+        channelId,
+        callId,
+        voiceSessionId,
+        details: {
+          mode: noiseSuppressionMode,
+          gateEnabled: Boolean(processorDiagnostics.gateEnabled),
+          hasProcessedTrack: Boolean(processorDiagnostics.hasProcessedTrack),
+          thresholdDb: gateDiagnostics?.thresholdDb,
+          floorGain: gateDiagnostics?.floorGain,
+        },
+      });
     };
 
     applyProcessor().catch((err) => {

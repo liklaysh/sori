@@ -30,5 +30,5 @@ export const resolveWebNoiseSuppressionMode = (
 export const getLiveKitAudioCaptureOptions = (mode: WebNoiseSuppressionMode) => ({
   echoCancellation: true,
   noiseSuppression: mode === "webrtc_basic",
-  autoGainControl: true,
+  autoGainControl: false,
 });
