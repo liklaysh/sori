@@ -76,6 +76,8 @@ capture_admin_calls() {
       | jq '.' >"${WORK_DIR}/admin-calls.json" 2>"${WORK_DIR}/admin-calls.error" || true
     curl -k -fsS -b "${cookie_jar}" "${api_url%/}/admin/diagnostics" \
       | jq '.' >"${WORK_DIR}/admin-diagnostics.json" 2>"${WORK_DIR}/admin-diagnostics.error" || true
+    curl -k -fsS -b "${cookie_jar}" "${api_url%/}/admin/diagnostics/voice-lifecycle" \
+      | jq '.' >"${WORK_DIR}/voice-lifecycle-events.json" 2>"${WORK_DIR}/voice-lifecycle-events.error" || true
   fi
   rm -f "${cookie_jar}"
 }
@@ -84,6 +86,7 @@ capture_voice_summary() {
   local target="${WORK_DIR}/voice-reconnect-summary.txt"
   local backend_logs="${WORK_DIR}/backend-logs.txt"
   local admin_calls="${WORK_DIR}/admin-calls.json"
+  local lifecycle_events="${WORK_DIR}/voice-lifecycle-events.json"
 
   {
     printf 'SORI voice reconnect summary\n'
@@ -107,6 +110,21 @@ capture_voice_summary() {
         | sort -nr || true
     else
       printf 'Backend logs or jq are unavailable; voice log summary skipped.\n'
+    fi
+
+    if [[ -f "${lifecycle_events}" ]] && command -v jq >/dev/null 2>&1; then
+      printf '\nClient voice lifecycle summary\n'
+      jq -r '
+        .summary as $summary
+        | "retentionDays\t" + ((.retentionDays // 3) | tostring),
+          "recentCount\t" + (($summary.recentCount // 0) | tostring),
+          "",
+          "events",
+          ($summary.byEvent // {} | to_entries | sort_by(.value) | reverse[]? | [.value, .key] | @tsv),
+          "",
+          "top users",
+          ($summary.topUsers // [] | .[]? | [.count, (.username // ""), .userId, ((.events // {}) | to_entries | map(.key + ":" + (.value | tostring)) | join(","))] | @tsv)
+      ' "${lifecycle_events}" 2>/dev/null || true
     fi
 
     if [[ -f "${admin_calls}" ]] && command -v jq >/dev/null 2>&1; then

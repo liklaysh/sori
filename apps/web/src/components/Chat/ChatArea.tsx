@@ -19,6 +19,7 @@ import { playNotificationSound } from "../../utils/notificationSounds";
 import { toast } from "sonner";
 import { MAX_UPLOAD_SIZE_MB } from "../../config";
 import { WebNoiseSuppressionMode } from "../../utils/noiseSuppressionModes";
+import { emitVoiceLifecycle } from "../../utils/voiceLifecycleTelemetry";
 
 const EMPTY_CHAT_ITEMS: ChatItem[] = [];
 const LiveKitSession = lazy(() => import("./Voice/LiveKitSession"));
@@ -255,11 +256,27 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
       setLastError(null);
       clearManualVoiceLeave(activeChannelId);
       setIsDisconnecting(false);
+      emitVoiceLifecycle(props.socket, {
+        event: "voice_join_requested",
+        reason: "explicit_user_action",
+        channelId: activeChannelId,
+      });
       await getChannelToken(activeChannelId);
       props.socket?.emit("join_voice_channel", activeChannelId);
+      emitVoiceLifecycle(props.socket, {
+        event: "voice_join_succeeded",
+        reason: "explicit_user_action",
+        channelId: activeChannelId,
+      });
       props.setIsVoiceChatOpen(true);
       playNotificationSound("voiceJoin");
     } catch (err) {
+      emitVoiceLifecycle(props.socket, {
+        event: "voice_join_failed",
+        reason: err instanceof Error ? err.message : "unknown",
+        severity: "error",
+        channelId: activeChannelId,
+      });
       console.error("Join voice failed:", err);
     }
   };
@@ -278,10 +295,30 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
       const isMeOccupant = occupants.some(o => o.userId === user?.id);
       
       if (isMeOccupant) {
-        getChannelToken(activeChannelId).catch(() => {});
+        emitVoiceLifecycle(props.socket, {
+          event: "voice_restore_started",
+          reason: "active_voice_view_self_occupant",
+          channelId: activeChannelId,
+        });
+        getChannelToken(activeChannelId)
+          .then(() => {
+            emitVoiceLifecycle(props.socket, {
+              event: "voice_restore_completed",
+              reason: "active_voice_view_self_occupant",
+              channelId: activeChannelId,
+            });
+          })
+          .catch((err) => {
+            emitVoiceLifecycle(props.socket, {
+              event: "voice_restore_failed",
+              reason: err instanceof Error ? err.message : "unknown",
+              severity: "warn",
+              channelId: activeChannelId,
+            });
+          });
       }
     }
-  }, [activeChannelId, activeModule, currentChannel?.type, livekitToken, user?.id, getChannelToken, isDisconnecting]);
+  }, [activeChannelId, activeModule, currentChannel?.type, livekitToken, user?.id, getChannelToken, isDisconnecting, props.socket]);
 
   // Safe Guard Reset: Only when switching to a DIFFERENT channel
   const lastChannelRef = useRef<string | null>(null);
@@ -432,10 +469,21 @@ export const ChatArea: React.FC<ChatAreaProps> = (props) => {
                   if (connectedChannelId) {
                     markManualVoiceLeave(connectedChannelId);
                     playNotificationSound("voiceLeave");
+                    emitVoiceLifecycle(props.socket, {
+                      event: "manual_leave_clicked",
+                      reason: "voice_control",
+                      channelId: connectedChannelId,
+                    });
                   }
                   props.socket?.emit("leave_voice_channel", connectedChannelId);
                   resetCall();
                   setIsDisconnecting(true);
+                  emitVoiceLifecycle(props.socket, {
+                    event: "voice_leave_completed",
+                    reason: "local_state_reset",
+                    channelId: connectedChannelId,
+                    callId,
+                  });
                 }}
                 onPeerGone={() => {
                   setIsDisconnecting(true);

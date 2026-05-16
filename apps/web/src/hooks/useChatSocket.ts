@@ -11,6 +11,8 @@ import { useUIStore } from "../store/useUIStore";
 import { useVoiceStore } from "../store/useVoiceStore";
 import { getConversationContextKey, getMessageAttachments, normalizeMessage } from "../utils/chatMessages";
 import { playNotificationSound } from "../utils/notificationSounds";
+import { emitClientSignal, emitVoiceLifecycle } from "../utils/voiceLifecycleTelemetry";
+import { getWebClientSignal } from "../utils/clientInfo";
 import i18n from "../i18n";
 
 export function useChatSocket() {
@@ -38,6 +40,7 @@ export function useChatSocket() {
   const notifiedMessageIdsRef = useRef<Set<string>>(new Set());
   const reconnectToastIdRef = useRef<string | number | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
+  const lastDisconnectReasonRef = useRef<string | null>(null);
 
   useEffect(() => { userRef.current = user; }, [user]);
   useEffect(() => { activeModuleRef.current = activeModule; }, [activeModule]);
@@ -55,6 +58,9 @@ export function useChatSocket() {
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
+      auth: {
+        client: getWebClientSignal(),
+      },
     });
 
     const refreshConversations = async () => {
@@ -80,6 +86,7 @@ export function useChatSocket() {
 
     newSocket.on("connect", () => {
       setSocket(newSocket);
+      emitClientSignal(newSocket);
       if (reconnectTimerRef.current !== null) {
         window.clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = null;
@@ -90,7 +97,12 @@ export function useChatSocket() {
       }
       const activeVoiceChannelId = useVoiceStore.getState().connectedChannelId;
       if (activeVoiceChannelId) {
-        newSocket.emit("join_voice_channel", activeVoiceChannelId);
+        emitVoiceLifecycle(newSocket, {
+          event: "socket_reconnected",
+          reason: lastDisconnectReasonRef.current || "sync_voice_presence",
+          channelId: activeVoiceChannelId,
+          details: { lastDisconnectReason: lastDisconnectReasonRef.current },
+        });
         const { isMuted: muted, isDeafened: deafened } = useUIStore.getState();
         newSocket.emit("user_audio_status_update", {
           channelId: activeVoiceChannelId,
@@ -98,10 +110,21 @@ export function useChatSocket() {
           isDeafened: deafened,
         });
       }
+      lastDisconnectReasonRef.current = null;
       refreshConversations();
     });
 
     newSocket.on("disconnect", (reason) => {
+      lastDisconnectReasonRef.current = reason;
+      const activeVoiceChannelId = useVoiceStore.getState().connectedChannelId;
+      if (activeVoiceChannelId) {
+        emitVoiceLifecycle(newSocket, {
+          event: "socket_disconnected",
+          reason,
+          severity: reason === "io client disconnect" ? "info" : "warn",
+          channelId: activeVoiceChannelId,
+        });
+      }
       setSocket(null);
       if (reason === "io client disconnect" || reconnectTimerRef.current !== null) {
         return;
@@ -295,6 +318,14 @@ export function useChatSocket() {
       return;
     }
 
+    if (socket.connected) {
+      emitVoiceLifecycle(socket, {
+        event: "voice_presence_sync",
+        reason: "status_or_device_state_changed",
+        channelId: connectedChannelId,
+        details: { isMuted, isDeafened },
+      });
+    }
     socket.emit("voice_heartbeat", { channelId: connectedChannelId });
     updateOccupantStatus(connectedChannelId, user.id, { isMuted, isDeafened });
     socket.emit("user_audio_status_update", { channelId: connectedChannelId, isMuted, isDeafened });

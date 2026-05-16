@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { playNotificationSound } from "../../utils/notificationSounds";
 import { VoiceOccupant } from "../../types/chat";
 import { WebNoiseSuppressionMode } from "../../utils/noiseSuppressionModes";
+import { emitVoiceLifecycle } from "../../utils/voiceLifecycleTelemetry";
 
 interface ChannelSidebarProps {
   socket: any;
@@ -85,11 +86,27 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
     try {
       clearManualVoiceLeave(channelId);
       setIsDisconnecting(false);
+      emitVoiceLifecycle(socket, {
+        event: "voice_join_requested",
+        reason: "sidebar_click",
+        channelId,
+      });
       await getChannelToken(channelId);
       socket?.emit("join_voice_channel", channelId);
+      emitVoiceLifecycle(socket, {
+        event: "voice_join_succeeded",
+        reason: "sidebar_click",
+        channelId,
+      });
       setIsVoiceChatOpen(true);
       playNotificationSound("voiceJoin");
     } catch (err) {
+      emitVoiceLifecycle(socket, {
+        event: "voice_join_failed",
+        reason: err instanceof Error ? err.message : "unknown",
+        severity: "error",
+        channelId,
+      });
       console.error("Join voice failed:", err);
     }
   };
@@ -98,11 +115,21 @@ export const ChannelSidebar: React.FC<ChannelSidebarProps> = (props) => {
     if (connectedChannelId) {
       markManualVoiceLeave(connectedChannelId);
       playNotificationSound("voiceLeave");
+      emitVoiceLifecycle(socket, {
+        event: "manual_leave_clicked",
+        reason: "sidebar_control",
+        channelId: connectedChannelId,
+      });
     }
     socket?.emit("leave_voice_channel", connectedChannelId);
     setIsVoiceChatOpen(false);
     resetCall();
     setIsDisconnecting(true);
+    emitVoiceLifecycle(socket, {
+      event: "voice_leave_completed",
+      reason: "local_state_reset",
+      channelId: connectedChannelId,
+    });
   };
 
   const handleOccupantContextMenu = (e: React.MouseEvent, occupant: VoiceOccupant, channelId: string) => {

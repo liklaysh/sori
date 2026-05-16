@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { config } from "../config.js";
 import { logger } from "./logger.js";
 import { mergeTelemetryAggregate, type CallTelemetryAggregate, type CallTelemetrySample } from "./callTelemetry.js";
@@ -9,6 +9,20 @@ const DIRECT_CALL_PREFIX = "active_direct_call:";
 const DIRECT_CALL_TTL_SECONDS = 3600;
 const CALL_TELEMETRY_PREFIX = "call_telemetry:";
 const CALL_TELEMETRY_TTL_SECONDS = 4 * 60 * 60;
+const VOICE_LIFECYCLE_RECENT_KEY = "voice_lifecycle:recent";
+const VOICE_LIFECYCLE_USER_PREFIX = "voice_lifecycle:user:";
+const VOICE_LIFECYCLE_DEDUPE_PREFIX = "voice_lifecycle:dedupe:";
+const VOICE_LIFECYCLE_RATE_PREFIX = "voice_lifecycle:rate:";
+const CLIENT_SIGNAL_RECENT_KEY = "client_signal:recent";
+const CLIENT_SIGNAL_LATEST_PREFIX = "client_signal:latest:";
+const CLIENT_SIGNAL_SOCKET_PREFIX = "client_signal:socket:";
+const VOICE_LIFECYCLE_TTL_SECONDS = 3 * 24 * 60 * 60;
+const VOICE_LIFECYCLE_DEDUPE_SECONDS = 20;
+const VOICE_LIFECYCLE_RATE_WINDOW_SECONDS = 60 * 60;
+const VOICE_LIFECYCLE_RATE_LIMIT = 120;
+const VOICE_LIFECYCLE_RECENT_LIMIT = 500;
+const VOICE_LIFECYCLE_USER_LIMIT = 100;
+const CLIENT_SIGNAL_RECENT_LIMIT = 300;
 
 export const redis = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
@@ -357,5 +371,269 @@ export const redisCallTelemetry = {
     if (exists) {
       await redis.expire(key, CALL_TELEMETRY_TTL_SECONDS);
     }
+  },
+};
+
+type ClientSignal = {
+  clientType?: "web" | "desktop" | string;
+  appVersion?: string;
+  buildId?: string;
+  commit?: string;
+  livekitClientVersion?: string;
+  platform?: string;
+  userAgent?: string;
+};
+
+export type VoiceLifecycleEvent = {
+  id?: string;
+  receivedAt?: string;
+  event: string;
+  reason?: string | null;
+  severity?: "debug" | "info" | "warn" | "error";
+  channelId?: string | null;
+  callId?: string | null;
+  voiceSessionId?: string | null;
+  client?: ClientSignal | null;
+  details?: Record<string, unknown> | null;
+};
+
+type StoredVoiceLifecycleEvent = Required<Pick<VoiceLifecycleEvent, "id" | "receivedAt" | "event">>
+  & Omit<VoiceLifecycleEvent, "id" | "receivedAt" | "event">
+  & {
+    userId: string;
+    username?: string | null;
+    socketId?: string | null;
+    rateLimited?: boolean;
+  };
+
+function safeString(value: unknown, maxLength = 160): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  return trimmed.slice(0, maxLength);
+}
+
+function sanitizeClientSignal(client: unknown): ClientSignal {
+  const source = (client && typeof client === "object") ? client as Record<string, unknown> : {};
+  return {
+    clientType: safeString(source.clientType, 32),
+    appVersion: safeString(source.appVersion, 32),
+    buildId: safeString(source.buildId, 64),
+    commit: safeString(source.commit, 64),
+    livekitClientVersion: safeString(source.livekitClientVersion, 32),
+    platform: safeString(source.platform, 80),
+    userAgent: safeString(source.userAgent, 240),
+  };
+}
+
+function sanitizeLifecycleDetails(details: unknown): Record<string, unknown> | null {
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    return null;
+  }
+
+  const result: Record<string, unknown> = {};
+  Object.entries(details as Record<string, unknown>).slice(0, 16).forEach(([key, value]) => {
+    const safeKey = key.slice(0, 64);
+    if (typeof value === "string") {
+      result[safeKey] = value.slice(0, 240);
+    } else if (typeof value === "number" || typeof value === "boolean" || value === null) {
+      result[safeKey] = value;
+    }
+  });
+
+  return Object.keys(result).length ? result : null;
+}
+
+function lifecycleDedupeKey(userId: string, event: VoiceLifecycleEvent, client: ClientSignal) {
+  const hash = createHash("sha1")
+    .update([
+      userId,
+      safeString(event.event, 80) || "unknown",
+      safeString(event.reason, 80) || "",
+      safeString(event.channelId, 80) || "",
+      safeString(event.callId, 80) || "",
+      safeString(event.voiceSessionId, 80) || "",
+      client.clientType || "",
+      client.appVersion || "",
+    ].join("|"))
+    .digest("hex")
+    .slice(0, 24);
+
+  return `${VOICE_LIFECYCLE_DEDUPE_PREFIX}${hash}`;
+}
+
+async function pushCappedJsonList(key: string, value: unknown, limit: number, ttlSeconds: number) {
+  const serialized = JSON.stringify(value);
+  const pipeline = redis.pipeline();
+  pipeline.lpush(key, serialized);
+  pipeline.ltrim(key, 0, limit - 1);
+  pipeline.expire(key, ttlSeconds);
+  await pipeline.exec();
+}
+
+async function readJsonList<T>(key: string, limit: number): Promise<T[]> {
+  const values = await redis.lrange(key, 0, limit - 1);
+  return values.flatMap((value) => {
+    try {
+      return [JSON.parse(value) as T];
+    } catch {
+      return [];
+    }
+  });
+}
+
+export const redisClientSignals = {
+  record: async (userId: string, socketId: string, client: unknown, username?: string | null) => {
+    const signal = {
+      userId,
+      username,
+      socketId,
+      receivedAt: new Date().toISOString(),
+      client: sanitizeClientSignal(client),
+    };
+
+    await Promise.all([
+      redis.set(`${CLIENT_SIGNAL_LATEST_PREFIX}${userId}`, JSON.stringify(signal), "EX", VOICE_LIFECYCLE_TTL_SECONDS),
+      redis.set(`${CLIENT_SIGNAL_SOCKET_PREFIX}${socketId}`, JSON.stringify(signal), "EX", VOICE_LIFECYCLE_TTL_SECONDS),
+      pushCappedJsonList(CLIENT_SIGNAL_RECENT_KEY, signal, CLIENT_SIGNAL_RECENT_LIMIT, VOICE_LIFECYCLE_TTL_SECONDS),
+    ]);
+
+    return signal;
+  },
+  getBySocket: async (socketId: string): Promise<ClientSignal | null> => {
+    const data = await redis.get(`${CLIENT_SIGNAL_SOCKET_PREFIX}${socketId}`);
+    if (!data) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(data) as { client?: ClientSignal };
+      return parsed.client || null;
+    } catch {
+      return null;
+    }
+  },
+  getRecent: async (limit = CLIENT_SIGNAL_RECENT_LIMIT) => {
+    return readJsonList(CLIENT_SIGNAL_RECENT_KEY, limit);
+  },
+};
+
+export const redisVoiceLifecycle = {
+  record: async (
+    user: { id: string; username?: string | null },
+    socketId: string,
+    event: VoiceLifecycleEvent,
+    fallbackClient?: ClientSignal | null,
+  ) => {
+    const safeEvent = safeString(event.event, 80);
+    if (!safeEvent) {
+      return { stored: false, reason: "invalid_event" as const };
+    }
+
+    const rateKey = `${VOICE_LIFECYCLE_RATE_PREFIX}${user.id}`;
+    const count = await redis.incr(rateKey);
+    if (count === 1) {
+      await redis.expire(rateKey, VOICE_LIFECYCLE_RATE_WINDOW_SECONDS);
+    }
+
+    if (count > VOICE_LIFECYCLE_RATE_LIMIT) {
+      if (count === VOICE_LIFECYCLE_RATE_LIMIT + 1) {
+        const limitedEvent: StoredVoiceLifecycleEvent = {
+          id: randomUUID(),
+          receivedAt: new Date().toISOString(),
+          event: "voice_lifecycle_rate_limited",
+          reason: "hourly_limit_exceeded",
+          severity: "warn",
+          channelId: safeString(event.channelId, 80) || null,
+          callId: safeString(event.callId, 80) || null,
+          voiceSessionId: safeString(event.voiceSessionId, 80) || null,
+          client: sanitizeClientSignal(event.client || fallbackClient),
+          details: { limit: VOICE_LIFECYCLE_RATE_LIMIT },
+          userId: user.id,
+          username: user.username || null,
+          socketId,
+          rateLimited: true,
+        };
+        await pushCappedJsonList(VOICE_LIFECYCLE_RECENT_KEY, limitedEvent, VOICE_LIFECYCLE_RECENT_LIMIT, VOICE_LIFECYCLE_TTL_SECONDS);
+        await pushCappedJsonList(`${VOICE_LIFECYCLE_USER_PREFIX}${user.id}`, limitedEvent, VOICE_LIFECYCLE_USER_LIMIT, VOICE_LIFECYCLE_TTL_SECONDS);
+      }
+
+      return { stored: false, reason: "rate_limited" as const };
+    }
+
+    const client = sanitizeClientSignal(event.client || fallbackClient);
+    const dedupeKey = lifecycleDedupeKey(user.id, { ...event, event: safeEvent }, client);
+    const dedupeAllowed = await redis.set(dedupeKey, "1", "EX", VOICE_LIFECYCLE_DEDUPE_SECONDS, "NX");
+    if (dedupeAllowed !== "OK") {
+      return { stored: false, reason: "deduped" as const };
+    }
+
+    const stored: StoredVoiceLifecycleEvent = {
+      id: randomUUID(),
+      receivedAt: new Date().toISOString(),
+      event: safeEvent,
+      reason: safeString(event.reason, 120) || null,
+      severity: event.severity || "info",
+      channelId: safeString(event.channelId, 80) || null,
+      callId: safeString(event.callId, 80) || null,
+      voiceSessionId: safeString(event.voiceSessionId, 80) || null,
+      client,
+      details: sanitizeLifecycleDetails(event.details),
+      userId: user.id,
+      username: user.username || null,
+      socketId,
+    };
+
+    await pushCappedJsonList(VOICE_LIFECYCLE_RECENT_KEY, stored, VOICE_LIFECYCLE_RECENT_LIMIT, VOICE_LIFECYCLE_TTL_SECONDS);
+    await pushCappedJsonList(`${VOICE_LIFECYCLE_USER_PREFIX}${user.id}`, stored, VOICE_LIFECYCLE_USER_LIMIT, VOICE_LIFECYCLE_TTL_SECONDS);
+
+    if (stored.severity === "warn" || stored.severity === "error") {
+      logger.warn({
+        message: "[VoiceLifecycle] Client event",
+        event: stored.event,
+        reason: stored.reason,
+        userId: stored.userId,
+        channelId: stored.channelId,
+        callId: stored.callId,
+        client: stored.client,
+      });
+    }
+
+    return { stored: true, event: stored };
+  },
+  getRecent: async (limit = VOICE_LIFECYCLE_RECENT_LIMIT) => {
+    return readJsonList<StoredVoiceLifecycleEvent>(VOICE_LIFECYCLE_RECENT_KEY, limit);
+  },
+  getSummary: async () => {
+    const events = await redisVoiceLifecycle.getRecent(VOICE_LIFECYCLE_RECENT_LIMIT);
+    const byUser: Record<string, { username?: string | null; count: number; events: Record<string, number>; reasons: Record<string, number> }> = {};
+    const byEvent: Record<string, number> = {};
+
+    for (const event of events) {
+      byEvent[event.event] = (byEvent[event.event] || 0) + 1;
+      const userEntry = byUser[event.userId] || { username: event.username, count: 0, events: {}, reasons: {} };
+      userEntry.count += 1;
+      userEntry.events[event.event] = (userEntry.events[event.event] || 0) + 1;
+      if (event.reason) {
+        userEntry.reasons[event.reason] = (userEntry.reasons[event.reason] || 0) + 1;
+      }
+      byUser[event.userId] = userEntry;
+    }
+
+    return {
+      retentionSeconds: VOICE_LIFECYCLE_TTL_SECONDS,
+      recentCount: events.length,
+      byEvent,
+      topUsers: Object.entries(byUser)
+        .map(([userId, value]) => ({ userId, ...value }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 20),
+    };
   },
 };

@@ -5,7 +5,7 @@ import { sql, ne } from "drizzle-orm";
 import { logAudit } from "../../utils/audit.js";
 import { s3Client, BUCKET_NAME } from "../../utils/s3.js";
 import { HeadBucketCommand } from "@aws-sdk/client-s3";
-import { redis, redisCallTelemetry } from "../../utils/redis.js";
+import { redis, redisCallTelemetry, redisClientSignals, redisVoiceLifecycle } from "../../utils/redis.js";
 import { sanitizeUser } from "../../utils/publicUser.js";
 import {
   diagnoseTelemetryDegradation,
@@ -268,12 +268,20 @@ system.get("/calls", async (c) => {
 });
 
 system.get("/diagnostics", async (c) => {
-  const [database, valkey, storage, migrations, telemetrySchema] = await Promise.all([
+  const [database, valkey, storage, migrations, telemetrySchema, voiceLifecycle] = await Promise.all([
     resolveServiceStatus(checkDatabase),
     resolveServiceStatus(checkRedis),
     resolveServiceStatus(checkStorage),
     getMigrationDiagnostics(),
     getTelemetrySchemaDiagnostics(),
+    redisVoiceLifecycle.getSummary().catch((error) => ({
+      status: "error",
+      error: error instanceof Error ? error.message : "unknown",
+      recentCount: 0,
+      retentionSeconds: 3 * 24 * 60 * 60,
+      byEvent: {},
+      topUsers: [],
+    })),
   ]);
 
   const serviceStatuses = [database.status, valkey.status, storage.status, telemetrySchema.status];
@@ -294,6 +302,7 @@ system.get("/diagnostics", async (c) => {
     },
     migrations,
     telemetrySchema,
+    voiceLifecycle,
     runtime: {
       environment: config.env,
       uptime: Math.round(process.uptime()),
@@ -310,6 +319,22 @@ system.get("/diagnostics", async (c) => {
       health: `${config.public.apiUrl.replace(/\/+$/, "")}/health`,
       bootstrap: `${config.public.webUrl.replace(/\/+$/, "")}/.well-known/sori/client.json`,
     },
+  });
+});
+
+system.get("/diagnostics/voice-lifecycle", async (c) => {
+  const [events, clients, summary] = await Promise.all([
+    redisVoiceLifecycle.getRecent(500),
+    redisClientSignals.getRecent(300),
+    redisVoiceLifecycle.getSummary(),
+  ]);
+
+  return c.json({
+    generatedAt: new Date().toISOString(),
+    retentionDays: 3,
+    summary,
+    events,
+    clients,
   });
 });
 

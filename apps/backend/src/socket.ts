@@ -7,7 +7,15 @@ import { config } from "./config.js";
 import { setGlobalIo } from "./globals.js";
 import { eq, inArray, and } from "drizzle-orm";
 import { createAdapter } from "@socket.io/redis-adapter";
-import { pubClient, subClient, redisPresence, redisVoice, sanitizeVoiceOccupantsState } from "./utils/redis.js";
+import {
+  pubClient,
+  subClient,
+  redisClientSignals,
+  redisPresence,
+  redisVoice,
+  redisVoiceLifecycle,
+  sanitizeVoiceOccupantsState,
+} from "./utils/redis.js";
 import { logger } from "./utils/logger.js";
 import { nanoid } from "nanoid";
 
@@ -81,6 +89,7 @@ export function initSocket(server: any) {
       // Request Tracking for Sockets
       const requestId = socket.handshake.auth.requestId || nanoid();
       socket.data.requestId = requestId;
+      socket.data.clientInfo = socket.handshake.auth.client || null;
       
       next();
     } catch (err: any) {
@@ -100,7 +109,12 @@ export function initSocket(server: any) {
       socketId: socket.id,
       userId: user.id,
       requestId,
-      role: user.role
+      role: user.role,
+      client: socket.data.clientInfo,
+    });
+
+    await redisClientSignals.record(user.id, socket.id, socket.data.clientInfo, user.username).catch((error) => {
+      logger.warn("[Socket] Failed to record client signal", { error: error as Error, userId: user.id, socketId: socket.id });
     });
     
     // Clear any pending offline update
@@ -138,6 +152,28 @@ export function initSocket(server: any) {
       } catch (err) {
         logger.error("[Socket] get_voice_state error:", { error: err });
       }
+    });
+
+    socket.on("client_signal", async (payload: unknown) => {
+      socket.data.clientInfo = payload;
+      await redisClientSignals.record(user.id, socket.id, payload, user.username).catch((error) => {
+        logger.warn("[Socket] Failed to update client signal", { error: error as Error, userId: user.id, socketId: socket.id });
+      });
+    });
+
+    socket.on("voice_lifecycle_event", async (payload: unknown) => {
+      if (isAdminPanel || !payload || typeof payload !== "object") {
+        return;
+      }
+
+      await redisVoiceLifecycle.record(
+        { id: user.id, username: user.username },
+        socket.id,
+        payload as any,
+        socket.data.clientInfo,
+      ).catch((error) => {
+        logger.warn("[Socket] Failed to record voice lifecycle event", { error: error as Error, userId: user.id, socketId: socket.id });
+      });
     });
 
     // Register module listeners before async bootstrap so early emits after connect are not lost.

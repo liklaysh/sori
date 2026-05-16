@@ -4,6 +4,7 @@ import api from "../lib/api";
 import { toast } from "sonner";
 import { useVoiceStore } from "../store/useVoiceStore";
 import { startNotificationSoundLoop, stopNotificationSoundLoop } from "../utils/notificationSounds";
+import { emitVoiceLifecycle } from "../utils/voiceLifecycleTelemetry";
 import i18n from "../i18n";
 
 interface CallMetrics {
@@ -44,6 +45,11 @@ export function useCall({ socket }: UseCallProps) {
     if (!socket || status !== "idle") {
       return;
     }
+    emitVoiceLifecycle(socket, {
+      event: "direct_call_initiated",
+      reason: "explicit_user_action",
+      details: { targetUserId: targetUser.id },
+    });
     setStatus("calling");
     setCallData({ partner: targetUser });
     socket.emit("direct_call_initiate", { targetUserId: targetUser.id });
@@ -72,6 +78,11 @@ export function useCall({ socket }: UseCallProps) {
       notifiedIncomingCallIdsRef.current.delete(callId);
     }
     if (socket && callId) {
+      emitVoiceLifecycle(socket, {
+        event: "manual_leave_clicked",
+        reason: "direct_call_end",
+        callId,
+      });
       const cleanMetrics = (metrics && typeof metrics === 'object' && !(metrics instanceof Event) && !('nativeEvent' in metrics)) 
         ? metrics 
         : undefined;
@@ -105,12 +116,28 @@ export function useCall({ socket }: UseCallProps) {
 
     const handleAccepted = async (data: { callId: string }) => {
       try {
+        emitVoiceLifecycle(socket, {
+          event: "direct_call_token_requested",
+          reason: "call_accepted",
+          callId: data.callId,
+        });
         const res = await api.post("/calls/token", { callId: data.callId });
         const tokenData = res.data as { token: string; startedAt: number };
         setToken(tokenData.token);
         setStatus("connected");
         setCallData({ startTime: tokenData.startedAt });
+        emitVoiceLifecycle(socket, {
+          event: "direct_call_connected",
+          reason: "call_accepted",
+          callId: data.callId,
+        });
       } catch (err) {
+        emitVoiceLifecycle(socket, {
+          event: "direct_call_connect_failed",
+          reason: err instanceof Error ? err.message : "unknown",
+          severity: "error",
+          callId: data.callId,
+        });
         console.error("Failed to get direct call token", err);
         endCall();
       }
@@ -119,6 +146,14 @@ export function useCall({ socket }: UseCallProps) {
     const safeReset = (_reason?: string) => {
       stopNotificationSoundLoop("directCall");
       const activeCallId = useVoiceStore.getState().callId;
+      if (activeCallId && _reason) {
+        emitVoiceLifecycle(socket, {
+          event: "direct_call_reset",
+          reason: _reason,
+          severity: _reason === "socket_disconnect" || _reason === "direct_call_error" ? "warn" : "info",
+          callId: activeCallId,
+        });
+      }
       if (activeCallId) {
         notifiedIncomingCallIdsRef.current.delete(activeCallId);
       }

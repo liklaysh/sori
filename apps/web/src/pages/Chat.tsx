@@ -11,6 +11,7 @@ import { useChatSocket } from "../hooks/useChatSocket";
 import { useMediaSettings } from "../hooks/useMediaSettings";
 import { useCall } from "../hooks/useCall";
 import { preloadNotificationSounds } from "../utils/notificationSounds";
+import { emitVoiceLifecycle } from "../utils/voiceLifecycleTelemetry";
 
 // Components
 import { ServerSidebar } from "../components/Chat/ServerSidebar";
@@ -150,6 +151,11 @@ const Chat: React.FC = () => {
     }
 
     if (restoredVoiceChannelRef.current === channelToRestore) {
+      emitVoiceLifecycle(socket, {
+        event: "voice_restore_skipped",
+        reason: "already_attempted_for_channel",
+        channelId: channelToRestore,
+      });
       return;
     }
 
@@ -157,6 +163,11 @@ const Chat: React.FC = () => {
     let cancelled = false;
 
     call.setIsDisconnecting(false);
+    emitVoiceLifecycle(socket, {
+      event: "voice_restore_started",
+      reason: "self_occupant_after_socket_ready",
+      channelId: channelToRestore,
+    });
     call.getChannelToken(channelToRestore)
       .then(() => {
         if (cancelled) {
@@ -171,11 +182,22 @@ const Chat: React.FC = () => {
           isDeafened,
         });
         setIsVoiceChatOpen(true);
+        emitVoiceLifecycle(socket, {
+          event: "voice_restore_completed",
+          reason: "self_occupant_after_socket_ready",
+          channelId: channelToRestore,
+        });
       })
       .catch(() => {
         if (restoredVoiceChannelRef.current === channelToRestore) {
           restoredVoiceChannelRef.current = null;
         }
+        emitVoiceLifecycle(socket, {
+          event: "voice_restore_failed",
+          reason: "token_request_failed",
+          severity: "warn",
+          channelId: channelToRestore,
+        });
       });
 
     return () => {

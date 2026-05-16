@@ -8,7 +8,7 @@ import {
   useRemoteParticipants,
   useRoomContext,
 } from "@livekit/components-react";
-import { ConnectionState } from "livekit-client";
+import { ConnectionState, RoomEvent } from "livekit-client";
 import { Track, LocalAudioTrack } from "livekit-client";
 import { LIVEKIT_URL } from "../../../config";
 import { ChatItem, User } from "../../../types/chat";
@@ -19,6 +19,7 @@ import { SoriVoiceRoom } from "./SoriVoiceRoom";
 import { StreamingTracker } from "./StreamingTracker";
 import { CallTelemetryReporter } from "./CallTelemetryReporter";
 import { WebNoiseSuppressionMode, getLiveKitAudioCaptureOptions } from "../../../utils/noiseSuppressionModes";
+import { emitVoiceLifecycle } from "../../../utils/voiceLifecycleTelemetry";
 
 interface LiveKitSessionProps {
   socket: any;
@@ -114,6 +115,48 @@ const VoiceSessionManager: React.FC<{
   return null;
 };
 
+const LiveKitLifecycleReporter: React.FC<{
+  socket: any;
+  callId: string | null;
+  channelId: string | null;
+  voiceSessionId: string;
+}> = ({ socket, callId, channelId, voiceSessionId }) => {
+  const room = useRoomContext();
+
+  useEffect(() => {
+    const report = (event: string, reason?: string | null, severity: "info" | "warn" | "error" = "info") => {
+      emitVoiceLifecycle(socket, {
+        event,
+        reason,
+        severity,
+        callId,
+        channelId,
+        voiceSessionId,
+        details: { roomState: room.state },
+      });
+    };
+
+    report("livekit_room_mounted", "component_mount");
+
+    const onReconnecting = () => report("livekit_reconnecting", "room_event", "warn");
+    const onReconnected = () => report("livekit_reconnected", "room_event");
+    const onDisconnected = (reason?: unknown) => report("livekit_disconnected", typeof reason === "string" ? reason : "room_event", "warn");
+
+    room.on(RoomEvent.Reconnecting, onReconnecting);
+    room.on(RoomEvent.Reconnected, onReconnected);
+    room.on(RoomEvent.Disconnected, onDisconnected);
+
+    return () => {
+      report("livekit_room_unmounted", "component_cleanup");
+      room.off(RoomEvent.Reconnecting, onReconnecting);
+      room.off(RoomEvent.Reconnected, onReconnected);
+      room.off(RoomEvent.Disconnected, onDisconnected);
+    };
+  }, [callId, channelId, room, socket, voiceSessionId]);
+
+  return null;
+};
+
 const LiveKitMediaDeviceSync: React.FC<{
   activeMicId?: string;
   activeOutputId?: string;
@@ -140,9 +183,13 @@ const LiveKitMediaDeviceSync: React.FC<{
 };
 
 const LiveKitAudioSync: React.FC<{
+  socket: any;
+  channelId: string | null;
+  callId: string | null;
+  voiceSessionId: string;
   activeMicId?: string;
   noiseSuppressionMode: WebNoiseSuppressionMode;
-}> = ({ activeMicId, noiseSuppressionMode }) => {
+}> = ({ socket, channelId, callId, voiceSessionId, activeMicId, noiseSuppressionMode }) => {
   const { localParticipant } = useLocalParticipant();
   const isMuted = useUIStore((state) => state.isMuted);
 
@@ -152,8 +199,21 @@ const LiveKitAudioSync: React.FC<{
       deviceId: activeMicId && activeMicId !== "default" ? activeMicId : undefined,
     };
 
-    localParticipant.setMicrophoneEnabled(!isMuted, audioOptions).catch(() => {});
-  }, [activeMicId, isMuted, localParticipant, noiseSuppressionMode]);
+    localParticipant.setMicrophoneEnabled(!isMuted, audioOptions).catch((error) => {
+      if (isMuted) {
+        return;
+      }
+      emitVoiceLifecycle(socket, {
+        event: "audio_track_publish_failed",
+        reason: error instanceof Error ? error.message : "unknown",
+        severity: "error",
+        channelId,
+        callId,
+        voiceSessionId,
+        details: { activeMicId, noiseSuppressionMode },
+      });
+    });
+  }, [activeMicId, callId, channelId, isMuted, localParticipant, noiseSuppressionMode, socket, voiceSessionId]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -173,19 +233,43 @@ const LiveKitAudioSync: React.FC<{
     };
 
     applyProcessor().catch((err) => {
+      emitVoiceLifecycle(socket, {
+        event: "noise_processor_failed",
+        reason: err instanceof Error ? err.message : "unknown",
+        severity: "warn",
+        channelId,
+        callId,
+        voiceSessionId,
+        details: { noiseSuppressionMode },
+      });
       console.error("[NoiseSuppression] Failed to apply:", err);
     });
 
     return () => {
       isCancelled = true;
     };
-  }, [localParticipant, noiseSuppressionMode]);
+  }, [callId, channelId, localParticipant, noiseSuppressionMode, socket, voiceSessionId]);
 
   return null;
 };
 
 export default function LiveKitSession(props: LiveKitSessionProps) {
   const participantVolumes = useUIStore((state) => state.participantVolumes);
+  const voiceSessionIdRef = useRef(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  );
+
+  useEffect(() => {
+    emitVoiceLifecycle(props.socket, {
+      event: "voice_session_rendered",
+      reason: props.connectedChannelId ? "voice_channel" : "direct_call",
+      channelId: props.connectedChannelId,
+      callId: props.callId,
+      voiceSessionId: voiceSessionIdRef.current,
+    });
+  }, [props.callId, props.connectedChannelId, props.socket]);
 
   return (
     <LiveKitRoom
@@ -195,13 +279,38 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
       token={props.livekitToken}
       serverUrl={LIVEKIT_URL}
       connect={true}
-      onConnected={props.onConnected}
-      onDisconnected={props.onDisconnected}
+      onConnected={() => {
+        emitVoiceLifecycle(props.socket, {
+          event: "livekit_connected",
+          reason: "room_callback",
+          channelId: props.connectedChannelId,
+          callId: props.callId,
+          voiceSessionId: voiceSessionIdRef.current,
+        });
+        props.onConnected();
+      }}
+      onDisconnected={() => {
+        emitVoiceLifecycle(props.socket, {
+          event: "livekit_disconnected",
+          reason: "room_callback",
+          severity: "warn",
+          channelId: props.connectedChannelId,
+          callId: props.callId,
+          voiceSessionId: voiceSessionIdRef.current,
+        });
+        props.onDisconnected();
+      }}
       className={props.showFullVoiceUI
         ? "absolute inset-0 z-20 flex bg-sori-surface-main"
         : "absolute left-[-10000px] top-0 h-px w-px overflow-hidden opacity-0 pointer-events-none"
       }
     >
+      <LiveKitLifecycleReporter
+        socket={props.socket}
+        callId={props.callId}
+        channelId={props.connectedChannelId}
+        voiceSessionId={voiceSessionIdRef.current}
+      />
       <VoiceSessionManager
         callId={props.callId}
         partner={props.partner}
@@ -214,6 +323,10 @@ export default function LiveKitSession(props: LiveKitSessionProps) {
         activeOutputId={props.activeOutputId}
       />
       <LiveKitAudioSync
+        socket={props.socket}
+        channelId={props.connectedChannelId}
+        callId={props.callId}
+        voiceSessionId={voiceSessionIdRef.current}
         activeMicId={props.activeMicId}
         noiseSuppressionMode={props.effectiveNoiseSuppressionMode}
       />

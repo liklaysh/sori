@@ -106,6 +106,8 @@ services:
         - VITE_WS_URL=${VITE_WS_URL}
         - VITE_LIVEKIT_URL=${VITE_LIVEKIT_URL}
         - VITE_MAX_UPLOAD_SIZE_MB=${VITE_MAX_UPLOAD_SIZE_MB:-25}
+        - SORI_COMMIT=${SORI_COMMIT:-unknown}
+        - SORI_BUILD_ID=${SORI_BUILD_ID:-}
     # Ports managed by gateway
     expose: 
       - "80"

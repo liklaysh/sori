@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@sori/ui";
 import { useTranslation } from "react-i18next";
 import { useUserStore } from "./store/useUserStore";
+import { WebUpdateGate } from "./components/System/WebUpdateGate";
 
 const Login = lazy(() => import("./pages/Login"));
 const Chat = lazy(() => import("./pages/Chat"));
@@ -69,6 +70,7 @@ function App() {
         </Routes>
       </Suspense>
       <Toaster />
+      <WebUpdateGate />
     </BrowserRouter>
   );
 }

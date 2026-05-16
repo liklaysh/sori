@@ -4,6 +4,7 @@ import { serverSettings } from "../db/schema.js";
 import { config } from "../config.js";
 import { safe } from "../utils/safe.js";
 import { CLIENT_BOOTSTRAP_VERSION, ClientBootstrapPayload } from "../types/clientBootstrap.js";
+import { getSystemVersion } from "../utils/version.js";
 
 const client = new Hono();
 
@@ -15,6 +16,7 @@ async function getServerName() {
 
 async function buildBootstrapPayload(): Promise<ClientBootstrapPayload> {
   const serverName = await getServerName();
+  const systemVersion = getSystemVersion();
 
   return {
     version: CLIENT_BOOTSTRAP_VERSION,
@@ -44,6 +46,11 @@ async function buildBootstrapPayload(): Promise<ClientBootstrapPayload> {
     },
     upload: {
       maxUploadSizeMb: config.storage.maxUploadSizeMb,
+    },
+    build: {
+      version: systemVersion.version,
+      buildId: systemVersion.buildId,
+      commit: systemVersion.commit,
     },
     features: {
       directMessages: true,

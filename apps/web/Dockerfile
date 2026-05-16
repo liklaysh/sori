@@ -5,6 +5,7 @@ WORKDIR /app
 
 # Copy root workspace configs
 COPY package.json package-lock.json ./
+COPY VERSION ./VERSION
 COPY apps/web/package.json ./apps/web/
 COPY packages/ui/package.json ./packages/ui/
 
@@ -21,13 +22,17 @@ ARG VITE_API_URL
 ARG VITE_WS_URL
 ARG VITE_LIVEKIT_URL
 ARG VITE_MAX_UPLOAD_SIZE_MB
+ARG SORI_COMMIT=unknown
+ARG SORI_BUILD_ID=
 
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_WS_URL=$VITE_WS_URL
 ENV VITE_LIVEKIT_URL=$VITE_LIVEKIT_URL
 ENV VITE_MAX_UPLOAD_SIZE_MB=$VITE_MAX_UPLOAD_SIZE_MB
+ENV VITE_SORI_COMMIT=$SORI_COMMIT
+ENV VITE_SORI_BUILD_ID=$SORI_BUILD_ID
 
-RUN npm run build -w @sori/web
+RUN VITE_SORI_VERSION="$(cat VERSION)" npm run build -w @sori/web
 
 # Stage 2: Runtime
 FROM caddy:2-alpine
