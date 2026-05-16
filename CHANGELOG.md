@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6
+
+- Added lightweight voice lifecycle diagnostics with short-term capped storage, dedupe, rate limiting, client version signals, and diagnostics export support.
+- Added a hard web update gate so outdated browser bundles prompt users to refresh after a server update.
+- Improved voice reconnect handling so socket reconnects resync voice presence without rejoining after a manual leave.
+- Reworked the outgoing microphone processing pipeline so LiveKit publishes a processed audio track with suppression plus a smooth noise gate.
+- Disabled browser auto gain control in voice capture to reduce low-level room noise being amplified during pauses.
+
 ## 0.1.5
 
 - Fixed a server time synchronization request stampede in the web client that could trigger bursts of `/time` requests during heavy chat rendering.
